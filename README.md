@@ -44,11 +44,15 @@ WiscSIMS Tool has two features.
 
 2. Open QGIS.
 
-3.  From the QGIS menu, select `Plugins` > `Manege and Install Plugins`
+3.  From the QGIS menu, select `Plugins` > `Manege and Install Plugins`.
+<a href="img/readme/plugin_install_menu.png" target="_blank"><img src="img/readme/plugin_install_menu.png" width="500" alt=""></a>
 
-4. Select `Intall from ZIP` and hit `...` button to select downloaded `wiscsims_tool3.zip` file.
-5. Hit `Install Plugin` to install `WiscSIMS Tool 3`.
-6. Select `Installed Plugins` to make sure `WiscSIMS Tool 3` was correctlly installed. You also see `WiscSIMS Tool 3` icon in the QGIS toolbar.
+1. Select `Intall from ZIP` and hit `...` button to select downloaded `wiscsims_tool3.zip` file.
+<a href="img/readme/plugin_install_zip.png" target="_blank"><img src="img/readme/plugin_install_zip.png" width="600" alt="Install WiscSIMS Tool from zip file"></a>
+
+
+1. Hit `Install Plugin` to install `WiscSIMS Tool 3`.
+2. Select `Installed Plugins` to make sure `WiscSIMS Tool 3` was correctlly installed. You also see `WiscSIMS Tool 3` icon in the QGIS toolbar.
 
 ## Usage
 
