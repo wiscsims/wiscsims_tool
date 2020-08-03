@@ -28,7 +28,7 @@ from qgis.core import QgsProject, QgsFeature, QgsVectorLayer, QgsField, QgsVecto
 from qgis.gui import QgsRubberBand, QgsMapCanvasAnnotationItem
 
 # Initialize Qt resources from file resources.py
-from .resources import *
+from .resources import *  #
 
 # Import custom tools
 from .tools.alignmentTool import AlignmentModel, AlignmentMarker
