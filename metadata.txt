@@ -7,16 +7,16 @@
 # This file should be included when you package your plugin.# Mandatory items:
 
 [general]
-name=WiscSIMS Tool3
-qgisMinimumVersion=3.0
-description=useful tools for WiscSIMS sessions
-version=1.0
-author=WiscSIMS
+name=WiscSIMS Tool
+qgisMinimumVersion=3.4
+description=Useful QGIS tools for WiscSIMS sessions
+version=3.0
+author=WiscSIMS (Kouki Kitajima)
 email=kitajima@wisc.edu
 
 about=Provide a brief description of the plugin and its purpose.
 
-tracker=https://github.com/wiscsims/wiscsims_tool
+tracker=https://github.com/wiscsims/wiscsims_tool/issues
 repository=https://github.com/wiscsims/wiscsims_tool
 # End of mandatory metadata
 

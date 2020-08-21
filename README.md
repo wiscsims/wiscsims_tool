@@ -1,4 +1,4 @@
-# WiscSIMS Tool 3
+# WiscSIMS Tool
 
 A QGIS3 plugin for external/internal WiscSIMS users.
 
@@ -6,7 +6,7 @@ A QGIS3 plugin for external/internal WiscSIMS users.
 
 <!-- TOC -->
 
-- [WiscSIMS Tool 3](#wiscsims-tool-3)
+- [WiscSIMS Tool](#wiscsims-tool)
   - [Table of Contents](#table-of-contents)
   - [Features](#features)
   - [Requirements](#requirements)
@@ -40,23 +40,23 @@ WiscSIMS Tool has two features.
 
 ## Installation
 
-1. Download `WiscSIMS Tool 3`  (**wiscsims_tool3.zip**) from [WiscSIMS GitHub repository](https://github.com/wiscsims/wiscsims_tool/releases/latest).
+1. Download `WiscSIMS Tool`  (**wiscsims_tool.zip**) from [WiscSIMS GitHub repository](https://github.com/wiscsims/wiscsims_tool/releases/latest).
 
 2. Open QGIS.
 
 3.  From the QGIS menu, select `Plugins` > `Manege and Install Plugins`.
 <a href="img/readme/plugin_install_menu.png" target="_blank"><img src="img/readme/plugin_install_menu.png" width="500" alt=""></a>
 
-1. Select `Intall from ZIP` and hit `...` button to select downloaded `wiscsims_tool3.zip` file.
+1. Select `Intall from ZIP` and hit `...` button to select downloaded `wiscsims_tool.zip` file.
 <a href="img/readme/plugin_install_zip.png" target="_blank"><img src="img/readme/plugin_install_zip.png" width="600" alt="Install WiscSIMS Tool from zip file"></a>
 
 
-1. Hit `Install Plugin` to install `WiscSIMS Tool 3`.
-2. Select `Installed Plugins` to make sure `WiscSIMS Tool 3` was correctlly installed. You also see `WiscSIMS Tool 3` icon in the QGIS toolbar.
+1. Hit `Install Plugin` to install `WiscSIMS Tool`.
+2. Select `Installed Plugins` to make sure `WiscSIMS Tool` was correctlly installed. You also see `WiscSIMS Tool` icon in the QGIS toolbar.
 
 ## Usage
 
-Activate **`WiscSIMS Tool 3`** from toolbar or menu `plugins` > `WiscSIMS` > `WiscSIMS Tool 3`.
+Activate **`WiscSIMS Tool`** from toolbar or menu `plugins` > `WiscSIMS` > `WiscSIMS Tool`.
 
 ### Import Data
 
@@ -76,7 +76,7 @@ Layers for preset must be vector layer and have a column/field named `Comment` (
 
 #### Scale
 
-You can define the scale of image as a `Pixel Size`. In WiscSIMS Tool 3, pixel size has unit of **`µm/map_unit`**. If you have `aligment file (.json)` used in your WiscSIMS session and loaded in `Import` panel, `Pixel Size` will be automatically updated.
+You can define the scale of image as a `Pixel Size`. In WiscSIMS Tool, pixel size has unit of **`µm/map_unit`**. If you have `aligment file (.json)` used in your WiscSIMS session and loaded in `Import` panel, `Pixel Size` will be automatically updated.
 If you don't know the pixel size of the image, you can use **1 µm** for now. If the spot size displayed is too large or too small, adjust the pixel size appropriately. This scale will be used to preset spots in WiscSIMS Tool.
 
 #### Preset Mode

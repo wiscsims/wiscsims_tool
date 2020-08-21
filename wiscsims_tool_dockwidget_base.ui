@@ -836,7 +836,7 @@ font-weight: bold;
               <bool>true</bool>
              </property>
              <property name="checked">
-              <bool>false</bool>
+              <bool>true</bool>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_5">
               <property name="spacing">
@@ -977,6 +977,9 @@ font-weight: bold;
                 </property>
                 <property name="text">
                  <string>Reset when comment changes</string>
+                </property>
+                <property name="checked">
+                 <bool>true</bool>
                 </property>
                </widget>
               </item>
