@@ -93,7 +93,7 @@ class WiscSIMSTool:
         self.actions = []
         self.menu = self.tr(u'&WiscSIMS')
         # TODO: We are going to let the user set this up in a future iteration
-        self.toolbar = self.iface.addToolBar(u'WiscSIMS Tool')
+        self.toolbar = self.iface.addToolBar(u'WiscSIMS')
         self.toolbar.setObjectName(u'WiscSIMS Tool')
 
         # print "** INITIALIZING WiscSIMSTool"
