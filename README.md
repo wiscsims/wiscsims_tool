@@ -12,9 +12,11 @@ A QGIS3 plugin for external/internal WiscSIMS users.
   - [Requirements](#requirements)
     - [QGIS3](#qgis3)
   - [Installation](#installation)
+    - [Install from QGIS Plugin Repository (Recommended)](#install-from-qgis-plugin-repository-recommended)
+    - [Install from ZIP file](#install-from-zip-file)
   - [Usage](#usage)
     - [Import Data](#import-data)
-    - [Preset](#preset)
+    - [Preset (pre-select SIMS spots on QGIS maps)](#preset-pre-select-sims-spots-on-qgis-maps)
       - [Comments](#comments)
       - [Layer](#layer)
       - [Scale](#scale)
@@ -33,13 +35,29 @@ WiscSIMS Tool has two features.
 ## Requirements
 
 ### [QGIS3](https://www.qgis.org/)
-
-  - [mac](https://qgis.org/downloads/macos/qgis-macos-ltr.dmg)
-  - [windows](https://qgis.org/downloads/QGIS-OSGeo4W-3.10.8-1-Setup-x86_64.exe) (64 bit)
-  - [windows](https://qgis.org/downloads/QGIS-OSGeo4W-3.10.8-1-Setup-x86.exe) (32 bit)
+QGIS3 (>3.10) is recommended.
+  - [MacOS](https://qgis.org/downloads/macos/qgis-macos-ltr.dmg)
+  - [Windows](https://qgis.org/downloads/QGIS-OSGeo4W-3.10.8-1-Setup-x86_64.exe) (64 bit)
+  - [Windows](https://qgis.org/downloads/QGIS-OSGeo4W-3.10.8-1-Setup-x86.exe) (32 bit)
 
 ## Installation
+There are two ways to install `WiscSIMS Tool`.
 
+### Install from QGIS Plugin Repository (Recommended)
+
+1. Open QGIS.
+
+2. From the QGIS menu, select `Plugins` > `Manege and Install Plugins`.
+<a href="img/readme/plugin_install_menu.png" target="_blank"><img src="img/readme/plugin_install_menu.png" width="500" alt=""></a>
+
+3. Search/find `WiscSIMS Tool` from the plugin list and click `Install Plugin` button on the right bottom of `Manege and Install Plugins` window.
+<a href="img/readme/search_and_install_WiscSIMSTool.png" target="_blank"><img src="img/readme/search_and_install_WiscSIMSTool.png" width="600" alt="Install WiscSIMS Tool from the list"></a>
+
+4. Select `Installed Plugins` to make sure `WiscSIMS Tool` was correctlly installed. If it is not checked, click the checkbox (on the left of green puzzle piece icon) to activate the plugin. You also see `WiscSIMS Tool` icon in the QGIS toolbar.
+
+
+### Install from ZIP file
+Manual installation is also available.
 1. Download `WiscSIMS Tool`  (**wiscsims_tool.zip**) from [WiscSIMS GitHub repository](https://github.com/wiscsims/wiscsims_tool/releases/latest).
 
 2. Open QGIS.
@@ -62,7 +80,7 @@ Activate **`WiscSIMS Tool`** from toolbar or menu `plugins` > `WiscSIMS` > `Wisc
 
 _To be updated_
 
-### Preset
+### Preset (pre-select SIMS spots on QGIS maps)
 
 You can select spots for SIMS analysis with three selecting modes: Point, Line and Grid. All or part of selected spots can be exported to Excel file (WiscSIMS session file) for manual/automated analysis.
 
