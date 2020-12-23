@@ -52,7 +52,7 @@ class WiscSIMSTool:
 
     def __init__(self, iface):
 
-        self.debug = False
+        # self.debug = False
 
         """Constructor.
 
@@ -234,13 +234,11 @@ class WiscSIMSTool:
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
 
-        self.d_print("** UNLOAD WiscSIMSTool")
 
         self.clear_preview_points()
         self.ref_marker.init_ref_point_markers()
 
         for action in self.actions:
-            self.d_print('action', action)
             self.iface.removePluginMenu(
                 self.tr(u'&WiscSIMS'),
                 action)
@@ -357,9 +355,9 @@ class WiscSIMSTool:
             self.handle_comment_change_preview)
 
     def init_map_tool(self):
-        self.d_print('init_map_tool')
+
+        # check the plugin activation state
         if self.wiscsims_tool_action.isChecked():
-            self.d_print('user activate the plugin')
             # when the user activate the WiscSIMS Tool
             self.prev_tool = self.canvas.mapTool()
             self.wiscsims_tool_action.setChecked(True)
@@ -376,14 +374,12 @@ class WiscSIMSTool:
 
             self.canvas.setMapTool(self.canvasMapTool)
         else:
-            self.d_print('user deactivate the plugin')
             # when the user deactivate the WiscSIMS Tool
             try:
                 self.wiscsims_tool_action.setChecked(False)
                 self.canvas.mapToolSet.disconnect(self.mapToolChanged)
                 self.canvas.unsetMapTool(self.canvasMapTool)
-                self.d_print('prevtool:{}'.format(self.prev_tool))
-                if not re.search(r'wiscsims_tool', self.prev_tool):
+                if not re.search('wiscsims_tool', self.prev_tool):
                     self.canvas.setMapTool(self.prev_tool)
                 self.dockwidget.setEnabled(False)
 
@@ -599,7 +595,6 @@ class WiscSIMSTool:
 
         self.dockwidget.Cmb_Target_Layer.clear()
         layers = self.get_excel_layers(self.xl)
-        self.d_print(layers)
         if len(layers) > 0:
             [self.dockwidget.Cmb_Target_Layer.addItem(
                 l.name(), l) for l in layers]
@@ -612,7 +607,6 @@ class WiscSIMSTool:
             self.dockwidget.Btn_Import_From_Excel.setEnabled(False)
 
     def create_new_layer(self, fpath=None):
-        d_print(QgsProject.instance().fileName())
         project_path = os.path.dirname(QgsProject.instance().fileName())
         saveFile, _filter = QFileDialog.getSaveFileName(
             self.window,
@@ -663,10 +657,7 @@ class WiscSIMSTool:
         if okPressed:
             layerName = text
 
-        self.d_print('error', error)
-        self.d_print('QgsVectorFileWriter.NoError', QgsVectorFileWriter.NoError)
         if error == QgsVectorFileWriter.NoError:
-            self.d_print('inside')
             newVlayer = QgsVectorLayer(saveFile, layerName, "ogr")
             newVlayer.setCustomProperty("workbookPath", fpath)
             props = newVlayer.renderer().symbol().symbolLayer(0).properties()
@@ -675,7 +666,6 @@ class WiscSIMSTool:
             spotSize = 1.0 * self.dockwidget.Spn_Spot_Size.value()
             if self.model.isAvailable():
                 scale = self.get_average(self.model.getScales())
-                # self.d_print('scale', scale)
             else:
                 scale = 1.0
                 # print 'No alignment'
@@ -743,7 +733,6 @@ class WiscSIMSTool:
             "ESRI Shapefile"
         )
         if error != QgsVectorFileWriter.NoError:
-            self.d_print('error on VectorFileWriter')
             return
         # open shapefile, then get and return headers
         tmp_layer = QgsVectorLayer(tmp_file_path, 'kk', 'ogr')
@@ -872,7 +861,6 @@ class WiscSIMSTool:
             "ESRI Shapefile"
         )
 
-        self.d_print('error', error)
 
         # Set layer name without duplication
         layer_names = [l.name() for l in self.get_vector_point_layers()]
@@ -884,7 +872,6 @@ class WiscSIMSTool:
 
         spot_size = self.dockwidget.Spn_Preset_Spot_Size.value()
         if error != QgsVectorFileWriter.NoError:
-            self.d_print('QgsVectorFileWriter Error')
             return
 
         newVlayer = QgsVectorLayer(saveFile, layer_name, "ogr")
@@ -939,7 +926,6 @@ class WiscSIMSTool:
 
     def get_current_tool(self):
         tools = ['import', 'preset', 'alignment']
-        # self.d_print(self.dockwidget.Tab_Tool.currentTabName())
         return tools[self.dockwidget.Tab_Tool.currentIndex()]
 
     def get_preset_mode(self):
@@ -950,7 +936,6 @@ class WiscSIMSTool:
         if len(self.preset_points) == 0:
             return
         if self.dockwidget.Cmb_Preset_Layer.currentIndex() == -1:
-            self.d_print('Select a layer for Preest')
             return
         layer = self.dockwidget.Cmb_Preset_Layer.itemData(
             self.dockwidget.Cmb_Preset_Layer.currentIndex())
@@ -960,8 +945,6 @@ class WiscSIMSTool:
         for p in self.preset_points:
             feature = QgsFeature()
             feature.setFields(fields)
-            self.d_print(help(p))
-            self.d_print(p)
             geom = QgsGeometry.fromPointXY(QgsPointXY(p[1], p[2]))
             comment = p[0]
             feature.setGeometry(geom)
@@ -1020,24 +1003,18 @@ class WiscSIMSTool:
                 return
         self.preset_points = [[comment, pt[0], pt[1]]]
         self.add_preset_points()
-        self.d_print('after add point: {}'.format(len(self.preset_points)))
 
     def undo_add_preset_point(self):
-        self.d_print('undo preset point')
-        self.d_print('len: {}'.format(len(self.undo_preset)))
         if len(self.undo_preset) == 0:
             return
         # prev_comment = self.preset_points[0][0]
-        # self.d_print('prev comment: {}'.format(prev_comment))
         current_layer_index = self.dockwidget.Cmb_Preset_Layer.currentIndex()
         if current_layer_index == -1:
-            self.d_print('no layers are selected')
             return
         layer = self.dockwidget.Cmb_Preset_Layer.itemData(current_layer_index)
         layer.startEditing()
         layer.deleteFeatures(self.undo_preset)
         layer.commitChanges()
-        # self.d_print(a, b)
         n_deleted = len(self.undo_preset)
         if self.dockwidget.Cbx_Number_Increment.isChecked():
             self.dockwidget.Spn_Current_Number.setValue(
@@ -1118,11 +1095,9 @@ class WiscSIMSTool:
             self.draw_line_points()
             self.rb_s.removeLastPoint()
             self.rb_s.addPoint(self.start_point, True)
-            self.d_print('update_line')
 
     def draw_line_points(self):
         length = self.get_distance(self.start_point, self.end_point) / self.scale
-        self.d_print('scale', self.scale)
         self.dockwidget.Txt_Line_Length.setText('{:.2f}'.format(length))
         if self.dockwidget.Opt_Line_Step_Size.isChecked():
             step = self.dockwidget.Spn_Line_Step_Size.value()
@@ -1151,7 +1126,6 @@ class WiscSIMSTool:
         self.rb2.addPoint(pt, True)
         self.rb2.removeLastPoint()
         self.canvas.refresh()
-        # self.d_print(self.preset_points)
 
     def preset_grid(self, pt):
         self.init_rubber_bands()
@@ -1185,7 +1159,6 @@ class WiscSIMSTool:
             if self.rb2.numberOfVertices() == 1:
                 self.rb_s.addPoint(pt, True)
         self.canvas.refresh()
-        # self.d_print(self.preset_points)
 
     def add_rb_label(self, comment, pt):
         # layer = self.iface.activeLayer()
@@ -1259,7 +1232,6 @@ class WiscSIMSTool:
 
     def handle_comment_change_preview(self):
         current_mode = self.get_preset_mode()
-        self.d_print(self.rb, self.rb.numberOfVertices(), self.rb.size())
         if current_mode == "point" or self.rb.size() == 0:
             return
         if current_mode == "line":
@@ -1296,27 +1268,19 @@ class WiscSIMSTool:
     """
 
     def mapToolChanged(self, tool, prev_tool):
-        self.d_print(" >>>>>> MAP TOOL CHANGED <<<<<<<<<<")
-
-        # self.d_print('map tool: ', str(self.canvas.mapTool()), re.search(
         #     r'wiscsims_tool', str(tool)))
         if re.search(r'wiscsims_tool', str(tool)) or re.search(r'WiscSIMSTool', str(tool)):
             self.dockwidget.setEnabled(True)
-            self.d_print('Current tool is WiscSIMS Tool')
             return
 
         try:
-            self.d_print('disconnect mapToolChanged')
             self.canvas.mapToolSet.disconnect(self.mapToolChanged)
-            self.d_print('unset map tool')
             self.canvas.unsetMapTool(self.canvasMapTool)
         except Exception:
-            self.d_print('WT: error on disconnect canvas')
+            pass
 
-        self.d_print('remove rubber bands')
         self.clear_preview_points()
 
-        self.d_print('deactivate plugin button')
         self.wiscsims_tool_action.setChecked(False)
         self.dockwidget.setEnabled(False)
 
@@ -1326,13 +1290,10 @@ class WiscSIMSTool:
 
         mode = self.get_preset_mode()
         if mode == 'point':
-            self.d_print('current mode: Point')
             self.add_preset_point(pt)
         elif mode == 'line':
-            self.d_print('current mode: Line')
             self.preset_line(pt)
         elif mode == 'grid':
-            self.d_print('current mode: Grid')
             self.preset_grid(pt)
 
     def canvasClickedRight(self, pt):
@@ -1340,14 +1301,11 @@ class WiscSIMSTool:
             return
         mode = self.get_preset_mode()
         if mode == 'point':
-            self.d_print('point')
             self.undo_add_preset_point()
         elif mode == 'line':
-            self.d_print('Line end')
             self.preset_line(pt, True)
 
     def canvasDoubleClicked(self, pt):
-        self.d_print('canvas double clicked, {}'.format(pt))
         if self.get_current_tool() != 'preset':
             return
         self.clear_preview_points()
@@ -1369,5 +1327,6 @@ class WiscSIMSTool:
     """
 
     def d_print(self, *args):
-        if self.debug:
-            print(*args)
+        pass
+    #     if self.debug:
+    #         print(*args)
