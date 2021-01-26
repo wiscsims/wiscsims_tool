@@ -53,7 +53,6 @@ class WiscSIMSTool:
     def __init__(self, iface):
 
         # self.debug = False
-
         """Constructor.
 
         :param iface: An interface instance that will be passed to this class
@@ -233,7 +232,6 @@ class WiscSIMSTool:
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
-
 
         self.clear_preview_points()
         self.ref_marker.init_ref_point_markers()
@@ -861,7 +859,6 @@ class WiscSIMSTool:
             "ESRI Shapefile"
         )
 
-
         # Set layer name without duplication
         layer_names = [l.name() for l in self.get_vector_point_layers()]
         layer_name = 'Preset'
@@ -933,10 +930,15 @@ class WiscSIMSTool:
         return modes[self.dockwidget.Tab_Preset_Mode.currentIndex()]
 
     def add_preset_points(self):
+
         if len(self.preset_points) == 0:
             return
         if self.dockwidget.Cmb_Preset_Layer.currentIndex() == -1:
             return
+
+        # maximum # of undo
+        undo_max = 100
+
         layer = self.dockwidget.Cmb_Preset_Layer.itemData(
             self.dockwidget.Cmb_Preset_Layer.currentIndex())
         layer.startEditing()
@@ -953,9 +955,15 @@ class WiscSIMSTool:
         dpr = layer.dataProvider()
         results, newFeatures = dpr.addFeatures(features)
         layer.commitChanges()
-        self.undo_preset = [f.id() for f in newFeatures]
-        if len(self.undo_preset):
-            self.dockwidget.Btn_Undo_Add_Preset_Point.setEnabled(True)
+        points_for_undo = [f.id() for f in newFeatures]
+        self.undo_preset.append(points_for_undo)
+
+        # check number of undos
+        if len(self.undo_preset) > undo_max:
+            del self.undo_preset[0]
+
+        self.update_undo_btn_state()
+
         if self.dockwidget.Cbx_Number_Increment.isChecked():
             self.dockwidget.Spn_Current_Number.setValue(
                 self.dockwidget.Spn_Current_Number.value() + len(self.preset_points))
@@ -1007,20 +1015,31 @@ class WiscSIMSTool:
     def undo_add_preset_point(self):
         if len(self.undo_preset) == 0:
             return
-        # prev_comment = self.preset_points[0][0]
         current_layer_index = self.dockwidget.Cmb_Preset_Layer.currentIndex()
         if current_layer_index == -1:
             return
+
+        # get last item from self.undo_preset
+        removing_items = self.undo_preset.pop()
         layer = self.dockwidget.Cmb_Preset_Layer.itemData(current_layer_index)
         layer.startEditing()
-        layer.deleteFeatures(self.undo_preset)
+        layer.deleteFeatures(removing_items)
         layer.commitChanges()
-        n_deleted = len(self.undo_preset)
+
+        # update increment number
         if self.dockwidget.Cbx_Number_Increment.isChecked():
             self.dockwidget.Spn_Current_Number.setValue(
-                self.dockwidget.Spn_Current_Number.value() - n_deleted)
-        self.undo_preset = []
-        self.dockwidget.Btn_Undo_Add_Preset_Point.setEnabled(False)
+                self.dockwidget.Spn_Current_Number.value() - len(removing_items))
+
+        # self.undo_preset = []
+        # self.dockwidget.Btn_Undo_Add_Preset_Point.setEnabled(False)
+        self.update_undo_btn_state()
+
+    def update_undo_btn_state(self):
+        if len(self.undo_preset):
+            self.dockwidget.Btn_Undo_Add_Preset_Point.setEnabled(True)
+        else:
+            self.dockwidget.Btn_Undo_Add_Preset_Point.setEnabled(False)
 
     def clear_preview_points(self):
         if self.rb is not None:
