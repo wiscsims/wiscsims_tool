@@ -413,6 +413,12 @@ class WiscSIMSTool:
             except Exception:
                 pass
 
+    def toggle_use_alignment(self, status):
+        wb_status = True
+        if status and not self.model.isAvailable():
+            wb_status = False
+        self.dockwidget.Grp_Workbook.setEnabled(wb_status)
+
     def init_alignmentTable(self):
         self.dockwidget.Tbv_Alignment.setModel(self.model)
         hiddenColumns = [
@@ -589,12 +595,17 @@ class WiscSIMSTool:
         X, Y = self.xl.find_columns(['X', 'Y'], False)
         features = []
         i = 0
+        is_direct_import = not self.dockwidget.Grp_Alignment.isChecked()
         for d in importing_data:
+            if d[X] == "" or d[Y] == "":
+                continue
             i += 1
+            if is_direct_import:
+                canvasX, canvasY = [d[X], d[Y]]
+            else:
+                canvasX, canvasY = self.getWtAverageStageToCanvas([d[X], d[Y]])
             feature = QgsFeature()
-            canvasX, canvasY = self.getWtAverageStageToCanvas([d[X], d[Y]])
-            feature.setGeometry(QgsGeometry.fromPointXY(
-                QgsPointXY(canvasX, canvasY)))
+            feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(canvasX, canvasY)))
             feature.setAttributes(d)
             features.append(feature)
         dpr = importing_layer.dataProvider()
