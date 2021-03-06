@@ -21,14 +21,53 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt5.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, Qt, QSize, QModelIndex, QVariant, QSizeF, QPointF
-from PyQt5.QtGui import QIcon, QPixmap, QColor, QTextDocument
-from PyQt5.QtWidgets import QAction, QInputDialog, QFileDialog, QAbstractItemView, QMessageBox, QLineEdit
-from qgis.core import QgsProject, QgsFeature, QgsVectorLayer, QgsField, QgsVectorFileWriter, QgsGeometry, QgsMarkerSymbol, QgsPalLayerSettings, QgsTextAnnotation, QgsPointXY, QgsMargins, QgsVectorLayerSimpleLabeling, QgsPropertyCollection
-from qgis.gui import QgsRubberBand, QgsMapCanvasAnnotationItem
+from PyQt5.QtCore import (
+    QSettings,
+    QTranslator,
+    qVersion,
+    QCoreApplication,
+    Qt,
+    QSize,
+    QModelIndex,
+    QVariant,
+    QSizeF,
+    QPointF)
+from PyQt5.QtGui import (
+    QIcon,
+    QPixmap,
+    QColor,
+    QTextDocument
+)
+from PyQt5.QtWidgets import (
+    QAction,
+    QInputDialog,
+    QFileDialog,
+    QAbstractItemView,
+    QMessageBox,
+    QLineEdit
+)
+from qgis.core import (
+    QgsProject,
+    QgsFeature,
+    QgsVectorLayer,
+    QgsField,
+    QgsVectorFileWriter,
+    QgsGeometry,
+    QgsMarkerSymbol,
+    QgsPalLayerSettings,
+    QgsTextAnnotation,
+    QgsPointXY,
+    QgsMargins,
+    QgsVectorLayerSimpleLabeling,
+    QgsPropertyCollection
+)
+from qgis.gui import (
+    QgsRubberBand,
+    QgsMapCanvasAnnotationItem
+)
 
 # Initialize Qt resources from file resources.py
-from .resources import *  # noqa: F401s
+from .resources import *  # noqa: F401, F403
 
 # Import custom tools
 from .tools.alignmentTool import AlignmentModel, AlignmentMarker
@@ -40,7 +79,6 @@ from .tools.coordinateTool import CoordinateTool
 from .wiscsims_tool_dockwidget import WiscSIMSToolDockWidget
 
 import os.path
-# import sys
 import os
 import re
 import json
@@ -307,20 +345,18 @@ class WiscSIMSTool:
 
     def create_ui_connections(self):
         dock = self.dockwidget
+
+        dock.Grp_Alignment.toggled.connect(self.toggle_use_alignment)
         dock.Tbv_Alignment.clicked.connect(self.change_tableview_selection)
-        dock.Gbx_Alignment_Ref_Point_Markers.toggled.connect(
-            self.update_ref_point_markers)
-        dock.Cbx_Alignment_Ref_Points.toggled.connect(
-            self.update_ref_point_markers)
-        dock.Cbx_Alignment_Ref_Names.toggled.connect(
-            self.update_ref_point_markers)
+        dock.Gbx_Alignment_Ref_Point_Markers.toggled.connect(self.update_ref_point_markers)
+        dock.Cbx_Alignment_Ref_Points.toggled.connect(self.update_ref_point_markers)
+        dock.Cbx_Alignment_Ref_Names.toggled.connect(self.update_ref_point_markers)
         dock.Btn_Import_Alignments.clicked.connect(self.import_alignments)
         dock.Btn_Select_Workbook.clicked.connect(self.select_workbook)
         dock.Tbx_Workbook.textChanged.connect(self.workbook_udpated)
         dock.Btn_Create_New_Layer.clicked.connect(self.create_new_layer)
         dock.Btn_Import_From_Excel.clicked.connect(self.import_from_excel)
-        dock.Btn_Refresh_Import_Layers.clicked.connect(
-            self.update_import_layers)
+        dock.Btn_Refresh_Import_Layers.clicked.connect(self.update_import_layers)
 
         dock.Tab_Preset_Mode.currentChanged.connect(self.preset_tool_changed)
 
@@ -338,19 +374,15 @@ class WiscSIMSTool:
         dock.Btn_Grid_Add_Points.clicked.connect(self.add_preset_points)
         dock.Btn_Line_Add_Points.clicked.connect(self.add_preset_points)
 
-        dock.Btn_Reset_Current_Number.clicked.connect(
-            self.reset_current_number)
-        dock.Btn_Undo_Add_Preset_Point.clicked.connect(
-            self.undo_add_preset_point)
-        dock.Btn_Refresh_Preset_Layers.clicked.connect(
-            self.init_preset_layer_combobox)
+        dock.Btn_Reset_Current_Number.clicked.connect(self.reset_current_number)
+        dock.Btn_Undo_Add_Preset_Point.clicked.connect(self.undo_add_preset_point)
+        dock.Btn_Refresh_Preset_Layers.clicked.connect(self.init_preset_layer_combobox)
 
         dock.Spn_Preset_Pixel_Size.valueChanged.connect(self.change_pixel_size)
         dock.Spn_Preset_Spot_Size.valueChanged.connect(self.set_spot_size)
 
         dock.Tbx_Comment.textChanged.connect(self.reset_current_number)
-        dock.Tbx_Comment.textChanged.connect(
-            self.handle_comment_change_preview)
+        dock.Tbx_Comment.textChanged.connect(self.handle_comment_change_preview)
 
     def init_map_tool(self):
 
@@ -359,15 +391,12 @@ class WiscSIMSTool:
             # when the user activate the WiscSIMS Tool
             self.prev_tool = self.canvas.mapTool()
             self.wiscsims_tool_action.setChecked(True)
-            self.canvasMapTool = CanvasMapTool(
-                self.canvas, self.wiscsims_tool_action)
+            self.canvasMapTool = CanvasMapTool(self.canvas, self.wiscsims_tool_action)
 
             self.canvas.mapToolSet.connect(self.mapToolChanged)
             self.canvasMapTool.canvasClicked.connect(self.canvasClicked)
-            self.canvasMapTool.canvasClickedRight.connect(
-                self.canvasClickedRight)
-            self.canvasMapTool.canvasDoubleClicked.connect(
-                self.canvasDoubleClicked)
+            self.canvasMapTool.canvasClickedRight.connect(self.canvasClickedRight)
+            self.canvasMapTool.canvasDoubleClicked.connect(self.canvasDoubleClicked)
             self.canvasMapTool.canvasMoved.connect(self.canvasMoved)
 
             self.canvas.setMapTool(self.canvasMapTool)
@@ -524,17 +553,26 @@ class WiscSIMSTool:
             self.dockwidget.Tbx_Workbook.setText(
                 os.path.basename(self.workbook_path))
 
-    def import_from_excel(self):
-        if not self.model.isAvailable():
-            # print 'no alignment'
-            return
+    def is_ok_to_import(self):
+        """ check importing condition """
+        if self.dockwidget.Grp_Alignment.isChecked() and not self.model.isAvailable():
+            """ use alignment but no alignment file imported """
+            return False
 
         if self.xl.ws is None:
+            """ no excel file """
+            return False
+
+        if self.dockwidget.Cmb_Target_Layer.currentIndex() == -1:
+            """ no layer is selected """
+            return False
+
+    def import_from_excel(self):
+        if not self.is_ok_to_import():
             return
 
         if self.dockwidget.Opt_Comment.isChecked():
-            importing_data = self.xl.filter_by_comment(
-                self.dockwidget.Tbx_Comment_Match.text())
+            importing_data = self.xl.filter_by_comment(self.dockwidget.Tbx_Comment_Match.text())
         else:
             start_idx = self.dockwidget.Cmb_Excel_From.currentIndex()
             end_idx = self.dockwidget.Cmb_Excel_To.currentIndex()
@@ -544,8 +582,8 @@ class WiscSIMSTool:
                 self.dockwidget.Cmb_Excel_To.setCurrentIndex(end_idx)
             start_asc = self.dockwidget.Cmb_Excel_From.itemData(start_idx)
             end_asc = self.dockwidget.Cmb_Excel_To.itemData(end_idx)
-            importing_data = self.xl.filter_by_asc(
-                start=start_asc, end=end_asc)
+            importing_data = self.xl.filter_by_asc(start=start_asc, end=end_asc)
+
         importing_layer = self.dockwidget.Cmb_Target_Layer.itemData(
             self.dockwidget.Cmb_Target_Layer.currentIndex())
         X, Y = self.xl.find_columns(['X', 'Y'], False)
@@ -566,7 +604,7 @@ class WiscSIMSTool:
         QMessageBox.information(
             self.window,
             'Import Excel Data',
-            '{} data were imported!'.format(i)
+            f'{i} data were imported!'
         )
         # self.canvas.refresh()
 
@@ -594,13 +632,11 @@ class WiscSIMSTool:
         self.dockwidget.Cmb_Target_Layer.clear()
         layers = self.get_excel_layers(self.xl)
         if len(layers) > 0:
-            [self.dockwidget.Cmb_Target_Layer.addItem(
-                l.name(), l) for l in layers]
+            [self.dockwidget.Cmb_Target_Layer.addItem(l.name(), l) for l in layers]
 
             self.dockwidget.Btn_Import_From_Excel.setEnabled(True)
             if current_layer_index > -1:
-                self.dockwidget.Cmb_Target_Layer.setCurrentIndex(
-                    current_layer_index)
+                self.dockwidget.Cmb_Target_Layer.setCurrentIndex(current_layer_index)
         else:
             self.dockwidget.Btn_Import_From_Excel.setEnabled(False)
 
@@ -1239,7 +1275,7 @@ class WiscSIMSTool:
         return ((pt2[0] - pt1[0])**2 + (pt2[1] - pt1[1])**2)**0.5
 
     def get_angle(self, pt1, pt2):
-        return math.atan2((pt2[1] - pt1[1]), (pt2[0]-pt1[0]))
+        return math.atan2((pt2[1] - pt1[1]), (pt2[0] - pt1[0]))
 
     def preset_tool_changed(self, tool_index):
         self.clear_preview_points()
