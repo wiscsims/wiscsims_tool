@@ -18,7 +18,7 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>309</width>
+    <width>344</width>
     <height>720</height>
    </size>
   </property>
@@ -776,7 +776,7 @@ font-weight: bold;
          <number>4</number>
         </property>
         <property name="bottomMargin">
-         <number>5</number>
+         <number>0</number>
         </property>
         <item>
          <widget class="QGroupBox" name="groupBox_7">
@@ -1193,7 +1193,7 @@ font-weight: bold;
               <enum>QTabWidget::Rounded</enum>
              </property>
              <property name="currentIndex">
-              <number>1</number>
+              <number>2</number>
              </property>
              <property name="usesScrollButtons">
               <bool>false</bool>
@@ -1262,7 +1262,7 @@ font-weight: bold;
                    <number>6</number>
                   </property>
                   <property name="bottomMargin">
-                   <number>6</number>
+                   <number>12</number>
                   </property>
                   <item>
                    <widget class="QGroupBox" name="groupBox_9">
@@ -1397,17 +1397,14 @@ font-weight: bold;
                    </widget>
                   </item>
                   <item>
-                   <spacer name="verticalSpacer_2">
-                    <property name="orientation">
-                     <enum>Qt::Vertical</enum>
+                   <widget class="QFrame" name="frame">
+                    <property name="frameShape">
+                     <enum>QFrame::StyledPanel</enum>
                     </property>
-                    <property name="sizeHint" stdset="0">
-                     <size>
-                      <width>20</width>
-                      <height>40</height>
-                     </size>
+                    <property name="frameShadow">
+                     <enum>QFrame::Raised</enum>
                     </property>
-                   </spacer>
+                   </widget>
                   </item>
                   <item>
                    <widget class="QPushButton" name="Btn_Line_Add_Points">
@@ -1434,6 +1431,19 @@ font-weight: bold;
                      <string>Add Points</string>
                     </property>
                    </widget>
+                  </item>
+                  <item>
+                   <spacer name="verticalSpacer_3">
+                    <property name="orientation">
+                     <enum>Qt::Vertical</enum>
+                    </property>
+                    <property name="sizeHint" stdset="0">
+                     <size>
+                      <width>20</width>
+                      <height>40</height>
+                     </size>
+                    </property>
+                   </spacer>
                   </item>
                  </layout>
                 </widget>
