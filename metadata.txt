@@ -10,11 +10,11 @@
 name=WiscSIMS Tool
 qgisMinimumVersion=3.4
 description=Useful QGIS tools for WiscSIMS sessions
-version=3.2.0
+version=3.2.1
 author=WiscSIMS (Kouki Kitajima)
 email=kitajima@wisc.edu
 
-about=Provide a brief description of the plugin and its purpose.
+about=This QGIS plugin helps to pre-select spots and import session data for (Wisc)SIMS users.
 
 tracker=https://github.com/wiscsims/wiscsims_tool/issues
 repository=https://github.com/wiscsims/wiscsims_tool
@@ -26,7 +26,7 @@ repository=https://github.com/wiscsims/wiscsims_tool
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=python
+tags=python,SIMS,import,excel
 
 homepage=https://github.com/wiscsims/wiscsims_tool
 category=Plugins
