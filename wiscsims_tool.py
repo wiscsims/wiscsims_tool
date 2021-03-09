@@ -31,7 +31,8 @@ from PyQt5.QtCore import (
     QModelIndex,
     QVariant,
     QSizeF,
-    QPointF)
+    QPointF
+)
 from PyQt5.QtGui import (
     QIcon,
     QPixmap,
@@ -132,8 +133,6 @@ class WiscSIMSTool:
         # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar(u'WiscSIMS')
         self.toolbar.setObjectName(u'WiscSIMS Tool')
-
-        # print "** INITIALIZING WiscSIMSTool"
 
         self.pluginIsActive = False
         self.dockwidget = None
@@ -255,8 +254,6 @@ class WiscSIMSTool:
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin dockwidget is closed"""
 
-        # print "** CLOSING WiscSIMSTool"
-
         # disconnects
         self.dockwidget.closingPlugin.disconnect(self.onClosePlugin)
         self.wiscsims_tool_action.setChecked(False)
@@ -264,7 +261,7 @@ class WiscSIMSTool:
         # for reuse if plugin is reopened
         # Commented next statement since it causes QGIS crashe
         # when closing the docked window:
-        # self.dockwidget = None
+        self.dockwidget = None
 
         self.pluginIsActive = False
 
@@ -289,9 +286,6 @@ class WiscSIMSTool:
 
         if not self.pluginIsActive:
             self.pluginIsActive = True
-
-            # print "** STARTING WiscSIMSTool"
-
             # dockwidget may not exist if:
             #    first run of plugin
             #    removed on close (see self.onClosePlugin method)
@@ -344,6 +338,7 @@ class WiscSIMSTool:
         ltr.nameChanged.connect(self.handle_layers_changed)
 
     def create_ui_connections(self):
+
         dock = self.dockwidget
 
         dock.Grp_Alignment.toggled.connect(self.toggle_use_alignment)
@@ -572,6 +567,7 @@ class WiscSIMSTool:
         if self.dockwidget.Cmb_Target_Layer.currentIndex() == -1:
             """ no layer is selected """
             return False
+        return True
 
     def import_from_excel(self):
         if not self.is_ok_to_import():
@@ -785,22 +781,26 @@ class WiscSIMSTool:
 
         return fields
 
+    def is_identical_field_names(self, layer, xl_fields, field_max_len=5):
+        my_fields = self.get_fields(layer)
+        my_fileds_names = [f[:field_max_len] for f in my_fields]
+        xl_fields_len = len(self.intersect(my_fileds_names, xl_fields))
+        return xl_fields_len == len(my_fields)
+
     def get_excel_layers(self, xl):
         field_max_len = 5
         # field names in vector layers have been chopped
         if xl.ws is None:
             return []
         xl_fields = [h[:field_max_len] for h in xl.get_headers()]
-        # legend = self.iface.legendInterface()
         legend = QgsProject.instance().layerTreeRoot()
         try:
-            layers = [layer for layer in self.get_vector_point_layers(
-            ) if legend.findLayer(layer.id()).isVisible()]
+            vec_layers = self.get_vector_point_layers()
+            layers = [layer for layer in vec_layers if legend.findLayer(layer.id()).isVisible()]
         except Exception:
             return []
 
-        # layers = [tree_layer.layer() for tree_layer in QgsProject.instance().layerTreeRoot().findLayers() if QgsProject.in]
-        return [l for l in layers if len(self.intersect([f[:field_max_len] for f in self.get_fields(l)], xl_fields)) == len(self.get_fields(l))]
+        return [l for l in layers if self.is_identical_field_names(l, xl_fields, field_max_len)]
 
     """
     Functions for Aliginment and Coordinate Calculations
@@ -1387,12 +1387,3 @@ class WiscSIMSTool:
                 self.rb.removeLastPoint()
             self.end_point = pt
             self.rb.addPoint(pt, True)
-
-    """
-    Utilities
-    """
-
-    def d_print(self, *args):
-        pass
-    #     if self.debug:
-    #         print(*args)
