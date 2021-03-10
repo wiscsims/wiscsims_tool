@@ -261,6 +261,10 @@ class WiscSIMSTool:
         # for reuse if plugin is reopened
         # Commented next statement since it causes QGIS crashe
         # when closing the docked window:
+
+        self.remove_legend_connections()
+        self.remove_ui_connections()
+
         self.dockwidget = None
 
         self.unsetMapTool()
@@ -433,7 +437,7 @@ class WiscSIMSTool:
 
         dock.Tbx_Comment.textChanged.disconnect(self.reset_current_number)
         dock.Tbx_Comment.textChanged.disconnect(self.handle_comment_change_preview)
-
+    
     def init_map_tool(self):
 
         # check the plugin activation state
