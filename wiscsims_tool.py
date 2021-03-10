@@ -562,15 +562,9 @@ class WiscSIMSTool:
         alignments = self.model.ExportAsObject()
         selected_alignment = self.dockwidget.Tbv_Alignment.currentIndex().row()
         for aln in alignments:
-            # if aln['used'] < 2 and aln['r'] != self.ref_selecting['row']:
-            #     continue
             current_flag = selected_alignment == aln['r']
-            # if not self.is_default_values(aln['point_1'][1]):
-            self.handle_ref_marker(
-                aln['point_1'][1], aln['refname'] + ' (1)', current_flag)
-            # if not self.is_default_values(aln['point_2'][1]):
-            self.handle_ref_marker(
-                aln['point_2'][1], aln['refname'] + ' (2)', current_flag)
+            self.handle_ref_marker(aln['point_1'][1], aln['refname'] + ' (1)', current_flag)
+            self.handle_ref_marker(aln['point_2'][1], aln['refname'] + ' (2)', current_flag)
         self.update_canvas_rotation()
 
     def update_canvas_rotation(self):
@@ -604,7 +598,8 @@ class WiscSIMSTool:
             QMessageBox.warning(
                 self.window,
                 'Excel File Selection',
-                'Open appropriate workbook in Excel, then select the workbook.\n\nThe workbook must have a sheet named "Sum_table" or "Data".'
+                'Open appropriate workbook in Excel, then select the workbook.\n\n'
+                'The workbook must have a sheet named "Sum_table" or "Data".'
             )
             self.workbook_path = None
             self.dockwidget.Grp_Layer.setEnabled(False)
