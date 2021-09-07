@@ -137,7 +137,9 @@ class WiscSIMSTool:
         self.pluginIsActive = False
         self.dockwidget = None
 
-        self.rb, self.rb2, self.rb_s = None, None, None
+        self.rb = QgsRubberBand(self.canvas, True)
+        self.rb2 = QgsRubberBand(self.canvas, True)
+        self.rb_s = QgsRubberBand(self.canvas, False)
         self.rb_label = None
         self.start_point, self.end_point = None, None
         self.line_in_progress = False
@@ -437,7 +439,7 @@ class WiscSIMSTool:
 
         dock.Tbx_Comment.textChanged.disconnect(self.reset_current_number)
         dock.Tbx_Comment.textChanged.disconnect(self.handle_comment_change_preview)
-    
+
     def init_map_tool(self):
 
         # check the plugin activation state
@@ -484,10 +486,8 @@ class WiscSIMSTool:
          for c in hiddenColumns]
         self.dockwidget.Tbv_Alignment.setColumnWidth(0, 20)
         self.dockwidget.Tbv_Alignment.horizontalHeader().setStretchLastSection(True)
-        self.dockwidget.Tbv_Alignment.setSelectionBehavior(
-            QAbstractItemView.SelectRows)
-        self.dockwidget.Tbv_Alignment.setSelectionMode(
-            QAbstractItemView.SingleSelection)
+        self.dockwidget.Tbv_Alignment.setSelectionBehavior(QAbstractItemView.SelectRows)
+        self.dockwidget.Tbv_Alignment.setSelectionMode(QAbstractItemView.SingleSelection)
 
     def change_tableview_selection(self, index):
         if type(index) == QModelIndex:
@@ -496,9 +496,9 @@ class WiscSIMSTool:
             row = index.row()
         else:
             row = index
-        stage1, canvas1 = self.model.getRefPoint(row, 1)
-        stage2, canvas2 = self.model.getRefPoint(row, 2)
-        scale, offset, rotation = self.model.getAlignmentParams(row)
+        # stage1, canvas1 = self.model.getRefPoint(row, 1)
+        # stage2, canvas2 = self.model.getRefPoint(row, 2)
+        # scale, offset, rotation = self.model.getAlignmentParams(row)
         self.update_ref_point_markers()
 
     def format_alignment_to_json(self, aln):
@@ -581,7 +581,7 @@ class WiscSIMSTool:
     def select_workbook(self):
         title = 'Select WiscSIMS sesssion Workbook'
         mypath = os.path.dirname(QgsProject.instance().fileName())
-        self.workbook_path, _filter = QFileDialog.getOpenFileName(
+        self.workbook_path, _ = QFileDialog.getOpenFileName(
             self.window,
             title,
             mypath,
@@ -703,7 +703,7 @@ class WiscSIMSTool:
 
     def create_new_layer(self, fpath=None):
         project_path = os.path.dirname(QgsProject.instance().fileName())
-        saveFile, _filter = QFileDialog.getSaveFileName(
+        saveFile, _ = QFileDialog.getSaveFileName(
             self.window,
             'Save a Shape file',
             project_path,
@@ -731,7 +731,7 @@ class WiscSIMSTool:
         [reg.removeMapLayer(layer) for layer in layers if layer == saveFile]
 
         # write shape + etc files
-        error, _error_str = QgsVectorFileWriter.writeAsVectorFormat(
+        error, _ = QgsVectorFileWriter.writeAsVectorFormat(
             vl,
             saveFile,
             "UTF-8",
@@ -1143,7 +1143,7 @@ class WiscSIMSTool:
             self.dockwidget.Btn_Undo_Add_Preset_Point.setEnabled(False)
 
     def clear_preview_points(self):
-        if self.rb is not None:
+        if self.rb.size() > 0:
             self.rb.reset()
             self.rb2.reset()
             self.rb_s.reset()
@@ -1151,18 +1151,18 @@ class WiscSIMSTool:
 
     def init_rb(self):
         # Line
-        if self.rb is not None:
+        if self.rb.size() > 0:
             self.rb.reset()
-        self.rb = QgsRubberBand(self.canvas, True)  # False = not a polygon
+        # self.rb = QgsRubberBand(self.canvas, True)  # False = not a polygon
         self.rb.setWidth(1)
         self.rb.setColor(QColor(255, 20, 20, 60))
         self.dockwidget.Txt_Line_Length.setText('0')
 
     def init_rb2(self):
         # Points
-        if self.rb2 is not None:
+        if self.rb2.size() > 0:
             self.rb2.reset()
-        self.rb2 = QgsRubberBand(self.canvas, False)  # False = not a polygon
+        # self.rb2 = QgsRubberBand(self.canvas, False)  # False = not a polygon
         self.rb2.setIcon(QgsRubberBand.ICON_CIRCLE)
         self.rb2.setIconSize(10)
         self.rb2.setColor(QColor(255, 20, 20, 90))
@@ -1180,9 +1180,9 @@ class WiscSIMSTool:
          if self.is_annotation_item(i)]
 
     def init_rb_s(self):
-        if self.rb_s is not None:
+        if self.rb_s.size() > 0:
             self.rb_s.reset()
-        self.rb_s = QgsRubberBand(self.canvas, False)  # False = not a polygon
+        # self.rb_s = QgsRubberBand(self.canvas, False)  # False = not a polygon
         self.rb_s.setIcon(QgsRubberBand.ICON_CIRCLE)
         self.rb_s.setIconSize(5)
         self.rb_s.setColor(QColor(255, 0, 255, 250))
