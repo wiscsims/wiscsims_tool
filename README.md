@@ -58,7 +58,7 @@ There are two ways to install `WiscSIMS Tool`.
 
 ### Install from ZIP file
 Manual installation is also available.
-1. Download `WiscSIMS Tool`  (**wiscsims_tool.zip**) from [WiscSIMS GitHub repository](https://github.com/wiscsims/wiscsims_tool/releases/latest).
+1. Download `WiscSIMS Tool`  (**wiscsims_tool.zip**) from [WiscSIMS GitHub repository](https://github.com/wiscsims/wiscsims_tool/releases/latest/download/wiscsims_tool.zip).
 
 2. Open QGIS.
 
