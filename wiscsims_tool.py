@@ -713,8 +713,7 @@ class WiscSIMSTool:
         if saveFile == '':
             return None
 
-        vl = QgsVectorLayer("Point?crs=epsg:4326",
-                            "temporary_points", "memory")
+        vl = QgsVectorLayer("Point?crs=epsg:4326", "temporary_points", "memory")
         vl.setProviderEncoding("UTF-8")
         pr = vl.dataProvider()
         labels = self.xl.get_headers()
@@ -942,8 +941,7 @@ class WiscSIMSTool:
 
         # create layer with given name
         #  field: [Comment]
-        vl = QgsVectorLayer("Point?crs=epsg:4326",
-                            "temporary_points", "memory")
+        vl = QgsVectorLayer("Point?crs=epsg:4326", "temporary_points", "memory")
         vl.setProviderEncoding("UTF-8")
         pr = vl.dataProvider()
         attrs = [QgsField('Comment', QVariant.String)]
@@ -963,6 +961,8 @@ class WiscSIMSTool:
         # Set layer name without duplication
         layer_names = [l.name() for l in self.get_vector_point_layers()]
         layer_name = 'Preset'
+
+        # check layer names to avoid name duplication
         i = 1
         while layer_name in layer_names:
             i += 1
@@ -1000,9 +1000,14 @@ class WiscSIMSTool:
         newVlayer.setLabeling(QgsVectorLayerSimpleLabeling(settings))
         newVlayer.triggerRepaint()
 
+        root = QgsProject.instance().layerTreeRoot()
+        myLayerNode = root.findLayer(newVlayer.id())
+        myLayerNode.setCustomProperty("showFeatureCount", True)
+
         # add created layer to Cmb_Preset_Layer
         self.init_preset_layer_combobox()
-        # selet/highlight created layer
+
+        # select/highlight created layer
         self.dockwidget.Cmb_Preset_Layer.setCurrentIndex(
             self.dockwidget.Cmb_Preset_Layer.findText(layer_name))
 
