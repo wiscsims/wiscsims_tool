@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
+from PyQt5 import QtWidgets
 from PyQt5.QtCore import pyqtSignal, QPoint, Qt
 from PyQt5.QtGui import QColor
 from qgis.core import QgsPoint, QgsRectangle, Qgis
-from qgis.gui import QgsRubberBand, QgsMapTool
+from qgis.gui import QgsRubberBand, QgsMapTool, QgsMapMouseEvent
 import math
 
 
 class CanvasMapTool(QgsMapTool):
 
     canvasClicked = pyqtSignal('QgsPointXY')
+    canvasClickedWShift = pyqtSignal('QgsMapMouseEvent')
+    canvasReleaseWShift = pyqtSignal('QgsMapMouseEvent')
     canvasDoubleClicked = pyqtSignal('QgsPointXY')
     canvasClickedRight = pyqtSignal('QgsPointXY')
     canvasMoved = pyqtSignal('QgsPointXY')
@@ -43,20 +46,25 @@ class CanvasMapTool(QgsMapTool):
         self.refpoint2 = [None, None]
 
     def canvasPressEvent(self, event):
+        if QtWidgets.QApplication.keyboardModifiers() == Qt.ShiftModifier:
+            self.canvasClickedWShift.emit(event)
         return
 
     def canvasMoveEvent(self, event):
-        pt = self.toMapCoordinates(QPoint(event.pos().x(), event.pos().y()))
+        pt = self.getMapCoordinates(event)
         self.canvasMoved.emit(pt)
-        # self.emit(SIGNAL('mouseMoved'), pt)
         return
 
     def canvasReleaseEvent(self, event):
         pt = self.getMapCoordinates(event)
+
         if event.button() == Qt.RightButton:
             self.canvasClickedRight.emit(pt)
         else:
-            self.canvasClicked.emit(pt)
+            if QtWidgets.QApplication.keyboardModifiers() == Qt.ShiftModifier:
+                self.canvasReleaseWShift.emit(event)
+            else:
+                self.canvasClicked.emit(pt)
 
     def canvasDoubleClickEvent(self, event):
         pt = self.getMapCoordinates(event)

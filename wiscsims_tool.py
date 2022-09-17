@@ -64,7 +64,9 @@ from qgis.core import (
 )
 from qgis.gui import (
     QgsRubberBand,
-    QgsMapCanvasAnnotationItem
+    QgsMapCanvasAnnotationItem,
+    QgsMapToolIdentifyFeature,
+    QgsMapToolIdentify
 )
 
 # Initialize Qt resources from file resources.py
@@ -451,6 +453,8 @@ class WiscSIMSTool:
 
             self.canvas.mapToolSet.connect(self.mapToolChanged)
             self.canvasMapTool.canvasClicked.connect(self.canvasClicked)
+            self.canvasMapTool.canvasClickedWShift.connect(self.canvasClickedWShift)
+            self.canvasMapTool.canvasReleaseWShift.connect(self.canvasReleaseWShift)
             self.canvasMapTool.canvasClickedRight.connect(self.canvasClickedRight)
             self.canvasMapTool.canvasDoubleClicked.connect(self.canvasDoubleClicked)
             self.canvasMapTool.canvasMoved.connect(self.canvasMoved)
@@ -1410,6 +1414,50 @@ class WiscSIMSTool:
         self.canvas.mapToolSet.disconnect(self.mapToolChanged)
         self.canvas.unsetMapTool(self.canvasMapTool)
 
+    def canvasReleaseWShift(self, e):
+        # End move preset point
+        if self.f_id is None:
+            return
+
+        layer = self.dockwidget.Cmb_Preset_Layer.itemData(
+            self.dockwidget.Cmb_Preset_Layer.currentIndex())
+        layer.startEditing()
+        geom = QgsGeometry.fromPointXY(self.canvasMapTool.getMapCoordinates(e))
+        layer.dataProvider().changeGeometryValues({self.f_id: geom})
+        layer.commitChanges()
+        self.f_id = None
+        layer.removeSelection()
+
+    def canvasClickedWShift(self, e):
+        # Start moving preset point
+        self.f_id = None
+        layer = self.dockwidget.Cmb_Preset_Layer.itemData(
+            self.dockwidget.Cmb_Preset_Layer.currentIndex())
+        features = QgsMapToolIdentifyFeature(self.canvas).identify(e.x(), e.y(), [layer])
+        if len(features) == 0:
+            return
+
+        geom = features[0].mFeature.geometry()
+        self.f_id = features[0].mFeature.id()
+        layer.selectByIds([self.f_id], QgsVectorLayer.SetSelection)
+
+        # TODO
+
+        # WORKFLOW
+        #   - Select the point you want to move by holding shift
+        #   - Move cursor to new location (with shift)
+        #   - Click again to release the feature
+
+        # STEPS
+        #   - Change current preset layer to be editable
+        #   - Get feature under (or within threshold of) the cursor
+        #   - Select the feature
+        #   - Move feature with cursor
+        #   - Get new coordinates and move the feature
+        #   - Unselect the feature
+        #   - Change back current preset layer to be noneditable
+        return
+
     def canvasClicked(self, pt):
         if self.get_current_tool() != 'preset':
             return
@@ -1437,6 +1485,12 @@ class WiscSIMSTool:
         self.clear_preview_points()
 
     def canvasMoved(self, pt):
+        if self.f_id:
+            # moving preset point
+            print(pt)
+
+            return
+
         if self.get_current_tool() != 'preset':
             return
         mode = self.get_preset_mode()
