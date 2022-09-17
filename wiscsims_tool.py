@@ -60,7 +60,7 @@ from qgis.core import (
     QgsPointXY,
     QgsMargins,
     QgsVectorLayerSimpleLabeling,
-    QgsPropertyCollection
+    QgsPropertyCollection,
 )
 from qgis.gui import (
     QgsRubberBand,
@@ -151,6 +151,8 @@ class WiscSIMSTool:
         self.undo_preset = []
 
         self.scale = 1
+
+        self.f_id = None  # for modifying preset point position
 
     # noinspection PyMethodMayBeStatic
 
@@ -671,7 +673,7 @@ class WiscSIMSTool:
             'Import Excel Data',
             f'{i} data were imported!'
         )
-        # self.canvas.refresh()
+       # self.canvas.refresh()
 
     def workbook_udpated(self):
         # addItems asc files
@@ -1426,7 +1428,10 @@ class WiscSIMSTool:
         layer.dataProvider().changeGeometryValues({self.f_id: geom})
         layer.commitChanges()
         self.f_id = None
+        self.scratchLayer.commitChanges()
         layer.removeSelection()
+        qinst = QgsProject.instance()
+        qinst.removeMapLayer(self.scratchLayer)
 
     def canvasClickedWShift(self, e):
         # Start moving preset point
@@ -1439,7 +1444,28 @@ class WiscSIMSTool:
 
         geom = features[0].mFeature.geometry()
         self.f_id = features[0].mFeature.id()
+        # not working
         layer.selectByIds([self.f_id], QgsVectorLayer.SetSelection)
+
+        # Add/setup moving preview symbol layer
+        self.scratchLayer = QgsVectorLayer("Point", "Scratch point layer2",  "memory")
+        self.scratchLayer.startEditing()
+        props = layer.renderer().symbol().symbolLayer(0).properties()
+        self.scratchLayer.renderer().setSymbol(QgsMarkerSymbol.createSimple(props))
+
+        symbol = self.scratchLayer.renderer().symbol()
+        # symbol.setColor(QColor.fromRgb(255,0,0))
+        symbol.setOpacity(0.5)
+
+        self.scratchLayer.triggerRepaint()
+        pr = self.scratchLayer.dataProvider()
+        # pr.addAttributes([QgsField("name", QVariant.String)])
+        # self.scratchLayer.updateFields()
+        self.f_tmp = QgsFeature()
+        self.f_tmp.setGeometry(geom)
+        pr.addFeature(self.f_tmp)
+        self.scratchLayer.updateExtents()
+        QgsProject.instance().addMapLayer(self.scratchLayer)
 
         # TODO
 
@@ -1487,7 +1513,10 @@ class WiscSIMSTool:
     def canvasMoved(self, pt):
         if self.f_id:
             # moving preset point
-            print(pt)
+            self.scratchLayer.startEditing()
+            geom = QgsGeometry.fromPointXY(pt)
+            self.scratchLayer.dataProvider().changeGeometryValues({1: geom})
+            self.scratchLayer.commitChanges()
 
             return
 
