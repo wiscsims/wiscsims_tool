@@ -1039,6 +1039,11 @@ class WiscSIMSTool:
         tools = ['import', 'preset', 'alignment']
         return tools[self.dockwidget.Tab_Tool.currentIndex()]
 
+    def get_preset_layer(self):
+        layer = self.dockwidget.Cmb_Preset_Layer.itemData(
+            self.dockwidget.Cmb_Preset_Layer.currentIndex())
+        return layer
+
     def get_preset_mode(self):
         modes = ['point', 'line', 'grid']
         return modes[self.dockwidget.Tab_Preset_Mode.currentIndex()]
@@ -1047,14 +1052,14 @@ class WiscSIMSTool:
 
         if len(self.preset_points) == 0:
             return
+
         if self.dockwidget.Cmb_Preset_Layer.currentIndex() == -1:
             return
 
         # maximum # of undo
         undo_max = 100
 
-        layer = self.dockwidget.Cmb_Preset_Layer.itemData(
-            self.dockwidget.Cmb_Preset_Layer.currentIndex())
+        layer = self.get_preset_layer()
         layer.startEditing()
         fields = layer.fields()
         features = []
@@ -1423,8 +1428,7 @@ class WiscSIMSTool:
         if self.f_id is None:
             return
 
-        layer = self.dockwidget.Cmb_Preset_Layer.itemData(
-            self.dockwidget.Cmb_Preset_Layer.currentIndex())
+        layer = self.get_preset_layer()
         layer.startEditing()
         geom = QgsGeometry.fromPointXY(self.canvasMapTool.getMapCoordinates(e))
         layer.dataProvider().changeGeometryValues({self.f_id: geom})
@@ -1438,8 +1442,7 @@ class WiscSIMSTool:
     def canvasClickedWShift(self, e):
         # Start moving preset point
         self.f_id = None
-        layer = self.dockwidget.Cmb_Preset_Layer.itemData(
-            self.dockwidget.Cmb_Preset_Layer.currentIndex())
+        layer = self.get_preset_layer()
         features = QgsMapToolIdentifyFeature(self.canvas).identify(e.x(), e.y(), [layer])
         if len(features) == 0:
             return
@@ -1454,35 +1457,16 @@ class WiscSIMSTool:
         props = layer.renderer().symbol().symbolLayer(0).properties()
         self.scratchLayer.renderer().setSymbol(QgsMarkerSymbol.createSimple(props))
 
-        symbol = self.scratchLayer.renderer().symbol()
-        # symbol.setColor(QColor.fromRgb(255,0,0))
-        symbol.setOpacity(0.5)
+        self.scratchLayer.renderer().symbol().setOpacity(0.5)
 
         self.scratchLayer.triggerRepaint()
-        pr = self.scratchLayer.dataProvider()
-        # pr.addAttributes([QgsField("name", QVariant.String)])
-        # self.scratchLayer.updateFields()
+
         self.f_tmp = QgsFeature()
         self.f_tmp.setGeometry(geom)
-        pr.addFeature(self.f_tmp)
+        self.scratchLayer.dataProvider().addFeature(self.f_tmp)
+
         self.scratchLayer.updateExtents()
         QgsProject.instance().addMapLayer(self.scratchLayer)
-
-        # TODO
-
-        # WORKFLOW
-        #   - Select the point you want to move by holding shift
-        #   - Move cursor to new location (with shift)
-        #   - Click again to release the feature
-
-        # STEPS
-        #   - Change current preset layer to be editable
-        #   - Get feature under (or within threshold of) the cursor
-        #   - Select the feature
-        #   - Move feature with cursor
-        #   - Get new coordinates and move the feature
-        #   - Unselect the feature
-        #   - Change back current preset layer to be noneditable
         return
 
     def canvasClicked(self, pt):
@@ -1512,8 +1496,7 @@ class WiscSIMSTool:
         self.clear_preview_points()
 
     def canvasReleaseWAlt(self, e):
-        layer = self.dockwidget.Cmb_Preset_Layer.itemData(
-            self.dockwidget.Cmb_Preset_Layer.currentIndex())
+        layer = self.get_preset_layer()
         features = QgsMapToolIdentifyFeature(self.canvas).identify(e.x(), e.y(), [layer])
         if len(features) == 0:
             return
