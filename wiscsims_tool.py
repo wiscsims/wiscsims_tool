@@ -61,7 +61,8 @@ from qgis.core import (
     QgsMargins,
     QgsVectorLayerSimpleLabeling,
     QgsPropertyCollection,
-    QgsFeatureRequest
+    QgsFeatureRequest,
+    QgsMapLayer
 )
 from qgis.gui import (
     QgsRubberBand,
@@ -1452,8 +1453,11 @@ class WiscSIMSTool:
         layer.selectByIds([self.f_id], QgsVectorLayer.SetSelection)
 
         # Add/setup moving preview symbol layer
-        self.scratchLayer = QgsVectorLayer("Point", "Scratch point layer2",  "memory")
+        self.scratchLayer = QgsVectorLayer("Point", "tmp",  "memory")
+        self.scratchLayer.setFlags(QgsMapLayer.Private)
         self.scratchLayer.startEditing()
+
+        # Copy and paste symbol sytle from preset layer
         props = layer.renderer().symbol().symbolLayer(0).properties()
         self.scratchLayer.renderer().setSymbol(QgsMarkerSymbol.createSimple(props))
 
