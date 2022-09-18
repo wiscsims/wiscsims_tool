@@ -8,6 +8,8 @@ import math
 
 
 class CanvasMapTool(QgsMapTool):
+
+    # Mouse Event
     canvasClicked = pyqtSignal('QgsPointXY')
     canvasClickedWShift = pyqtSignal('QgsMapMouseEvent')
     canvasReleaseWShift = pyqtSignal('QgsMapMouseEvent')
@@ -15,6 +17,10 @@ class CanvasMapTool(QgsMapTool):
     canvasDoubleClicked = pyqtSignal('QgsPointXY')
     canvasClickedRight = pyqtSignal('QgsPointXY')
     canvasMoved = pyqtSignal('QgsPointXY')
+
+    # Key Event
+    canvasShiftKeyState = pyqtSignal('bool')
+    canvasAltKeyState = pyqtSignal('bool')
 
     def __init__(self, canvas, toolbarBtn):
         QgsMapTool.__init__(self, canvas)
@@ -44,6 +50,22 @@ class CanvasMapTool(QgsMapTool):
         self.spot = None
         self.spotColor = QColor(0, 255, 255, 200)
         self.refpoint2 = [None, None]
+
+    def keyPressEvent(self, e):
+        if e.key() == 16777248:  # Shift
+            self.canvasShiftKeyState.emit(True)
+            print("Shift Release!")
+        elif e.key() == 16777251:  # Alt/Option
+            self.canvasAltKeyState.emit(True)
+            print("Alt/Option Release!")
+
+    def keyReleaseEvent(self, e):
+        if e.key() == 16777248:  # Shift
+            self.canvasShiftKeyState.emit(False)
+            print("Shift Release!")
+        elif e.key() == 16777251:  # Alt/Option
+            self.canvasAltKeyState.emit(False)
+            print("Alt/Option Release!")
 
     def canvasPressEvent(self, event):
         if QtWidgets.QApplication.keyboardModifiers() == Qt.ShiftModifier:

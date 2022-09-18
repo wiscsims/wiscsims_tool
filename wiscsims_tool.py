@@ -37,7 +37,8 @@ from PyQt5.QtGui import (
     QIcon,
     QPixmap,
     QColor,
-    QTextDocument
+    QTextDocument,
+    QGuiApplication
 )
 from PyQt5.QtWidgets import (
     QAction,
@@ -463,6 +464,9 @@ class WiscSIMSTool:
             self.canvasMapTool.canvasClickedRight.connect(self.canvasClickedRight)
             self.canvasMapTool.canvasDoubleClicked.connect(self.canvasDoubleClicked)
             self.canvasMapTool.canvasMoved.connect(self.canvasMoved)
+
+            self.canvasMapTool.canvasShiftKeyState.connect(self.canvasShiftKeyState)
+            self.canvasMapTool.canvasAltKeyState.connect(self.canvasAltKeyState)
 
             self.canvas.setMapTool(self.canvasMapTool)
         else:
@@ -1437,10 +1441,15 @@ class WiscSIMSTool:
         self.f_id = None
         self.scratchLayer.commitChanges()
         layer.removeSelection()
+
         qinst = QgsProject.instance()
         qinst.removeMapLayer(self.scratchLayer)
 
+        QGuiApplication.restoreOverrideCursor()
+        return
+
     def canvasClickedWShift(self, e):
+        QGuiApplication.setOverrideCursor(Qt.ClosedHandCursor)
         # Start moving preset point
         self.f_id = None
         layer = self.get_preset_layer()
@@ -1524,6 +1533,7 @@ class WiscSIMSTool:
             layer.commitChanges()
 
         layer.removeSelection()
+        QGuiApplication.restoreOverrideCursor()
 
     def canvasMoved(self, pt):
         if self.f_id:
@@ -1545,3 +1555,15 @@ class WiscSIMSTool:
                 self.rb.removeLastPoint()
             self.end_point = pt
             self.rb.addPoint(pt, True)
+
+    def canvasShiftKeyState(self, state):
+        if state:
+            QGuiApplication.setOverrideCursor(Qt.OpenHandCursor)
+        else:
+            QGuiApplication.restoreOverrideCursor()
+
+    def canvasAltKeyState(self, state):
+        if state:
+            QGuiApplication.setOverrideCursor(Qt.PointingHandCursor)
+        else:
+            QGuiApplication.restoreOverrideCursor()
