@@ -61,6 +61,7 @@ from qgis.core import (
     QgsMargins,
     QgsVectorLayerSimpleLabeling,
     QgsPropertyCollection,
+    QgsFeatureRequest
 )
 from qgis.gui import (
     QgsRubberBand,
@@ -457,6 +458,7 @@ class WiscSIMSTool:
             self.canvasMapTool.canvasClicked.connect(self.canvasClicked)
             self.canvasMapTool.canvasClickedWShift.connect(self.canvasClickedWShift)
             self.canvasMapTool.canvasReleaseWShift.connect(self.canvasReleaseWShift)
+            self.canvasMapTool.canvasReleaseWAlt.connect(self.canvasReleaseWAlt)
             self.canvasMapTool.canvasClickedRight.connect(self.canvasClickedRight)
             self.canvasMapTool.canvasDoubleClicked.connect(self.canvasDoubleClicked)
             self.canvasMapTool.canvasMoved.connect(self.canvasMoved)
@@ -1444,7 +1446,6 @@ class WiscSIMSTool:
 
         geom = features[0].mFeature.geometry()
         self.f_id = features[0].mFeature.id()
-        # not working
         layer.selectByIds([self.f_id], QgsVectorLayer.SetSelection)
 
         # Add/setup moving preview symbol layer
@@ -1509,6 +1510,33 @@ class WiscSIMSTool:
         if self.get_current_tool() != 'preset':
             return
         self.clear_preview_points()
+
+    def canvasReleaseWAlt(self, e):
+        layer = self.dockwidget.Cmb_Preset_Layer.itemData(
+            self.dockwidget.Cmb_Preset_Layer.currentIndex())
+        features = QgsMapToolIdentifyFeature(self.canvas).identify(e.x(), e.y(), [layer])
+        if len(features) == 0:
+            return
+
+        f_id = features[0].mFeature.id()
+        layer.selectByIds([f_id], QgsVectorLayer.SetSelection)
+        comment = [f['Comment'] for f in layer.getFeatures(QgsFeatureRequest(f_id))][0]
+        title = "Modify Comment"
+        label = "Enter New Comment"
+        mode = QLineEdit.Normal
+        default = comment
+
+        # show dailog for new comment
+        new_comment, ok = QInputDialog.getText(self.window, title, label, mode, default)
+
+        if ok:
+            field_idx = layer.fields().indexOf('Comment')
+            layer.startEditing()
+            for feat_id in layer.selectedFeatureIds():
+                layer.changeAttributeValue(feat_id, field_idx, new_comment)
+            layer.commitChanges()
+
+        layer.removeSelection()
 
     def canvasMoved(self, pt):
         if self.f_id:

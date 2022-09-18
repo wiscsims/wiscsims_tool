@@ -8,10 +8,10 @@ import math
 
 
 class CanvasMapTool(QgsMapTool):
-
     canvasClicked = pyqtSignal('QgsPointXY')
     canvasClickedWShift = pyqtSignal('QgsMapMouseEvent')
     canvasReleaseWShift = pyqtSignal('QgsMapMouseEvent')
+    canvasReleaseWAlt = pyqtSignal('QgsMapMouseEvent')
     canvasDoubleClicked = pyqtSignal('QgsPointXY')
     canvasClickedRight = pyqtSignal('QgsPointXY')
     canvasMoved = pyqtSignal('QgsPointXY')
@@ -63,11 +63,14 @@ class CanvasMapTool(QgsMapTool):
         else:
             if QtWidgets.QApplication.keyboardModifiers() == Qt.ShiftModifier:
                 self.canvasReleaseWShift.emit(event)
+            elif QtWidgets.QApplication.keyboardModifiers() == Qt.AltModifier:
+                self.canvasReleaseWAlt.emit(event)
             else:
                 self.canvasClicked.emit(pt)
 
     def canvasDoubleClickEvent(self, event):
         pt = self.getMapCoordinates(event)
+
         self.canvasDoubleClicked.emit(pt)
 
     def getMapCoordinates(self, event):
