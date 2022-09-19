@@ -156,6 +156,7 @@ class WiscSIMSTool:
         self.scale = 1
 
         self.f_id = None  # for modifying preset point position
+        self.sc_dp = None
 
     # noinspection PyMethodMayBeStatic
 
@@ -1438,12 +1439,12 @@ class WiscSIMSTool:
         geom = QgsGeometry.fromPointXY(self.canvasMapTool.getMapCoordinates(e))
         layer.dataProvider().changeGeometryValues({self.f_id: geom})
         layer.commitChanges()
-        self.f_id = None
-        self.scratchLayer.commitChanges()
         layer.removeSelection()
 
-        qinst = QgsProject.instance()
-        qinst.removeMapLayer(self.scratchLayer)
+        self.scratchLayer.commitChanges()
+        self.f_id = None
+        self.sc_dp = None
+        QgsProject.instance().removeMapLayer(self.scratchLayer)
 
         QGuiApplication.restoreOverrideCursor()
         return
@@ -1469,17 +1470,17 @@ class WiscSIMSTool:
         # Copy and paste symbol sytle from preset layer
         props = layer.renderer().symbol().symbolLayer(0).properties()
         self.scratchLayer.renderer().setSymbol(QgsMarkerSymbol.createSimple(props))
-
         self.scratchLayer.renderer().symbol().setOpacity(0.5)
 
-        self.scratchLayer.triggerRepaint()
-
+        # Add a point as moving point
         self.f_tmp = QgsFeature()
         self.f_tmp.setGeometry(geom)
-        self.scratchLayer.dataProvider().addFeature(self.f_tmp)
+        self.sc_dp = self.scratchLayer.dataProvider()
+        self.sc_dp.addFeature(self.f_tmp)
+        self.scratchLayer.commitChanges()
 
-        self.scratchLayer.updateExtents()
         QgsProject.instance().addMapLayer(self.scratchLayer)
+
         return
 
     def canvasClicked(self, pt):
@@ -1536,21 +1537,20 @@ class WiscSIMSTool:
         QGuiApplication.restoreOverrideCursor()
 
     def canvasMoved(self, pt):
-        if self.f_id:
-            # moving preset point
-            self.scratchLayer.startEditing()
-            geom = QgsGeometry.fromPointXY(pt)
-            self.scratchLayer.dataProvider().changeGeometryValues({1: geom})
-            self.scratchLayer.commitChanges()
 
+        # moving preset point
+        if self.f_id:
+            geom = QgsGeometry.fromPointXY(pt)
+            self.sc_dp.changeGeometryValues({1: geom})
+            self.scratchLayer.triggerRepaint()
             return
 
         if self.get_current_tool() != 'preset':
             return
+
+        # adding preset epoints
         mode = self.get_preset_mode()
-        if self.dockwidget.Tab_Tool.currentIndex() == 1 \
-                and mode == 'line' \
-                and self.line_in_progress:
+        if self.dockwidget.Tab_Tool.currentIndex() == 1 and mode == 'line' and self.line_in_progress:
             if self.end_point:
                 self.rb.removeLastPoint()
             self.end_point = pt
