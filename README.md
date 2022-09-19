@@ -115,4 +115,4 @@ There are three types of preset mode, Point, Line and Grid in WiscSIMS Tool. You
 
 #### Undo
 
-Undo for last added point(s) is avaiable when `undo` button is active. There is no mulitiple `undo`, only one `undo` is available.
+Undo for added point(s) is avaiable when `undo` button is active. Currently, a maximum of 100 undo is possible.
