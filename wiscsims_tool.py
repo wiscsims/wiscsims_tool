@@ -1560,10 +1560,11 @@ class WiscSIMSTool:
         if state:
             QGuiApplication.setOverrideCursor(Qt.OpenHandCursor)
         else:
-            QGuiApplication.restoreOverrideCursor()
+            QGuiApplication.setOverrideCursor(Qt.CrossCursor)
 
     def canvasAltKeyState(self, state):
         if state:
             QGuiApplication.setOverrideCursor(Qt.PointingHandCursor)
         else:
-            QGuiApplication.restoreOverrideCursor()
+            QGuiApplication.setOverrideCursor(Qt.CrossCursor)
+            # QGuiApplication.restoreOverrideCursor()
