@@ -1567,4 +1567,3 @@ class WiscSIMSTool:
             QGuiApplication.setOverrideCursor(Qt.PointingHandCursor)
         else:
             QGuiApplication.setOverrideCursor(Qt.CrossCursor)
-            # QGuiApplication.restoreOverrideCursor()
