@@ -1,29 +1,31 @@
+
 # WiscSIMS Tool
 
 A QGIS3 plugin for external/internal WiscSIMS users.
 
 ## Table of Contents
 
-<!-- TOC -->
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 
-- [WiscSIMS Tool](#wiscsims-tool)
-  - [Table of Contents](#table-of-contents)
-  - [Features](#features)
-  - [Requirements](#requirements)
-    - [QGIS3](#qgis3)
-  - [Installation](#installation)
-    - [Install from QGIS Plugin Repository (Recommended)](#install-from-qgis-plugin-repository-recommended)
-    - [Install from ZIP file](#install-from-zip-file)
-  - [Usage](#usage)
-    - [Import Data](#import-data)
-    - [Preset (pre-select SIMS spots on QGIS maps)](#preset-pre-select-sims-spots-on-qgis-maps)
-      - [Comments](#comments)
-      - [Layer](#layer)
-      - [Scale](#scale)
-      - [Preset Mode](#preset-mode)
-      - [Undo](#undo)
+- [Features](#features)
+- [Requirements](#requirements)
+  - [QGIS3](#qgis3)
+- [Installation](#installation)
+  - [Install from QGIS Plugin Repository (Recommended)](#install-from-qgis-plugin-repository-recommended)
+  - [Install from ZIP file](#install-from-zip-file)
+- [Usage](#usage)
+  - [Import Data](#import-data)
+  - [Preset (pre-select SIMS spots on QGIS maps)](#preset-pre-select-sims-spots-on-qgis-maps)
+    - [Comments](#comments)
+    - [Layer](#layer)
+    - [Scale](#scale)
+    - [Preset Mode](#preset-mode)
+    - [Undo](#undo)
+    - [Modify spot locations](#modify-spot-locations)
+    - [Modify comment](#modify-comment)
 
-<!-- /TOC -->
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
 ## Features
 
@@ -115,4 +117,19 @@ There are three types of preset mode, Point, Line and Grid in WiscSIMS Tool. You
 
 #### Undo
 
-Undo for added point(s) is avaiable when `undo` button is active. Currently, a maximum of 100 undo is possible.
+Undo for added point(s) is avaiable when `Undo` button is active. Currently, a maximum of 100 undo is possible.
+
+#### Modify spot locations
+
+Locations of preset spots can be modified by click, drag & drop with **`shift`** key. 
+
+TODO: [movie]
+
+#### Modify comment
+
+Comments for each spot can be modified later. Click the spot with pressing `Alt(Windows)/Option(MacOS)`, then small popup window shows for editing original comment.
+
+TODO: [movie]
+
+
+
