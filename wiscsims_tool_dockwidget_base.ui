@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>397</width>
-    <height>650</height>
+    <height>651</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,7 +19,7 @@
   <property name="minimumSize">
    <size>
     <width>387</width>
-    <height>650</height>
+    <height>651</height>
    </size>
   </property>
   <property name="maximumSize">
@@ -85,7 +85,7 @@ QTabWidget::pane {
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="iconSize">
        <size>
@@ -786,6 +786,24 @@ font-weight: bold;
         </property>
         <item>
          <widget class="QGroupBox" name="groupBox_7">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="minimumSize">
+           <size>
+            <width>0</width>
+            <height>150</height>
+           </size>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>150</height>
+           </size>
+          </property>
           <property name="title">
            <string>Comment</string>
           </property>
@@ -820,7 +838,7 @@ font-weight: bold;
              <property name="minimumSize">
               <size>
                <width>0</width>
-               <height>80</height>
+               <height>88</height>
               </size>
              </property>
              <property name="maximumSize">
@@ -1000,6 +1018,18 @@ font-weight: bold;
         </item>
         <item>
          <widget class="QGroupBox" name="groupBox_8">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>78</height>
+           </size>
+          </property>
           <property name="title">
            <string>Layer</string>
           </property>
@@ -1053,6 +1083,18 @@ font-weight: bold;
         </item>
         <item>
          <widget class="QGroupBox" name="groupBox_12">
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
+          </property>
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>60</height>
+           </size>
+          </property>
           <property name="title">
            <string>Scale</string>
           </property>
@@ -1159,8 +1201,13 @@ font-weight: bold;
             <height>20</height>
            </size>
           </property>
+          <property name="font">
+           <font>
+            <pointsize>-1</pointsize>
+           </font>
+          </property>
           <property name="text">
-           <string>   Mode</string>
+           <string> Mode</string>
           </property>
          </widget>
         </item>
@@ -1191,7 +1238,7 @@ font-weight: bold;
            <enum>QTabWidget::Rounded</enum>
           </property>
           <property name="currentIndex">
-           <number>2</number>
+           <number>0</number>
           </property>
           <property name="iconSize">
            <size>
@@ -1336,7 +1383,7 @@ font-weight: bold;
                      <string>N of Spots</string>
                     </property>
                     <property name="checked">
-                     <bool>false</bool>
+                     <bool>true</bool>
                     </property>
                     <attribute name="buttonGroup">
                      <string notr="true">buttonGroup</string>
@@ -1992,9 +2039,28 @@ font-weight: bold;
          </widget>
         </item>
         <item>
+         <spacer name="verticalSpacer">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
+        </item>
+        <item>
          <widget class="QPushButton" name="Btn_Undo_Add_Preset_Point">
           <property name="enabled">
            <bool>false</bool>
+          </property>
+          <property name="sizePolicy">
+           <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
+            <horstretch>0</horstretch>
+            <verstretch>0</verstretch>
+           </sizepolicy>
           </property>
           <property name="font">
            <font>
@@ -2002,7 +2068,7 @@ font-weight: bold;
            </font>
           </property>
           <property name="text">
-           <string>undo</string>
+           <string>Undo</string>
           </property>
          </widget>
         </item>
