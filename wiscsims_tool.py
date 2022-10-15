@@ -141,7 +141,7 @@ class WiscSIMSTool:
         self.toolbar.setObjectName(u'WiscSIMS Tool')
 
         self.pluginIsActive = False
-        self.dockwidget = None
+        # self.dockwidget = None
 
         self.rb = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
         self.rb2 = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
@@ -276,7 +276,8 @@ class WiscSIMSTool:
         self.remove_legend_connections()
         self.remove_ui_connections()
 
-        self.dockwidget = None
+        # self.dockwidget = None
+        delattr(self, 'dockwidget')
 
         self.unsetMapTool()
 
@@ -315,7 +316,7 @@ class WiscSIMSTool:
         # dockwidget may not exist if:
         #    first run of plugin
         #    removed on close (see self.onClosePlugin method)
-        if self.dockwidget is None:
+        if not hasattr('self', 'dockwidget'):
             # Create the dockwidget (after translation) and keep reference
             plugin_path = ':plugins/wiscsims_tool'
             self.dockwidget = WiscSIMSToolDockWidget()
