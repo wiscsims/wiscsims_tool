@@ -903,7 +903,7 @@ class WiscSIMSTool:
                 d = self.cot.getDistance(pt, m[pt_name][0])
                 if d == 0:
                     d = 1E-10
-                w = 1 / (d**2)
+                w = 1.0 / (d**2)
                 if i == 1:
                     np = self.cot.toCanvasCoordinates2(pt, params)
                 tmp_out.append(w)
@@ -911,7 +911,7 @@ class WiscSIMSTool:
                 wpt_x.append(w * np[0])
                 wpt_y.append(w * np[1])
         sum_weights = sum(weights)
-        return [self.my_round_int(p / sum_weights) for p in [sum(wpt_x), sum(wpt_y)]]
+        return [p / sum_weights for p in [sum(wpt_x), sum(wpt_y)]]
 
     """
     Functions for Preset
