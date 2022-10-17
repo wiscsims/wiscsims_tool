@@ -109,7 +109,7 @@ There are three types of preset mode, Point, Line and Grid in WiscSIMS Tool. You
 
 - **Line**
 
-  In Line Mode, you can add spots along the line defined by two spots. At first, you can select a start-point of line by left click, then select a end-point by right click. You will see previews of red spots and comments in gray square ballon. Note that red circles only show positions of the spots to be added, circle size is not to scale. Secondly, you can modify step size or number of spots as you want. Preview will be updated automatically with your modification. Finally, hit `Add Points` button at the bottom of `Preset Mode` section to addf points to the selected layer.
+  In Line Mode, you can add spots along the line defined by two spots. At first, you can select a start-point of line by **`left click`**, then select a end-point by **`right click`**. You will see previews of red spots and comments in gray square ballon. Note that red circles only show positions of the spots to be added, circle size is not to scale. Secondly, you can modify step size or number of spots as you want. Preview will be updated automatically with your modification. Finally, hit `Add Points` button at the bottom of `Preset Mode` section to addf points to the selected layer.
 
 - **Grid**
 
@@ -121,7 +121,7 @@ Undo for added point(s) is avaiable when `Undo` button is active. Currently, a m
 
 #### Modify spot locations
 
-Locations of preset spots can be modified by click, drag & drop with **`shift`** key. 
+Locations of preset spots can be modified by click, drag & drop with `Shift` key. If you want to move multiple spots, 
 
 TODO: [movie]
 
