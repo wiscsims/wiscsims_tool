@@ -121,7 +121,7 @@ Undo for added point(s) is avaiable when `Undo` button is active. Currently, a m
 
 #### Modify spot locations
 
-Locations of preset spots can be modified by click, drag & drop with `Shift` key. If you want to move multiple spots, 
+Locations of preset spots can be modified by clicking the feature (spot) with `Shift` key, then drag & drop. If you want to move multiple spots, use _built-in_ <a href="https://sites.google.com/a/wisc.edu/wiscsims-micro-qgis/learn-to-use-qgis/editing/selecting-objects" target="_blank">`Select and Move Features`</a>.
 
 TODO: [movie]
 
