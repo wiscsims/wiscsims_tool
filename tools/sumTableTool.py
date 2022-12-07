@@ -15,9 +15,9 @@ class SumTableTool:
         if not os.path.exists(self.path):
             return None
 
-        self.excel = None
-        self.wb = None
-        self.ws = None
+        # self.excel = None
+        # self.wb = None
+        # self.ws = None
 
         self.prev = []
         self.values = []
@@ -49,6 +49,7 @@ class SumTableTool:
             else:
                 raise ValueError('No appropriate worksheet.')
         except ValueError as err:
+            print(err)
             return None
 
     def reload_workbook(self):
@@ -167,30 +168,3 @@ class SumTableTool:
                 self.prev) or not self.prev[r] == self.values[r]]
 
         return out
-
-
-if __name__ == '__main__':
-    # test_excel_file = '/Users/saburo/Desktop/20180924_test.xlsx'
-    test_excel_file = '/Users/saburo/Documents/WindowsSharedFolder/20180129_d18O_Byerly_KK.xlsx'
-    if not os.path.exists(test_excel_file):
-        test_excel_file = 'E:/20180129_d18O_Byerly_KK.xlsx'
-    exl = SumTableTool(test_excel_file)
-    if exl is None:
-        print('error')
-        exit()
-    print(exl.get_workbook_path())
-    print(exl.get_workbook_name())
-    print(exl.wb.sheet_names())
-    print(len(exl.get_headers()))
-    print(exl.find_columns(['X', 'Y']))
-    # print exl.filter_by_asc(start='20180201@550.asc', end='201802925@553.asc')
-    print('last row: {}, col: {}, header_len: {}'.format(
-        exl.find_last_row(), exl.find_last_column(), len(exl.get_headers())))
-    print(len(exl.filter_by_comment('KIM-5')))
-    print('selected address:', exl.get_selected_address())
-    print('selected value:', exl.get_selected_value())
-    print(exl.ws.cell_value(740, 22))
-    val = exl.get_values()
-    print(val[490])
-
-    # print exl.ws._cell_values
