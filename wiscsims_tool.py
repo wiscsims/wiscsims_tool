@@ -1095,8 +1095,6 @@ class WiscSIMSTool:
         if len(self.undo_preset) > self.undo_max:
             del self.undo_preset[0]
 
-        print(self.undo_preset)
-
         self.update_undo_btn_state()
 
         if self.dockwidget.Cbx_Number_Increment.isChecked():
@@ -1171,9 +1169,11 @@ class WiscSIMSTool:
         preset_layer.commitChanges()
         self.update_undo_btn_state()
 
-    def undo_editing_comment(self, preset_layer, original_comment):
-        print(preset_layer, original_comment)
-        pass
+    def undo_editing_comment(self, preset_layer, data):
+        fid = data['id']
+        comment = data['comment']
+        field_idx = preset_layer.fields().indexOf("Comment")
+        preset_layer.changeAttributeValue(fid, field_idx, comment)
 
     def undo_moving_point(self, preset_layer, data):
         fid = data['id']
@@ -1622,6 +1622,14 @@ class WiscSIMSTool:
             layer.commitChanges()
 
         layer.removeSelection()
+
+        self.undo_preset.append({
+            'type': 'comment',
+            'data': {
+                'id': f_id,
+                'comment': default,
+            }
+        })
         QGuiApplication.restoreOverrideCursor()
 
     def canvasMoved(self, pt):
