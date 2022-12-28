@@ -160,6 +160,9 @@ class WiscSIMSTool:
         self.f_id = None  # for modifying preset point position
         self.sc_dp = None
 
+        # maximum # of undo
+        self.undo_max = 100
+
         self.flag_cancel_moving_spot = False
 
     # noinspection PyMethodMayBeStatic
@@ -402,7 +405,7 @@ class WiscSIMSTool:
         dock.Btn_Line_Add_Points.clicked.connect(self.add_preset_points)
 
         dock.Btn_Reset_Current_Number.clicked.connect(self.reset_current_number)
-        dock.Btn_Undo_Add_Preset_Point.clicked.connect(self.undo_add_preset_point)
+        dock.Btn_Undo_Add_Preset_Point.clicked.connect(self.handle_undo)
         dock.Btn_Refresh_Preset_Layers.clicked.connect(self.init_preset_layer_combobox)
 
         dock.Spn_Preset_Pixel_Size.valueChanged.connect(self.change_pixel_size)
@@ -1067,9 +1070,6 @@ class WiscSIMSTool:
         if self.dockwidget.Cmb_Preset_Layer.currentIndex() == -1:
             return
 
-        # maximum # of undo
-        undo_max = 100
-
         layer = self.get_preset_layer()
         layer.startEditing()
         fields = layer.fields()
@@ -1086,11 +1086,16 @@ class WiscSIMSTool:
         results, newFeatures = dpr.addFeatures(features)
         layer.commitChanges()
         points_for_undo = [f.id() for f in newFeatures]
-        self.undo_preset.append(points_for_undo)
+        self.undo_preset.append({
+            'type': 'addition',
+            'data': points_for_undo
+        })
 
         # check number of undos
-        if len(self.undo_preset) > undo_max:
+        if len(self.undo_preset) > self.undo_max:
             del self.undo_preset[0]
+
+        print(self.undo_preset)
 
         self.update_undo_btn_state()
 
@@ -1142,28 +1147,49 @@ class WiscSIMSTool:
         self.preset_points = [[comment, pt[0], pt[1]]]
         self.add_preset_points()
 
-    def undo_add_preset_point(self):
+    def handle_undo(self):
         if len(self.undo_preset) == 0:
             return
+
         current_layer_index = self.dockwidget.Cmb_Preset_Layer.currentIndex()
         if current_layer_index == -1:
             return
 
-        # get last item from self.undo_preset
-        removing_items = self.undo_preset.pop()
-        layer = self.dockwidget.Cmb_Preset_Layer.itemData(current_layer_index)
-        layer.startEditing()
-        layer.deleteFeatures(removing_items)
-        layer.commitChanges()
+        # get and remove last item from self.undo_preset
+        undo_item = self.undo_preset.pop()
+
+        preset_layer = self.dockwidget.Cmb_Preset_Layer.itemData(current_layer_index)
+        preset_layer.startEditing()
+
+        if undo_item['type'] == 'addition':
+            self.undo_add_preset_point(preset_layer, undo_item['data'])
+        elif undo_item['type'] == 'movement':
+            self.undo_moving_point(preset_layer, undo_item['data'])
+        elif undo_item['type'] == 'comment':
+            self.undo_editing_comment(preset_layer, undo_item['data'])
+
+        preset_layer.commitChanges()
+        self.update_undo_btn_state()
+
+    def undo_editing_comment(self, preset_layer, original_comment):
+        print(preset_layer, original_comment)
+        pass
+
+    def undo_moving_point(self, preset_layer, data):
+        fid = data['id']
+        geom = data['geom']
+        preset_layer.dataProvider().changeGeometryValues({fid: geom})
+
+    def undo_add_preset_point(self, preset_layer, id_list):
+        preset_layer.deleteFeatures(id_list)
 
         # update increment number
         if self.dockwidget.Cbx_Number_Increment.isChecked():
             self.dockwidget.Spn_Current_Number.setValue(
-                self.dockwidget.Spn_Current_Number.value() - len(removing_items))
+                self.dockwidget.Spn_Current_Number.value() - len(id_list))
 
         # self.undo_preset = []
         # self.dockwidget.Btn_Undo_Add_Preset_Point.setEnabled(False)
-        self.update_undo_btn_state()
 
     def update_undo_btn_state(self):
         if len(self.undo_preset):
@@ -1458,11 +1484,21 @@ class WiscSIMSTool:
             return
 
         layer = self.get_preset_layer()
+        original_geo = [f.geometry() for f in layer.getFeatures() if f.id() == self.f_id][0]
         layer.startEditing()
         geom = QgsGeometry.fromPointXY(self.canvasMapTool.getMapCoordinates(e))
         layer.dataProvider().changeGeometryValues({self.f_id: geom})
         layer.commitChanges()
+
         layer.removeSelection()
+        undo_data = {
+            'type': 'movement',
+            'data': {
+                'id': self.f_id,
+                'geom': original_geo
+            }
+        }
+        self.undo_preset.append(undo_data)
 
         self.removeScratchLayer()
 
