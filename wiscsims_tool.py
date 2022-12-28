@@ -156,8 +156,11 @@ class WiscSIMSTool:
 
         self.scale = 1
 
+        self.scratchLayer = None  # in memory layer while moving the spot
         self.f_id = None  # for modifying preset point position
         self.sc_dp = None
+
+        self.flag_cancel_moving_spot = False
 
     # noinspection PyMethodMayBeStatic
 
@@ -460,7 +463,7 @@ class WiscSIMSTool:
             self.canvasMapTool = CanvasMapTool(self.canvas, self.wiscsims_tool_action)
 
             self.canvas.mapToolSet.connect(self.mapToolChanged)
-            self.canvasMapTool.canvasClicked.connect(self.canvasClicked)
+            self.canvasMapTool.canvasClicked.connect(self.canvasClicked)  # released
             self.canvasMapTool.canvasClickedWShift.connect(self.canvasClickedWShift)
             self.canvasMapTool.canvasReleaseWShift.connect(self.canvasReleaseWShift)
             self.canvasMapTool.canvasReleaseWAlt.connect(self.canvasReleaseWAlt)
@@ -1435,6 +1438,20 @@ class WiscSIMSTool:
         self.canvas.mapToolSet.disconnect(self.mapToolChanged)
         self.canvas.unsetMapTool(self.canvasMapTool)
 
+    def removeScratchLayer(self):
+        if self.scratchLayer is None:
+            return
+
+        layer = self.get_preset_layer()
+        layer.removeSelection()
+
+        self.scratchLayer.commitChanges()
+        self.scratchLayer.triggerRepaint()
+        QgsProject.instance().removeMapLayer(self.scratchLayer)
+        self.f_id = None
+        self.sc_dp = None
+        self.scratchLayer = None
+
     def canvasReleaseWShift(self, e):
         # End move preset point
         if self.f_id is None:
@@ -1447,17 +1464,15 @@ class WiscSIMSTool:
         layer.commitChanges()
         layer.removeSelection()
 
-        self.scratchLayer.commitChanges()
-        self.f_id = None
-        self.sc_dp = None
-        QgsProject.instance().removeMapLayer(self.scratchLayer)
+        self.removeScratchLayer()
 
         QGuiApplication.restoreOverrideCursor()
         return
 
     def canvasClickedWShift(self, e):
         # Start moving preset point
-        self.f_id = None
+        # self.f_id = None
+        self.removeScratchLayer()
         layer = self.get_preset_layer()
 
         if layer is None:
@@ -1494,12 +1509,18 @@ class WiscSIMSTool:
         self.sc_dp = self.scratchLayer.dataProvider()
         self.sc_dp.addFeature(self.f_tmp)
         self.scratchLayer.commitChanges()
-
         QgsProject.instance().addMapLayer(self.scratchLayer)
 
         return
 
     def canvasClicked(self, pt):
+
+        self.removeScratchLayer()
+
+        if self.flag_cancel_moving_spot:
+            self.flag_cancel_moving_spot = False
+            return
+
         if self.get_preset_layer() is None:
             return
 
@@ -1579,7 +1600,7 @@ class WiscSIMSTool:
         if self.get_current_tool() != 'preset':
             return
 
-        # adding preset epoints
+        # adding preset end point
         mode = self.get_preset_mode()
         if self.dockwidget.Tab_Tool.currentIndex() == 1 and mode == 'line' and self.line_in_progress:
             if self.end_point:
@@ -1589,8 +1610,14 @@ class WiscSIMSTool:
 
     def canvasShiftKeyState(self, state):
         if state:
+            # shift key pressed
             QGuiApplication.setOverrideCursor(Qt.OpenHandCursor)
+            self.flag_cancel_moving_spot = False
         else:
+            # shift key released
+            # cancel moving
+            self.removeScratchLayer()
+            self.flag_cancel_moving_spot = True
             QGuiApplication.setOverrideCursor(Qt.CrossCursor)
 
     def canvasAltKeyState(self, state):

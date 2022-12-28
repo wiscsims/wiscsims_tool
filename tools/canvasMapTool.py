@@ -54,18 +54,14 @@ class CanvasMapTool(QgsMapTool):
     def keyPressEvent(self, e):
         if e.key() == 16777248:  # Shift
             self.canvasShiftKeyState.emit(True)
-            print("Shift Release!")
         elif e.key() == 16777251:  # Alt/Option
             self.canvasAltKeyState.emit(True)
-            print("Alt/Option Release!")
 
     def keyReleaseEvent(self, e):
         if e.key() == 16777248:  # Shift
             self.canvasShiftKeyState.emit(False)
-            print("Shift Release!")
         elif e.key() == 16777251:  # Alt/Option
             self.canvasAltKeyState.emit(False)
-            print("Alt/Option Release!")
 
     def canvasPressEvent(self, event):
         if QtWidgets.QApplication.keyboardModifiers() == Qt.ShiftModifier:
