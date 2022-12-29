@@ -1499,6 +1499,7 @@ class WiscSIMSTool:
             return
 
         cursor_geom = QgsGeometry.fromPointXY(self.canvasMapTool.getMapCoordinates(e))
+        self.movement_offst = [0, 0]
         radius = 5  # spot_size / 2 / pixel_size (10 / 2 / 1 = 5)
         features = self.get_near_features(layer, cursor_geom, radius)
 
@@ -1510,6 +1511,9 @@ class WiscSIMSTool:
         feature = features[-1]  # select uppermost feature
 
         geom = feature.geometry()
+        geom_p = geom.asPoint()
+        cursor_geom_p = cursor_geom.asPoint()
+        self.movement_offset = [geom_p.x() - cursor_geom_p.x(), geom_p.y() - cursor_geom_p.y()]
         self.f_id = feature.id()
         layer.selectByIds([self.f_id], QgsVectorLayer.SetSelection)
 
@@ -1541,7 +1545,9 @@ class WiscSIMSTool:
         layer = self.get_preset_layer()
         original_geo = [f.geometry() for f in layer.getFeatures() if f.id() == self.f_id][0]
         layer.startEditing()
-        geom = QgsGeometry.fromPointXY(self.canvasMapTool.getMapCoordinates(e))
+        pt = self.canvasMapTool.getMapCoordinates(e)
+        pt.set(pt.x() + self.movement_offset[0], pt.y() + self.movement_offset[1])
+        geom = QgsGeometry.fromPointXY(pt)
         layer.dataProvider().changeGeometryValues({self.f_id: geom})
         layer.commitChanges()
 
@@ -1654,6 +1660,7 @@ class WiscSIMSTool:
 
         # moving preset point
         if self.f_id:
+            pt.set(pt.x() + self.movement_offset[0], pt.y() + self.movement_offset[1])
             geom = QgsGeometry.fromPointXY(pt)
             self.sc_dp.changeGeometryValues({1: geom})
             self.scratchLayer.triggerRepaint()
