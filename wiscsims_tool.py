@@ -1559,6 +1559,7 @@ class WiscSIMSTool:
 
         QGuiApplication.restoreOverrideCursor()
         self.update_undo_btn_state()
+        self.flag_cancel_moving_spot = False
         return
 
     def canvasReleaseWAlt(self, e):
@@ -1676,9 +1677,13 @@ class WiscSIMSTool:
             self.flag_cancel_moving_spot = False
         else:
             # shift key released
-            # cancel moving
-            self.removeScratchLayer()
-            self.flag_cancel_moving_spot = True
+            if self.f_id:
+                # cancel moving
+                self.removeScratchLayer()
+                self.flag_cancel_moving_spot = True
+            else:
+                # after spot movement
+                self.flag_cancel_moving_spot = False
             QGuiApplication.setOverrideCursor(Qt.CrossCursor)
 
     def canvasAltKeyState(self, state):
