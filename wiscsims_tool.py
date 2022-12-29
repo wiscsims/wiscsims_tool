@@ -1478,6 +1478,61 @@ class WiscSIMSTool:
         self.sc_dp = None
         self.scratchLayer = None
 
+    def get_near_features(self, layer, geom, radius=5):
+        features = layer.dataProvider().getFeatures()
+
+        return [f for f in features if geom.distance(f.geometry()) < radius]
+
+    def canvasClickedWShift(self, e):
+        # Start moving preset point
+        # self.f_id = None
+        self.removeScratchLayer()
+        layer = self.get_preset_layer()
+
+        if layer is None:
+            # there is no preset layer
+            QMessageBox.warning(
+                self.window,
+                'No Preset Layer',
+                'Preset layer is not selected.'
+            )
+            return
+
+        cursor_geom = QgsGeometry.fromPointXY(self.canvasMapTool.getMapCoordinates(e))
+        radius = 5  # spot_size / 2 / pixel_size (10 / 2 / 1 = 5)
+        features = self.get_near_features(layer, cursor_geom, radius)
+
+        if len(features) == 0:
+            # do nothing
+            return
+
+        QGuiApplication.setOverrideCursor(Qt.ClosedHandCursor)
+        feature = features[-1]  # select uppermost feature
+
+        geom = feature.geometry()
+        self.f_id = feature.id()
+        layer.selectByIds([self.f_id], QgsVectorLayer.SetSelection)
+
+        # Add/setup moving preview symbol layer
+        self.scratchLayer = QgsVectorLayer("Point", "tmp",  "memory")
+        self.scratchLayer.setFlags(QgsMapLayer.Private)
+        self.scratchLayer.startEditing()
+
+        # Copy and paste symbol sytle from preset layer
+        props = layer.renderer().symbol().symbolLayer(0).properties()
+        self.scratchLayer.renderer().setSymbol(QgsMarkerSymbol.createSimple(props))
+        self.scratchLayer.renderer().symbol().setOpacity(0.5)
+
+        # Add a point as moving point
+        self.f_tmp = QgsFeature()
+        self.f_tmp.setGeometry(geom)
+        self.sc_dp = self.scratchLayer.dataProvider()
+        self.sc_dp.addFeature(self.f_tmp)
+        self.scratchLayer.commitChanges()
+        QgsProject.instance().addMapLayer(self.scratchLayer)
+
+        return
+
     def canvasReleaseWShift(self, e):
         # End move preset point
         if self.f_id is None:
@@ -1505,49 +1560,48 @@ class WiscSIMSTool:
         QGuiApplication.restoreOverrideCursor()
         return
 
-    def canvasClickedWShift(self, e):
-        # Start moving preset point
-        # self.f_id = None
-        self.removeScratchLayer()
+    def canvasReleaseWAlt(self, e):
         layer = self.get_preset_layer()
-
         if layer is None:
-            # there is no preset layer
-            QMessageBox.warning(
-                self.window,
-                'No Preset Layer',
-                'Preset layer is not selected.'
-            )
             return
 
-        QGuiApplication.setOverrideCursor(Qt.ClosedHandCursor)
-        features = QgsMapToolIdentifyFeature(self.canvas).identify(e.x(), e.y(), [layer])
+        cursor_geom = QgsGeometry.fromPointXY(self.canvasMapTool.getMapCoordinates(e))
+        radius = 5  # spot_size / 2 / pixel_size (10 / 2 / 1 = 5)
+        features = self.get_near_features(layer, cursor_geom, radius)
+
         if len(features) == 0:
             return
 
-        geom = features[0].mFeature.geometry()
-        self.f_id = features[0].mFeature.id()
-        layer.selectByIds([self.f_id], QgsVectorLayer.SetSelection)
+        f_id = features[-1].id()  # select uppermost feature
 
-        # Add/setup moving preview symbol layer
-        self.scratchLayer = QgsVectorLayer("Point", "tmp",  "memory")
-        self.scratchLayer.setFlags(QgsMapLayer.Private)
-        self.scratchLayer.startEditing()
+        # f_id = features[0].mFeature.id()
+        layer.selectByIds([f_id], QgsVectorLayer.SetSelection)
+        comment = [f['Comment'] for f in layer.getFeatures(QgsFeatureRequest(f_id))][0]
+        title = "Modifying Comment"
+        label = "Enter New Comment"
+        mode = QLineEdit.Normal
+        default = comment
 
-        # Copy and paste symbol sytle from preset layer
-        props = layer.renderer().symbol().symbolLayer(0).properties()
-        self.scratchLayer.renderer().setSymbol(QgsMarkerSymbol.createSimple(props))
-        self.scratchLayer.renderer().symbol().setOpacity(0.5)
+        # show dailog for new comment
+        new_comment, ok = QInputDialog.getText(self.window, title, label, mode, default)
 
-        # Add a point as moving point
-        self.f_tmp = QgsFeature()
-        self.f_tmp.setGeometry(geom)
-        self.sc_dp = self.scratchLayer.dataProvider()
-        self.sc_dp.addFeature(self.f_tmp)
-        self.scratchLayer.commitChanges()
-        QgsProject.instance().addMapLayer(self.scratchLayer)
+        if ok:
+            field_idx = layer.fields().indexOf('Comment')
+            layer.startEditing()
+            for feat_id in layer.selectedFeatureIds():
+                layer.changeAttributeValue(feat_id, field_idx, new_comment)
+            layer.commitChanges()
 
-        return
+        layer.removeSelection()
+
+        self.undo_preset.append({
+            'type': 'comment',
+            'data': {
+                'id': f_id,
+                'comment': default,
+            }
+        })
+        QGuiApplication.restoreOverrideCursor()
 
     def canvasClicked(self, pt):
 
@@ -1592,45 +1646,6 @@ class WiscSIMSTool:
             return
 
         self.clear_preview_points()
-
-    def canvasReleaseWAlt(self, e):
-        layer = self.get_preset_layer()
-        if layer is None:
-            return
-
-        features = QgsMapToolIdentifyFeature(self.canvas).identify(e.x(), e.y(), [layer])
-
-        if len(features) == 0:
-            return
-
-        f_id = features[0].mFeature.id()
-        layer.selectByIds([f_id], QgsVectorLayer.SetSelection)
-        comment = [f['Comment'] for f in layer.getFeatures(QgsFeatureRequest(f_id))][0]
-        title = "Modifying Comment"
-        label = "Enter New Comment"
-        mode = QLineEdit.Normal
-        default = comment
-
-        # show dailog for new comment
-        new_comment, ok = QInputDialog.getText(self.window, title, label, mode, default)
-
-        if ok:
-            field_idx = layer.fields().indexOf('Comment')
-            layer.startEditing()
-            for feat_id in layer.selectedFeatureIds():
-                layer.changeAttributeValue(feat_id, field_idx, new_comment)
-            layer.commitChanges()
-
-        layer.removeSelection()
-
-        self.undo_preset.append({
-            'type': 'comment',
-            'data': {
-                'id': f_id,
-                'comment': default,
-            }
-        })
-        QGuiApplication.restoreOverrideCursor()
 
     def canvasMoved(self, pt):
 
