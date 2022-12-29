@@ -1558,6 +1558,7 @@ class WiscSIMSTool:
         self.removeScratchLayer()
 
         QGuiApplication.restoreOverrideCursor()
+        self.update_undo_btn_state()
         return
 
     def canvasReleaseWAlt(self, e):
@@ -1602,6 +1603,7 @@ class WiscSIMSTool:
             }
         })
         QGuiApplication.restoreOverrideCursor()
+        self.update_undo_btn_state()
 
     def canvasClicked(self, pt):
 
