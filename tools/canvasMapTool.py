@@ -14,6 +14,7 @@ class CanvasMapTool(QgsMapTool):
     canvasClickedWShift = pyqtSignal('QgsMapMouseEvent')
     canvasReleaseWShift = pyqtSignal('QgsMapMouseEvent')
     canvasReleaseWAlt = pyqtSignal('QgsMapMouseEvent')
+    canvasReleaseWAltShift = pyqtSignal('QgsMapMouseEvent')
     canvasDoubleClicked = pyqtSignal('QgsPointXY')
     canvasClickedRight = pyqtSignal('QgsPointXY')
     canvasMoved = pyqtSignal('QgsPointXY')
@@ -79,7 +80,9 @@ class CanvasMapTool(QgsMapTool):
         if event.button() == Qt.RightButton:
             self.canvasClickedRight.emit(pt)
         else:
-            if QtWidgets.QApplication.keyboardModifiers() == Qt.ShiftModifier:
+            if QtWidgets.QApplication.keyboardModifiers() == (Qt.ShiftModifier | Qt.AltModifier):
+                self.canvasReleaseWAltShift.emit(event)
+            elif QtWidgets.QApplication.keyboardModifiers() == Qt.ShiftModifier:
                 self.canvasReleaseWShift.emit(event)
             elif QtWidgets.QApplication.keyboardModifiers() == Qt.AltModifier:
                 self.canvasReleaseWAlt.emit(event)

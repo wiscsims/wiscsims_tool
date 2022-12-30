@@ -165,6 +165,9 @@ class WiscSIMSTool:
 
         self.flag_cancel_moving_spot = False
 
+        self.state_shift_key = False
+        self.state_alt_key = False
+
     # noinspection PyMethodMayBeStatic
 
     def tr(self, message):
@@ -467,9 +470,16 @@ class WiscSIMSTool:
 
             self.canvas.mapToolSet.connect(self.mapToolChanged)
             self.canvasMapTool.canvasClicked.connect(self.canvasClicked)  # released
+
+            # start moving spot
             self.canvasMapTool.canvasClickedWShift.connect(self.canvasClickedWShift)
+            # finish moving spot
             self.canvasMapTool.canvasReleaseWShift.connect(self.canvasReleaseWShift)
+            # edit comment
             self.canvasMapTool.canvasReleaseWAlt.connect(self.canvasReleaseWAlt)
+            # delete spot
+            self.canvasMapTool.canvasReleaseWAltShift.connect(self.canvasReleaseWAltShift)
+
             self.canvasMapTool.canvasClickedRight.connect(self.canvasClickedRight)
             self.canvasMapTool.canvasDoubleClicked.connect(self.canvasDoubleClicked)
             self.canvasMapTool.canvasMoved.connect(self.canvasMoved)
@@ -1165,6 +1175,8 @@ class WiscSIMSTool:
             self.undo_moving_point(preset_layer, undo_item['data'])
         elif undo_item['type'] == 'comment':
             self.undo_editing_comment(preset_layer, undo_item['data'])
+        elif undo_item['type'] == 'delete':
+            self.undo_delete_preset_point(preset_layer, undo_item['data'])
 
         preset_layer.commitChanges()
         self.update_undo_btn_state()
@@ -1179,6 +1191,19 @@ class WiscSIMSTool:
         fid = data['id']
         geom = data['geom']
         preset_layer.dataProvider().changeGeometryValues({fid: geom})
+
+    def undo_delete_preset_point(self, preset_layer, data):
+        preset_layer.startEditing()
+        fields = preset_layer.fields()
+        feature = QgsFeature()
+        feature.setFields(fields)
+        geom = data['geometry']
+        comment = data['comment']
+        feature.setGeometry(geom)
+        feature['Comment'] = comment
+        dpr = preset_layer.dataProvider()
+        dpr.addFeatures([feature])
+        preset_layer.commitChanges()
 
     def undo_add_preset_point(self, preset_layer, id_list):
         preset_layer.deleteFeatures(id_list)
@@ -1478,7 +1503,11 @@ class WiscSIMSTool:
         self.sc_dp = None
         self.scratchLayer = None
 
-    def get_near_features(self, layer, geom, radius=5):
+    def get_near_features(self, layer, geom):
+        # radius = spot_size / 2 / pixel_size (10 / 2 / 1 = 5)
+        spot_size = self.dockwidget.Spn_Preset_Spot_Size.value()
+        pixel_size = self.dockwidget.Spn_Preset_Pixel_Size.value()
+        radius = spot_size / 2 / pixel_size
         features = layer.dataProvider().getFeatures()
 
         return [f for f in features if geom.distance(f.geometry()) < radius]
@@ -1501,7 +1530,7 @@ class WiscSIMSTool:
         cursor_geom = QgsGeometry.fromPointXY(self.canvasMapTool.getMapCoordinates(e))
         self.movement_offst = [0, 0]
         radius = 5  # spot_size / 2 / pixel_size (10 / 2 / 1 = 5)
-        features = self.get_near_features(layer, cursor_geom, radius)
+        features = self.get_near_features(layer, cursor_geom)
 
         if len(features) == 0:
             # do nothing
@@ -1568,14 +1597,58 @@ class WiscSIMSTool:
         self.flag_cancel_moving_spot = False
         return
 
+    def canvasReleaseWAltShift(self, e):
+        # delete spot
+        layer = self.get_preset_layer()
+        if layer is None:
+            return
+
+        cursor_geom = QgsGeometry.fromPointXY(self.canvasMapTool.getMapCoordinates(e))
+        features = self.get_near_features(layer, cursor_geom)
+
+        if len(features) == 0:
+            return
+
+        f_id = features[-1].id()  # select uppermost feature
+
+        layer.selectByIds([f_id], QgsVectorLayer.SetSelection)
+        f = [f for f in layer.getFeatures(QgsFeatureRequest(f_id))][0]
+        comment = f['Comment']
+        geom = f.geometry()
+        title = "Delete Spot"
+        label = f"Are you sure you want to delete \"{comment}\"?"
+
+        QGuiApplication.restoreOverrideCursor()
+
+        # show dailog for new comment
+        rep_message = QMessageBox.warning(
+            self.window, title, label, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if rep_message == QMessageBox.No:
+            layer.removeSelection()
+            return
+
+        layer.startEditing()
+        layer.deleteFeature(f_id)
+        layer.commitChanges()
+
+        self.undo_preset.append({
+            'type': 'delete',
+            'data': {
+                'id': f_id,
+                'geometry': geom,
+                'comment': comment,
+            }
+        })
+
+        self.update_undo_btn_state()
+
     def canvasReleaseWAlt(self, e):
         layer = self.get_preset_layer()
         if layer is None:
             return
 
         cursor_geom = QgsGeometry.fromPointXY(self.canvasMapTool.getMapCoordinates(e))
-        radius = 5  # spot_size / 2 / pixel_size (10 / 2 / 1 = 5)
-        features = self.get_near_features(layer, cursor_geom, radius)
+        features = self.get_near_features(layer, cursor_geom)
 
         if len(features) == 0:
             return
@@ -1679,10 +1752,16 @@ class WiscSIMSTool:
 
     def canvasShiftKeyState(self, state):
         if state:
-            # shift key pressed
-            QGuiApplication.setOverrideCursor(Qt.OpenHandCursor)
-            self.flag_cancel_moving_spot = False
+            self.state_shift_key = True
+            if not self.state_alt_key:
+                # shift key pressed
+                QGuiApplication.setOverrideCursor(Qt.OpenHandCursor)
+                self.flag_cancel_moving_spot = False
+            else:
+                # shift + alt
+                QGuiApplication.setOverrideCursor(Qt.ForbiddenCursor)
         else:
+            self.state_shift_key = False
             # shift key released
             if self.f_id:
                 # cancel moving
@@ -1691,10 +1770,19 @@ class WiscSIMSTool:
             else:
                 # after spot movement
                 self.flag_cancel_moving_spot = False
-            QGuiApplication.setOverrideCursor(Qt.CrossCursor)
+            # QGuiApplication.setOverrideCursor(Qt.CrossCursor)
+            QGuiApplication.restoreOverrideCursor()
 
     def canvasAltKeyState(self, state):
         if state:
-            QGuiApplication.setOverrideCursor(Qt.PointingHandCursor)
+            self.state_alt_key = True
+            if self.state_shift_key:
+                # shift + alt
+                QGuiApplication.setOverrideCursor(Qt.ForbiddenCursor)
+            else:
+                # alt
+                QGuiApplication.setOverrideCursor(Qt.PointingHandCursor)
         else:
-            QGuiApplication.setOverrideCursor(Qt.CrossCursor)
+            self.state_alt_key = False
+            QGuiApplication.restoreOverrideCursor()
+            # QGuiApplication.setOverrideCursor(Qt.CrossCursor)
