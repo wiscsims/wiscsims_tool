@@ -1716,7 +1716,8 @@ class WiscSIMSTool:
 
         mode = self.get_preset_mode()
         if mode == 'point':
-            self.undo_add_preset_point()
+            self.handle_undo()
+            # self.undo_add_preset_point()
         elif mode == 'line':
             self.preset_line(pt, True)
 
