@@ -2,5 +2,6 @@
     <qresource prefix="/plugins/wiscsims_tool">
         <file>img/icon.png</file>
         <file>img/icon_open_folder.png</file>
+        <file>img/icon_delete.png</file>
     </qresource>
 </RCC>

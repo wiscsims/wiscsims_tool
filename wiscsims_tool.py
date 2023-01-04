@@ -38,13 +38,13 @@ from PyQt5.QtGui import (
     QPixmap,
     QColor,
     QTextDocument,
-    QGuiApplication
+    QGuiApplication,
+    QCursor,
 )
 from PyQt5.QtWidgets import (
     QAction,
     QInputDialog,
-    QFileDialog,
-    QAbstractItemView,
+    QFileDialog,   QAbstractItemView,
     QMessageBox,
     QLineEdit
 )
@@ -64,7 +64,8 @@ from qgis.core import (
     QgsPropertyCollection,
     QgsFeatureRequest,
     QgsMapLayer,
-    QgsWkbTypes
+    QgsWkbTypes,
+    Qgis
 )
 from qgis.gui import (
     QgsRubberBand,
@@ -261,6 +262,7 @@ class WiscSIMSTool:
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
 
         icon_path = ':/plugins/wiscsims_tool/img/icon.png'
+
         self.wiscsims_tool_action = self.add_action(
             icon_path,
             text=self.tr(u'WiscSIMS Tool'),
@@ -1179,6 +1181,9 @@ class WiscSIMSTool:
             self.undo_delete_preset_point(preset_layer, undo_item['data'])
 
         preset_layer.commitChanges()
+
+        self.iface.messageBar().pushMessage(
+            f"Undo: {undo_item['type']}", level=Qgis.Info, duration=1)
         self.update_undo_btn_state()
 
     def undo_editing_comment(self, preset_layer, data):
@@ -1220,6 +1225,7 @@ class WiscSIMSTool:
         if len(self.undo_preset):
             self.dockwidget.Btn_Undo_Add_Preset_Point.setEnabled(True)
         else:
+            self.iface.messageBar().pushMessage("Already at oldest change", level=Qgis.Info, duration=3)
             self.dockwidget.Btn_Undo_Add_Preset_Point.setEnabled(False)
 
     def clear_preview_points(self):
@@ -1618,9 +1624,11 @@ class WiscSIMSTool:
         title = "Delete Spot"
         label = f"Are you sure you want to delete \"{comment}\"?"
 
+        self.state_shift_key = False
+        self.state_alt_key = False
         QGuiApplication.restoreOverrideCursor()
 
-        # show dailog for new comment
+        # show confirmation dailog
         rep_message = QMessageBox.warning(
             self.window, title, label, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if rep_message == QMessageBox.No:
@@ -1751,6 +1759,16 @@ class WiscSIMSTool:
             self.end_point = pt
             self.rb.addPoint(pt, True)
 
+    def set_deleting_spot_cursor(self):
+        cursor = QCursor(
+            QPixmap(":/plugins/wiscsims_tool/img/icon_delete.png"),
+            hotX=0,
+            hotY=0,
+        )
+        QGuiApplication.setOverrideCursor(cursor)
+
+        return True
+
     def canvasShiftKeyState(self, state):
         if state:
             self.state_shift_key = True
@@ -1760,7 +1778,7 @@ class WiscSIMSTool:
                 self.flag_cancel_moving_spot = False
             else:
                 # shift + alt
-                QGuiApplication.setOverrideCursor(Qt.ForbiddenCursor)
+                self.set_deleting_spot_cursor()
         else:
             self.state_shift_key = False
             # shift key released
@@ -1771,19 +1789,19 @@ class WiscSIMSTool:
             else:
                 # after spot movement
                 self.flag_cancel_moving_spot = False
-            # QGuiApplication.setOverrideCursor(Qt.CrossCursor)
-            QGuiApplication.restoreOverrideCursor()
+            # QGuiApplication.restoreOverrideCursor()
+            QGuiApplication.setOverrideCursor(Qt.CrossCursor)
 
     def canvasAltKeyState(self, state):
         if state:
             self.state_alt_key = True
             if self.state_shift_key:
                 # shift + alt
-                QGuiApplication.setOverrideCursor(Qt.ForbiddenCursor)
+                self.set_deleting_spot_cursor()
             else:
                 # alt
                 QGuiApplication.setOverrideCursor(Qt.PointingHandCursor)
         else:
             self.state_alt_key = False
-            QGuiApplication.restoreOverrideCursor()
-            # QGuiApplication.setOverrideCursor(Qt.CrossCursor)
+            # QGuiApplication.restoreOverrideCursor()
+            QGuiApplication.setOverrideCursor(Qt.CrossCursor)
