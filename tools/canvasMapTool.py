@@ -22,6 +22,7 @@ class CanvasMapTool(QgsMapTool):
     # Key Event
     canvasShiftKeyState = pyqtSignal('bool')
     canvasAltKeyState = pyqtSignal('bool')
+    canvasEscapeKeyState = pyqtSignal('bool')
 
     def __init__(self, canvas, toolbarBtn):
         QgsMapTool.__init__(self, canvas)
@@ -57,6 +58,8 @@ class CanvasMapTool(QgsMapTool):
             self.canvasShiftKeyState.emit(True)
         elif e.key() == 16777251:  # Alt/Option
             self.canvasAltKeyState.emit(True)
+        elif e.key() == Qt.Key_Escape:
+            self.canvasEscapeKeyState.emit(True)
 
     def keyReleaseEvent(self, e):
         if e.key() == 16777248:  # Shift

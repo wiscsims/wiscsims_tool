@@ -495,6 +495,7 @@ class WiscSIMSTool:
 
             self.canvasMapTool.canvasShiftKeyState.connect(self.canvasShiftKeyState)
             self.canvasMapTool.canvasAltKeyState.connect(self.canvasAltKeyState)
+            self.canvasMapTool.canvasEscapeKeyState.connect(self.canvasEscapeKeyState)
 
             self.canvas.setMapTool(self.canvasMapTool)
         else:
@@ -1127,6 +1128,8 @@ class WiscSIMSTool:
             self.dockwidget.Spn_Current_Number.setValue(
                 self.dockwidget.Spn_Current_Number.value() + len(self.preset_points))
         self.init_rubber_bands()
+
+        self.clear_preview_spots()
 
     def connect_controls(self):
         pass
@@ -1840,7 +1843,7 @@ class WiscSIMSTool:
         if mode == 'point':
             self.handle_undo()
             # self.undo_add_preset_point()
-        elif mode == 'line':
+        elif mode == 'line' and self.start_point:
             self.preset_line(pt, True)
 
     def canvasDoubleClicked(self, pt):
@@ -1919,3 +1922,12 @@ class WiscSIMSTool:
             self.state_alt_key = False
             # QGuiApplication.restoreOverrideCursor()
             QGuiApplication.setOverrideCursor(Qt.CrossCursor)
+
+    def canvasEscapeKeyState(self, state):
+        self.clear_preview_spots()
+
+    def clear_preview_spots(self):
+        self.start_point = None
+        self.end_point = None
+        self.init_scratch_layer()
+        self.clear_preview_points()
