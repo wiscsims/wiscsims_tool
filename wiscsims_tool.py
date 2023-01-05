@@ -1060,6 +1060,12 @@ class WiscSIMSTool:
         layer.renderer().symbol().symbolLayer(0).setSize(1.0 * self.scale * size)
         layer.triggerRepaint()
 
+        current_mode = self.get_preset_mode()
+        if current_mode == "grid":
+            self.update_grid()
+        elif current_mode == "line":
+            self.update_line()
+
     def reset_current_number(self, btn):
         # hit reset button => btn = bool
         # comment changed => btn = unicode
@@ -1658,7 +1664,6 @@ class WiscSIMSTool:
 
         cursor_geom = QgsGeometry.fromPointXY(self.canvasMapTool.getMapCoordinates(e))
         self.movement_offst = [0, 0]
-        radius = 5  # spot_size / 2 / pixel_size (10 / 2 / 1 = 5)
         features = self.get_near_features(layer, cursor_geom)
 
         if len(features) == 0:
