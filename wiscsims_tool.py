@@ -1875,6 +1875,8 @@ class WiscSIMSTool:
                 self.rb.removeLastPoint()
             self.end_point = pt
             self.rb.addPoint(pt, True)
+            length = self.get_distance(self.start_point, self.end_point) / self.scale
+            self.dockwidget.Txt_Line_Length.setText('{:.2f}'.format(length))
 
     def set_deleting_spot_cursor(self):
         cursor = QCursor(
