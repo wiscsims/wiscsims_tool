@@ -340,8 +340,7 @@ class WiscSIMSTool:
             self.dockwidget = WiscSIMSToolDockWidget()
             icon_open_folder = QPixmap(os.path.join(plugin_path, 'img', 'icon_open_folder.png'))
             # icon_open_folder = os.path.join(plugin_path, 'img', 'icon_open_folder.png')
-            self.dockwidget.Btn_Select_Workbook.setIcon(
-                QIcon(icon_open_folder))
+            self.dockwidget.Btn_Select_Workbook.setIcon(QIcon(icon_open_folder))
             self.dockwidget.Btn_Select_Workbook.setIconSize(QSize(16, 16))
 
             self.init_alignmentTable()
@@ -1131,6 +1130,8 @@ class WiscSIMSTool:
 
         self.clear_preview_spots()
 
+        # self.update_add_points_btn_status(False)
+
     def connect_controls(self):
         pass
 
@@ -1262,6 +1263,13 @@ class WiscSIMSTool:
             self.init_rubber_bands()
             self.init_annotation()
 
+    def clear_preview_spots(self):
+        # clear/init all preview related items
+        self.start_point = None
+        self.end_point = None
+        self.init_scratch_layer()
+        self.clear_preview_points()
+
     def init_rb(self):
         # Line
         if self.rb.size() > 0:
@@ -1285,7 +1293,7 @@ class WiscSIMSTool:
         self.init_annotation()
 
     def init_rb_s(self):
-        # Starting point of line prset
+        # Starting point of line preset
         if self.rb_s.size() > 0:
             self.rb_s.reset()
         self.rb_s = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
@@ -1362,10 +1370,39 @@ class WiscSIMSTool:
         self.fields = None
         self.scratchLayer = None
 
+        self.update_add_points_btn_status(False)
+
     def add_features_to_scratch_layer(self, features):
         self.sc_dp.addFeatures(features)
         self.scratchLayer.commitChanges()
         self.scratchLayer.triggerRepaint()
+
+    def update_add_points_btn_status(self, status):
+        mode = self.get_preset_mode()
+        btns = []
+
+        if mode == 'line':
+            btns.append(self.dockwidget.Btn_Line_Add_Points)
+        elif mode == 'grid':
+            btns.append(self.dockwidget.Btn_Grid_Add_Points)
+        else:
+            btns.append(self.dockwidget.Btn_Line_Add_Points)
+            btns.append(self.dockwidget.Btn_Grid_Add_Points)
+
+        if status:  # Activate
+            fg_color = "rgb(255, 255, 255)"
+            bg_color = "rgb(255, 49, 49)"
+        else:       # Deactivate
+            fg_color = "rgb(128, 128, 128)"
+            bg_color = "rgb(192, 192, 192)"
+
+        styles = (f"background-color: {bg_color};"
+                  f"color: {fg_color};"
+                  "font-weight: bold;")
+
+        for btn in btns:
+            btn.setStyleSheet(styles)
+            btn.setEnabled(status)
 
     def preset_line(self, pt, line_end=False):
         if line_end:
@@ -1375,7 +1412,7 @@ class WiscSIMSTool:
                 self.init_scratch_layer()
             self.end_point = pt
             # self.rb.addPoint(pt, True)
-            self.draw_line_points()
+            self.draw_line_points()  # preview spots
             self.line_in_progress = False
         else:  # start line drawing
             self.init_rubber_bands()
@@ -1438,6 +1475,7 @@ class WiscSIMSTool:
         self.rb_s.reset()
         # self.init_rb_s()
         self.canvas.refresh()
+        self.update_add_points_btn_status(True)
 
     def draw_line_points_old(self):
         length = self.get_distance(self.start_point, self.end_point) / self.scale
@@ -1517,6 +1555,8 @@ class WiscSIMSTool:
 
         self.add_features_to_scratch_layer(features)
         self.canvas.refresh()
+        self.update_add_points_btn_status(True)
+        # self.dockwidget.Btn_Grid_Add_Points.setEnabled(True)
 
     def add_rb_label(self, comment, pt):
         # layer = self.iface.activeLayer()
@@ -1579,7 +1619,8 @@ class WiscSIMSTool:
         return math.atan2((pt2[1] - pt1[1]), (pt2[0] - pt1[0]))
 
     def preset_tool_changed(self, tool_index):
-        self.clear_preview_points()
+        self.clear_preview_points()  # rubber_bands
+        self.clear_preview_spots()   # scratch layer
 
     def set_value_without_signal(self, target, value):
         target.blockSignals(True)
@@ -1632,6 +1673,7 @@ class WiscSIMSTool:
         try:
             self.unsetMapTool()
             self.clear_preview_points()
+            self.remove_scratch_layer()
             self.wiscsims_tool_action.setChecked(False)
             self.dockwidget.setEnabled(False)
         except Exception:
@@ -1819,6 +1861,7 @@ class WiscSIMSTool:
             return
 
         if self.get_preset_layer() is None:
+            # preset layer has not been selected yet
             return
 
         if self.get_current_tool() != 'preset':
@@ -1845,6 +1888,7 @@ class WiscSIMSTool:
             # self.undo_add_preset_point()
         elif mode == 'line' and self.start_point:
             self.preset_line(pt, True)
+            # activate add_preset_point button
 
     def canvasDoubleClicked(self, pt):
         if self.get_preset_layer() is None:
@@ -1854,6 +1898,7 @@ class WiscSIMSTool:
             return
 
         self.clear_preview_points()
+        self.remove_scratch_layer()
 
     def canvasMoved(self, pt):
 
@@ -1865,6 +1910,7 @@ class WiscSIMSTool:
             self.scratchLayer.triggerRepaint()
             return
 
+        # Active tab => Import
         if self.get_current_tool() != 'preset':
             return
 
@@ -1875,6 +1921,8 @@ class WiscSIMSTool:
                 self.rb.removeLastPoint()
             self.end_point = pt
             self.rb.addPoint(pt, True)
+
+            # update Line length
             length = self.get_distance(self.start_point, self.end_point) / self.scale
             self.dockwidget.Txt_Line_Length.setText('{:.2f}'.format(length))
 
@@ -1927,9 +1975,3 @@ class WiscSIMSTool:
 
     def canvasEscapeKeyState(self, state):
         self.clear_preview_spots()
-
-    def clear_preview_spots(self):
-        self.start_point = None
-        self.end_point = None
-        self.init_scratch_layer()
-        self.clear_preview_points()
