@@ -5,6 +5,7 @@ from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QTextDocument
 from qgis.core import QgsMarkerSymbol, QgsTextAnnotation, QgsMargins, QgsFillSymbol
 from qgis.gui import QgsRubberBand, QgsMapCanvasAnnotationItem
 
+
 class AlignmentModel(QStandardItemModel):
     """docstring for AlignmentModel"""
 
@@ -39,7 +40,8 @@ class AlignmentModel(QStandardItemModel):
         return sum([self.getCheckStatus(r) for r in range(n)])
 
     def addNewRefPoints(self, used, refname, pt1, pt2, scale, offset, rotation):
-        return self.addRefPoints(used, refname, pt1, pt2, scale, offset, rotation, import_from_json=False)
+        return self.addRefPoints(
+            used, refname, pt1, pt2, scale, offset, rotation, import_from_json=False)
 
     def addRefPoints(self, used, refname, pt1, pt2, scale, offset, rotation, import_from_json=True):
         newRow = [QStandardItem() for _ in range(self.n)]
@@ -211,6 +213,8 @@ class AlignmentModel(QStandardItemModel):
 """""""""""""""""""""""""""""""""""""""
 *** Alignment Marker Class
 """""""""""""""""""""""""""""""""""""""
+
+
 class AlignmentMarker():
     """docstring for AlignmentMarker"""
 
@@ -260,7 +264,8 @@ class AlignmentMarker():
         # frm.createSimple({'color': 'black'})
         frm.setColor(QColor("#f00"))
         # frm.setOpacity(0.5)
-        html = '<body><div style="backround-color: #f00; color: #fff; font-weight: bold">{}</div></body>'
+        html = ('<body><div style="backround-color: #f00;'
+                ' color: #fff; font-weight: bold">{}</div></body>')
         a = QgsTextAnnotation()
         c = QTextDocument()
         c.setHtml(html.format(name))

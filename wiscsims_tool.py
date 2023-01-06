@@ -1481,38 +1481,6 @@ class WiscSIMSTool:
         self.canvas.refresh()
         self.update_add_points_btn_status(True)
 
-    def draw_line_points_old(self):
-        length = self.get_distance(self.start_point, self.end_point) / self.scale
-        self.dockwidget.Txt_Line_Length.setText('{:.2f}'.format(length))
-        if self.dockwidget.Opt_Line_Step_Size.isChecked():
-            step = self.dockwidget.Spn_Line_Step_Size.value()
-            n_spots = int(length / step) + 1
-            self.set_value_without_signal(
-                self.dockwidget.Spn_Line_N_Spot, n_spots)
-        else:
-            n_spots = self.dockwidget.Spn_Line_N_Spot.value()
-            step = length / (n_spots - 1)
-            self.set_value_without_signal(
-                self.dockwidget.Spn_Line_Step_Size, step)
-        angle = self.get_angle(self.start_point, self.end_point)
-        cos = step * math.cos(angle)
-        sin = step * math.sin(angle)
-        i, x, y = 0, 0, 0
-        pt = QgsPointXY(x, y)
-        for n in range(n_spots):
-            x = self.start_point[0] + cos * n * self.scale
-            y = self.start_point[1] + sin * n * self.scale
-            comment = self.get_comment(i)
-            pt = QgsPointXY(x, y)
-            self.rb2.addPoint(pt, False)
-            self.add_rb_label(comment, pt)
-            self.preset_points.append([comment, x, y])
-            i += 1
-        self.rb2.addPoint(pt, True)
-        self.rb2.removeLastPoint()
-        self.init_rb_s()
-        self.canvas.refresh()
-
     def preset_grid(self, pt):
         self.init_rubber_bands()
         self.start_point = pt
@@ -1554,13 +1522,10 @@ class WiscSIMSTool:
             features.append(feature)
 
             i += 1
-            # if i == 1:
-            #     self.rb_s.addPoint(pt, True)
 
         self.add_features_to_scratch_layer(features)
-        self.canvas.refresh()
         self.update_add_points_btn_status(True)
-        # self.dockwidget.Btn_Grid_Add_Points.setEnabled(True)
+        self.canvas.refresh()
 
     def add_rb_label(self, comment, pt):
         # layer = self.iface.activeLayer()
