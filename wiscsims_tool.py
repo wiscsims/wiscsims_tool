@@ -1329,8 +1329,10 @@ class WiscSIMSTool:
         self.scratchLayer.renderer().setSymbol(QgsMarkerSymbol.createSimple(props))
 
         self.sc_dp = self.scratchLayer.dataProvider()
+        # add "Comment" field to the attribute table
         self.sc_dp.addAttributes([QgsField('Comment', QVariant.String)])
 
+        # Label formatting: "Comment" field, diplay all comments, drop shodow, buffer (white)
         settings = QgsPalLayerSettings()
         settings.enabled = True
         settings.fieldName = "Comment"
@@ -1343,12 +1345,14 @@ class WiscSIMSTool:
         self.scratchLayer.setLabeling(QgsVectorLayerSimpleLabeling(settings))
         self.scratchLayer.commitChanges()
 
+        # add drop shadow and color to the spot preview
         pe_stack = QgsEffectStack()
         pe_stack.appendEffect(QgsDropShadowEffect())
         pe_stack.appendEffect(QgsDrawSourceEffect())
-        # self.scratchLayer.renderer().symbol().setOpacity(0.3)
-        self.scratchLayer.renderer().symbol().setColor(QColor(20, 255, 20, 60))
+        if self.get_preset_mode() != "point":
+            self.scratchLayer.renderer().symbol().setColor(QColor(20, 255, 20, 60))
         self.scratchLayer.renderer().setPaintEffect(pe_stack)
+
         self.fields = self.scratchLayer.fields()
 
         self.scratchLayer.triggerRepaint()
@@ -1725,8 +1729,11 @@ class WiscSIMSTool:
         self.feature_id = feature.id()
         layer.selectByIds([self.feature_id], QgsVectorLayer.SetSelection)
 
+        comment = [f['Comment'] for f in layer.getFeatures(QgsFeatureRequest(self.feature_id))][0]
         tmp_feature = QgsFeature()
         tmp_feature.setGeometry(geom)
+        tmp_feature.setFields(self.fields)
+        tmp_feature['Comment'] = comment
         self.add_features_to_scratch_layer([tmp_feature])
 
         return
