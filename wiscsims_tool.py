@@ -802,7 +802,6 @@ class WiscSIMSTool:
                 scale = self.get_average(self.model.getScales())
             else:
                 scale = 1.0
-                # print 'No alignment'
             # scale = self.ct[self.getNavAlign()].scale / 1.0
             props['size'] = str(spotSize / scale)
             mySimpleSymbol = QgsMarkerSymbol.createSimple(props)
@@ -1340,6 +1339,8 @@ class WiscSIMSTool:
         coll = QgsPropertyCollection('preset')
         coll.setProperty(settings.ShadowDraw, True)
         coll.setProperty(settings.BufferDraw, True)
+        coll.setProperty(settings.Color, QColor(255, 255, 255))
+        coll.setProperty(settings.BufferColor, QColor(0, 0, 0))
         settings.setDataDefinedProperties(coll)
         self.scratchLayer.setLabelsEnabled(True)
         self.scratchLayer.setLabeling(QgsVectorLayerSimpleLabeling(settings))
@@ -1350,7 +1351,10 @@ class WiscSIMSTool:
         pe_stack.appendEffect(QgsDropShadowEffect())
         pe_stack.appendEffect(QgsDrawSourceEffect())
         if self.get_preset_mode() != "point":
-            self.scratchLayer.renderer().symbol().setColor(QColor(20, 255, 20, 60))
+            symbol = self.scratchLayer.renderer().symbol()
+            symbol.symbolLayer(0).setStrokeColor(QColor(255, 255, 255))
+            self.scratchLayer.renderer().symbol().setColor(QColor(64, 143, 176))
+
         self.scratchLayer.renderer().setPaintEffect(pe_stack)
 
         self.fields = self.scratchLayer.fields()
@@ -1410,10 +1414,10 @@ class WiscSIMSTool:
 
     def preset_line(self, pt, line_end=False):
         if line_end:
-            if self.end_point is not None:
-                self.rb.removeLastPoint()
-                self.init_rb2()
-                self.init_scratch_layer()
+            # if self.end_point is not None:
+            #     self.rb.removeLastPoint()
+            #     self.init_rb2()
+            #     self.init_scratch_layer()
             self.end_point = pt
             # self.rb.addPoint(pt, True)
             self.draw_line_points()  # preview spots
@@ -1436,18 +1440,21 @@ class WiscSIMSTool:
             self.rb_s.addPoint(self.start_point, True)
 
     def draw_line_points(self):
+        # update line length in the widget
         length = self.get_distance(self.start_point, self.end_point) / self.scale
         self.dockwidget.Txt_Line_Length.setText('{:.2f}'.format(length))
+
         if self.dockwidget.Opt_Line_Step_Size.isChecked():
+            # use step size
             step = self.dockwidget.Spn_Line_Step_Size.value()
             n_spots = int(length / step) + 1
-            self.set_value_without_signal(
-                self.dockwidget.Spn_Line_N_Spot, n_spots)
+            self.set_value_without_signal(self.dockwidget.Spn_Line_N_Spot, n_spots)
         else:
+            # use number of spots
             n_spots = self.dockwidget.Spn_Line_N_Spot.value()
             step = length / (n_spots - 1)
-            self.set_value_without_signal(
-                self.dockwidget.Spn_Line_Step_Size, step)
+            self.set_value_without_signal(self.dockwidget.Spn_Line_Step_Size, step)
+
         angle = self.get_angle(self.start_point, self.end_point)
         cos = step * math.cos(angle)
         sin = step * math.sin(angle)
@@ -1475,9 +1482,7 @@ class WiscSIMSTool:
 
         self.add_features_to_scratch_layer(features)
 
-        # self.rb2.addPoint(pt, True)
         self.rb_s.reset()
-        # self.init_rb_s()
         self.canvas.refresh()
         self.update_add_points_btn_status(True)
 
@@ -1826,7 +1831,8 @@ class WiscSIMSTool:
 
     def canvasClicked(self, pt):
 
-        self.remove_scratch_layer()
+        # self.remove_scratch_layer()
+        self.init_scratch_layer()
 
         if self.flag_cancel_moving_spot:
             self.flag_cancel_moving_spot = False
@@ -1843,7 +1849,16 @@ class WiscSIMSTool:
         if mode == 'point':
             self.add_preset_point(pt)
         elif mode == 'line':
-            self.preset_line(pt)
+            if self.start_point and self.end_point is None:
+                self.preset_line(pt, True)
+            else:
+                self.start_point = None
+                self.end_point = None
+                # elif self.start_point and self.end_point:
+                self.preset_line(pt)
+            # else:
+                pass
+                #
         elif mode == 'grid':
             self.preset_grid(pt)
 
@@ -1886,17 +1901,29 @@ class WiscSIMSTool:
         if self.get_current_tool() != 'preset':
             return
 
-        # adding preset end point
-        mode = self.get_preset_mode()
-        if self.dockwidget.Tab_Tool.currentIndex() == 1 and mode == 'line' and self.line_in_progress:
-            if self.end_point:
-                self.rb.removeLastPoint()
-            self.end_point = pt
+        if self.get_preset_mode() != 'line':
+            return
+
+        # line mode: process of end-point selection
+        if self.line_in_progress:
+            # drawing a tie line between start-point and cursor
+            self.rb.removeLastPoint()  # remove old end-point
             self.rb.addPoint(pt, True)
 
             # update Line length
-            length = self.get_distance(self.start_point, self.end_point) / self.scale
-            self.dockwidget.Txt_Line_Length.setText('{:.2f}'.format(length))
+            if pt is not None:
+                length = self.get_distance(self.start_point, pt) / self.scale
+                self.dockwidget.Txt_Line_Length.setText('{:.2f}'.format(length))
+
+        # if self.dockwidget.Tab_Tool.currentIndex() == 1 and mode == 'line' and self.line_in_progress:
+        #     if self.end_point:
+        #         self.rb.removeLastPoint()
+        #     self.end_point = pt
+        #     self.rb.addPoint(pt, True)
+        #
+        #     # update Line length
+        #     length = self.get_distance(self.start_point, self.end_point) / self.scale
+        #     self.dockwidget.Txt_Line_Length.setText('{:.2f}'.format(length))
 
     def set_deleting_spot_cursor(self):
         cursor = QCursor(
