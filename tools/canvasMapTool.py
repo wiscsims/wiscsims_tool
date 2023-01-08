@@ -23,6 +23,7 @@ class CanvasMapTool(QgsMapTool):
     canvasShiftKeyState = pyqtSignal('bool')
     canvasAltKeyState = pyqtSignal('bool')
     canvasEscapeKeyState = pyqtSignal('bool')
+    canvasUndoKey = pyqtSignal()
 
     def __init__(self, canvas, toolbarBtn):
         QgsMapTool.__init__(self, canvas)
@@ -59,7 +60,12 @@ class CanvasMapTool(QgsMapTool):
         elif e.key() == 16777251:  # Alt/Option
             self.canvasAltKeyState.emit(True)
         elif e.key() == Qt.Key_Escape:
+            # Clear preview spots
             self.canvasEscapeKeyState.emit(True)
+        elif QtWidgets.QApplication.keyboardModifiers() == Qt.ControlModifier and e.key() == Qt.Key_Z:
+            # Undo
+            self.canvasUndoKey.emit()
+        return
 
     def keyReleaseEvent(self, e):
         if e.key() == 16777248:  # Shift
@@ -70,7 +76,7 @@ class CanvasMapTool(QgsMapTool):
     def canvasPressEvent(self, event):
         if QtWidgets.QApplication.keyboardModifiers() == Qt.ShiftModifier:
             self.canvasClickedWShift.emit(event)
-        return
+            return
 
     def canvasMoveEvent(self, event):
         pt = self.getMapCoordinates(event)

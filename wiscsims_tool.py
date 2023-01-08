@@ -495,6 +495,7 @@ class WiscSIMSTool:
             self.canvasMapTool.canvasShiftKeyState.connect(self.canvasShiftKeyState)
             self.canvasMapTool.canvasAltKeyState.connect(self.canvasAltKeyState)
             self.canvasMapTool.canvasEscapeKeyState.connect(self.canvasEscapeKeyState)
+            self.canvasMapTool.canvasUndoKey.connect(self.handle_undo)
 
             self.canvas.setMapTool(self.canvasMapTool)
         else:
