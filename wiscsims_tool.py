@@ -31,7 +31,8 @@ from PyQt5.QtCore import (
     QModelIndex,
     QVariant,
     QSizeF,
-    QPointF
+    QPointF,
+    QRect,
 )
 from PyQt5.QtGui import (
     QIcon,
@@ -44,9 +45,11 @@ from PyQt5.QtGui import (
 from PyQt5.QtWidgets import (
     QAction,
     QInputDialog,
-    QFileDialog,   QAbstractItemView,
+    QFileDialog,
+    QAbstractItemView,
     QMessageBox,
-    QLineEdit
+    QLineEdit,
+    QToolTip,
 )
 from qgis.core import (
     QgsProject,
@@ -77,7 +80,8 @@ from qgis.gui import (
     QgsRubberBand,
     QgsMapCanvasAnnotationItem,
     QgsMapToolIdentifyFeature,
-    QgsMapToolIdentify
+    QgsMapToolIdentify,
+    QgsMapMouseEvent,
 )
 
 # Initialize Qt resources from file resources.py
@@ -1386,6 +1390,26 @@ class WiscSIMSTool:
         self.scratchLayer.commitChanges()
         self.scratchLayer.triggerRepaint()
 
+    def show_tooltip(self, situ):
+        self.hide_tooltip()
+
+        pos = QCursor.pos()
+
+        if situ == "line-start":
+            txt = "🌱 Click end-point to see preview spots!"
+        elif situ == "line-end":
+            txt = (
+                "🌱 If the preview spots look good,\n"
+                "🌱 click the \"Add Points\" button➡️"
+            )
+        else:
+            txt = ""
+        QToolTip.showText(pos, txt, self.canvas, QRect(pos.x(), pos.y(), 200, 200), 30000)
+        # QToolTip.showText(pos, txt, self.window)
+
+    def hide_tooltip(self):
+        QToolTip.hideText()
+
     def update_add_points_btn_status(self, status):
         mode = self.get_preset_mode()
         btns = []
@@ -1851,8 +1875,12 @@ class WiscSIMSTool:
             self.add_preset_point(pt)
         elif mode == 'line':
             if self.start_point and self.end_point is None:
+                self.show_tooltip("line-end")
+                # select end-point
                 self.preset_line(pt, True)
             else:
+                # select start-point
+                self.show_tooltip("line-start")
                 self.start_point = None
                 self.end_point = None
                 # elif self.start_point and self.end_point:
@@ -1889,7 +1917,6 @@ class WiscSIMSTool:
         self.remove_scratch_layer()
 
     def canvasMoved(self, pt):
-
         # moving preset point
         if self.feature_id:
             pt.set(pt.x() + self.movement_offset[0], pt.y() + self.movement_offset[1])
