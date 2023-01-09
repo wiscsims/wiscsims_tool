@@ -1714,7 +1714,7 @@ class WiscSIMSTool:
             # do nothing
             return
 
-        QGuiApplication.setOverrideCursor(Qt.ClosedHandCursor)
+        self.canvas.setCursor(Qt.ClosedHandCursor)
         feature = features[-1]  # select uppermost feature
 
         geom = feature.geometry()
@@ -1959,22 +1959,21 @@ class WiscSIMSTool:
             hotX=0,
             hotY=0,
         )
-        QGuiApplication.setOverrideCursor(cursor)
+        self.canvas.setCursor(cursor)
 
         return True
 
     def canvasShiftKeyState(self, state):
+        self.state_shift_key = state
         if state:
-            self.state_shift_key = True
             if not self.state_alt_key:
                 # shift key pressed
-                QGuiApplication.setOverrideCursor(Qt.OpenHandCursor)
+                self.canvas.setCursor(Qt.OpenHandCursor)
                 self.flag_cancel_moving_spot = False
             else:
                 # shift + alt
                 self.set_deleting_spot_cursor()
         else:
-            self.state_shift_key = False
             # shift key released
             if self.feature_id:
                 # cancel moving
@@ -1984,7 +1983,7 @@ class WiscSIMSTool:
                 # after spot movement
                 self.flag_cancel_moving_spot = False
             # QGuiApplication.restoreOverrideCursor()
-            QGuiApplication.setOverrideCursor(Qt.CrossCursor)
+            self.canvas.setCursor(Qt.CrossCursor)
 
     def canvasAltKeyState(self, state):
         if state:
@@ -1994,11 +1993,13 @@ class WiscSIMSTool:
                 self.set_deleting_spot_cursor()
             else:
                 # alt
-                QGuiApplication.setOverrideCursor(Qt.PointingHandCursor)
+                self.canvas.setCursor(Qt.PointingHandCursor)
         else:
             self.state_alt_key = False
             # QGuiApplication.restoreOverrideCursor()
             QGuiApplication.setOverrideCursor(Qt.CrossCursor)
+            self.canvas.setCursor(Qt.CrossCursor)  #
+
 
     def canvasEscapeKeyState(self, state):
         self.clear_preview_spots()
