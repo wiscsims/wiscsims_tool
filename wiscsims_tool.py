@@ -72,16 +72,16 @@ from qgis.core import (
     QgsDropShadowEffect,
     QgsDrawSourceEffect,
     # QgsInnerShadowEffect,
-    QgsSimpleFillSymbolLayer,
-    QgsSimpleMarkerSymbolLayer,
+    # QgsSimpleFillSymbolLayer,
+    # QgsSimpleMarkerSymbolLayer,
     Qgis
 )
 from qgis.gui import (
     QgsRubberBand,
     QgsMapCanvasAnnotationItem,
-    QgsMapToolIdentifyFeature,
-    QgsMapToolIdentify,
-    QgsMapMouseEvent,
+    # QgsMapToolIdentifyFeature,
+    # QgsMapToolIdentify,
+    # QgsMapMouseEvent,
 )
 
 # Initialize Qt resources from file resources.py
@@ -178,7 +178,9 @@ class WiscSIMSTool:
         self.flag_cancel_moving_spot = False
 
         self.state_shift_key = False
+        self.state_ctrl_key = False
         self.state_alt_key = False
+        self.mouse_move_counter = 0
 
     # noinspection PyMethodMayBeStatic
 
@@ -303,7 +305,7 @@ class WiscSIMSTool:
 
         self.unsetMapTool()
 
-        self.clear_preview_points()
+        self.clear_preview_spots()
 
         self.pluginIsActive = False
 
@@ -497,6 +499,7 @@ class WiscSIMSTool:
             self.canvasMapTool.canvasMoved.connect(self.canvasMoved)
 
             self.canvasMapTool.canvasShiftKeyState.connect(self.canvasShiftKeyState)
+            self.canvasMapTool.canvasCtrlKeyState.connect(self.canvasCtrlkeyState)
             self.canvasMapTool.canvasAltKeyState.connect(self.canvasAltKeyState)
             self.canvasMapTool.canvasEscapeKeyState.connect(self.canvasEscapeKeyState)
             self.canvasMapTool.canvasUndoKey.connect(self.handle_undo)
@@ -1267,11 +1270,16 @@ class WiscSIMSTool:
             self.init_rubber_bands()
             self.init_annotation()
 
-    def clear_preview_spots(self):
+    def clear_preview_spots(self, init=True):
         # clear/init all preview related items
         self.start_point = None
         self.end_point = None
-        self.init_scratch_layer()
+        self.feature_id = None
+        self.line_in_progress = False
+        if init:
+            self.init_scratch_layer()
+        else:
+            self.remove_scratch_layer()
         self.clear_preview_points()
 
     def init_rb(self):
@@ -1371,6 +1379,8 @@ class WiscSIMSTool:
         if self.scratchLayer is None:
             return
 
+        # self.clear_preview_points()
+
         layer = self.get_preset_layer()
         layer.removeSelection()
 
@@ -1466,8 +1476,9 @@ class WiscSIMSTool:
 
     def draw_line_points(self):
         # update line length in the widget
-        length = self.get_distance(self.start_point, self.end_point) / self.scale
-        self.dockwidget.Txt_Line_Length.setText('{:.2f}'.format(length))
+        length = self.update_line_length(self.end_point)
+        # length = self.get_distance(self.start_point, self.end_point) / self.scale
+        # self.dockwidget.Txt_Line_Length.setText('{:.2f}'.format(length))
 
         if self.dockwidget.Opt_Line_Step_Size.isChecked():
             # use step size
@@ -1618,7 +1629,7 @@ class WiscSIMSTool:
         return math.atan2((pt2[1] - pt1[1]), (pt2[0] - pt1[0]))
 
     def preset_tool_changed(self, tool_index):
-        self.clear_preview_points()  # rubber_bands
+        # self.clear_preview_points()  # rubber_bands
         self.clear_preview_spots()   # scratch layer
 
     def set_value_without_signal(self, target, value):
@@ -1659,6 +1670,14 @@ class WiscSIMSTool:
             self.update_line()
         self.set_spot_size(self.dockwidget.Spn_Preset_Spot_Size.value())
 
+    def update_line_length(self, pt=None):
+        if pt is None:
+            length = 0
+        else:
+            length = self.get_distance(self.start_point, pt) / self.scale
+        self.dockwidget.Txt_Line_Length.setText(f"{length:.1f}")
+        return length
+
     """
     Canvas related
     """
@@ -1671,7 +1690,7 @@ class WiscSIMSTool:
 
         try:
             self.unsetMapTool()
-            self.clear_preview_points()
+            # self.clear_preview_points()
             self.remove_scratch_layer()
             self.wiscsims_tool_action.setChecked(False)
             self.dockwidget.setEnabled(False)
@@ -1857,20 +1876,23 @@ class WiscSIMSTool:
     def canvasClicked(self, pt):
 
         # self.remove_scratch_layer()
+        self.clear_preview_points()
         self.init_scratch_layer()
 
-        if self.flag_cancel_moving_spot:
-            self.flag_cancel_moving_spot = False
+        if self.get_current_tool() != 'preset':
             return
 
         if self.get_preset_layer() is None:
             # preset layer has not been selected yet
             return
 
-        if self.get_current_tool() != 'preset':
+        if self.flag_cancel_moving_spot:
+            self.flag_cancel_moving_spot = False
             return
 
         mode = self.get_preset_mode()
+        if self.state_ctrl_key:
+            self.state_ctrl_key = False
         if mode == 'point':
             self.add_preset_point(pt)
         elif mode == 'line':
@@ -1913,24 +1935,18 @@ class WiscSIMSTool:
         if self.get_current_tool() != 'preset':
             return
 
-        self.clear_preview_points()
+        # self.clear_preview_points()
         self.remove_scratch_layer()
 
     def canvasMoved(self, pt):
-        # moving preset point
-        if self.feature_id:
-            pt.set(pt.x() + self.movement_offset[0], pt.y() + self.movement_offset[1])
-            geom = QgsGeometry.fromPointXY(pt)
-            self.sc_dp.changeGeometryValues({1: geom})
-            self.scratchLayer.triggerRepaint()
-            return
 
-        # Active tab => Import
-        if self.get_current_tool() != 'preset':
+        # Throttling of preview repainting
+        # no throttling while selecting end-point in the Line mode
+        self.move_throttling_threshold = 5
+        self.mouse_move_counter += 1
+        if self.mouse_move_counter < self.move_throttling_threshold and not self.line_in_progress:
             return
-
-        if self.get_preset_mode() != 'line':
-            return
+        self.mouse_move_counter = 0
 
         # line mode: process of end-point selection
         if self.line_in_progress:
@@ -1939,9 +1955,27 @@ class WiscSIMSTool:
             self.rb.addPoint(pt, True)
 
             # update Line length
-            if pt is not None:
-                length = self.get_distance(self.start_point, pt) / self.scale
-                self.dockwidget.Txt_Line_Length.setText('{:.2f}'.format(length))
+            self.update_line_length(pt)
+            return
+
+        # moving preset point
+        self.cursor_pos = pt
+        print(".", end="")
+
+        if self.feature_id or self.state_ctrl_key:
+            if self.feature_id:
+                pt.set(pt.x() + self.movement_offset[0], pt.y() + self.movement_offset[1])
+            geom = QgsGeometry.fromPointXY(pt)
+            self.sc_dp.changeGeometryValues({1: geom})
+            self.scratchLayer.triggerRepaint()
+            return
+
+            # Active tab => Import
+        if self.get_current_tool() != 'preset':
+            return
+
+        if self.get_preset_mode() != 'line':
+            return
 
         # if self.dockwidget.Tab_Tool.currentIndex() == 1 and mode == 'line' and self.line_in_progress:
         #     if self.end_point:
@@ -1986,8 +2020,8 @@ class WiscSIMSTool:
             self.canvas.setCursor(Qt.CrossCursor)
 
     def canvasAltKeyState(self, state):
+        self.state_alt_key = state
         if state:
-            self.state_alt_key = True
             if self.state_shift_key:
                 # shift + alt
                 self.set_deleting_spot_cursor()
@@ -1995,11 +2029,32 @@ class WiscSIMSTool:
                 # alt
                 self.canvas.setCursor(Qt.PointingHandCursor)
         else:
-            self.state_alt_key = False
-            # QGuiApplication.restoreOverrideCursor()
-            QGuiApplication.setOverrideCursor(Qt.CrossCursor)
             self.canvas.setCursor(Qt.CrossCursor)  #
 
+    def canvasCtrlkeyState(self, state):
+        if not state and not self.state_ctrl_key:
+            # do nothing if state_ctrl_key is already False when CTRL key was released
+            # Because CTRL + click trigger clear preview spots (remove a rubberband spot of start-point)
+            self.canvas.setCursor(Qt.CrossCursor)
+            return
 
-    def canvasEscapeKeyState(self, state):
         self.clear_preview_spots()
+        self.state_ctrl_key = state
+        if state:
+            # show preview for checking spot size
+            # Opacity: 0.4, Stroke: black (opacity: 1)
+            symbol = self.scratchLayer.renderer().symbol().symbolLayer(0)
+            col = symbol.fillColor()
+            col.setAlpha(102)  # opacity: 0.4
+            symbol.setStrokeColor(QColor(0, 0, 0, 255))
+            symbol.setFillColor(col)
+            feature = QgsFeature()
+            feature.setGeometry(QgsGeometry.fromPointXY(self.cursor_pos))
+            self.add_features_to_scratch_layer([feature])
+            # hide cursor while showing spot size preview
+            self.canvas.setCursor(Qt.BlankCursor)
+        else:
+            self.canvas.setCursor(Qt.CrossCursor)
+
+    def canvasEscapeKeyState(self):
+        self.clear_preview_spots(init=False)

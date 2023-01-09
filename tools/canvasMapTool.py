@@ -20,9 +20,10 @@ class CanvasMapTool(QgsMapTool):
     canvasMoved = pyqtSignal('QgsPointXY')
 
     # Key Event
+    canvasCtrlKeyState = pyqtSignal('bool')
     canvasShiftKeyState = pyqtSignal('bool')
     canvasAltKeyState = pyqtSignal('bool')
-    canvasEscapeKeyState = pyqtSignal('bool')
+    canvasEscapeKeyState = pyqtSignal()
     canvasUndoKey = pyqtSignal()
 
     def __init__(self, canvas, toolbarBtn):
@@ -59,9 +60,9 @@ class CanvasMapTool(QgsMapTool):
             self.canvasShiftKeyState.emit(True)
         elif e.key() == 16777251:  # Alt/Option
             self.canvasAltKeyState.emit(True)
-        elif e.key() == Qt.Key_Escape:
-            # Clear preview spots
-            self.canvasEscapeKeyState.emit(True)
+        elif e.key() == Qt.Key_Control:
+            # display spot preview
+            self.canvasCtrlKeyState.emit(True)
         elif QtWidgets.QApplication.keyboardModifiers() == Qt.ControlModifier and e.key() == Qt.Key_Z:
             # Undo
             self.canvasUndoKey.emit()
@@ -72,6 +73,12 @@ class CanvasMapTool(QgsMapTool):
             self.canvasShiftKeyState.emit(False)
         elif e.key() == 16777251:  # Alt/Option
             self.canvasAltKeyState.emit(False)
+        elif e.key() == Qt.Key_Control:
+            # display spot preview
+            self.canvasCtrlKeyState.emit(False)
+        elif e.key() == Qt.Key_Escape:
+            # Clear preview spots
+            self.canvasEscapeKeyState.emit()
 
     def canvasPressEvent(self, event):
         if QtWidgets.QApplication.keyboardModifiers() == Qt.ShiftModifier:
