@@ -1920,8 +1920,17 @@ class WiscSIMSTool:
 
 
 
-        # self.clear_preview_points()
-        self.remove_scratch_layer()
+   def canvasDoubleClicked(self, pt):
+        pass
+        # if self.get_preset_layer() is None:
+        #     return
+        #
+        # if self.get_current_tool() != 'preset':
+        #     return
+        #
+        # # self.clear_preview_points()
+        # self.remove_scratch_layer()
+        #
 
     def canvasMoved(self, pt):
 
