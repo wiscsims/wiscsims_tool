@@ -15,7 +15,6 @@ class CanvasMapTool(QgsMapTool):
     canvasReleaseWShift = pyqtSignal('QgsMapMouseEvent')
     canvasReleaseWAlt = pyqtSignal('QgsMapMouseEvent')
     canvasReleaseWAltShift = pyqtSignal('QgsMapMouseEvent')
-    canvasDoubleClicked = pyqtSignal('QgsPointXY')
     canvasClickedRight = pyqtSignal('QgsPointXY')
     canvasMoved = pyqtSignal('QgsPointXY')
 
@@ -104,11 +103,6 @@ class CanvasMapTool(QgsMapTool):
                 self.canvasReleaseWAlt.emit(event)
             else:
                 self.canvasClicked.emit(pt)
-
-    def canvasDoubleClickEvent(self, event):
-        pt = self.getMapCoordinates(event)
-
-        self.canvasDoubleClicked.emit(pt)
 
     def getMapCoordinates(self, event):
         return self.toMapCoordinates(QPoint(event.pos().x(), event.pos().y()))

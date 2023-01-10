@@ -496,7 +496,6 @@ class WiscSIMSTool:
             self.canvasMapTool.canvasReleaseWAltShift.connect(self.canvasReleaseWAltShift)
 
             self.canvasMapTool.canvasClickedRight.connect(self.canvasClickedRight)
-            self.canvasMapTool.canvasDoubleClicked.connect(self.canvasDoubleClicked)
             self.canvasMapTool.canvasMoved.connect(self.canvasMoved)
 
             self.canvasMapTool.canvasShiftKeyState.connect(self.canvasShiftKeyState)
@@ -1138,36 +1137,6 @@ class WiscSIMSTool:
 
         self.clear_preview_spots()
 
-        # self.update_add_points_btn_status(False)
-
-    def connect_controls(self):
-        pass
-
-    # def get_comment(self):
-    #     comment = self.get_raw_comment()
-    #     if self.dockwidget.Cbx_Number_Increment.isChecked():
-    #         comment = self.increment_comment(comment)
-    #     return comment
-
-    # def get_raw_comment(self):
-    #     return self.dockwidget.Tbx_Comment.text()
-
-    # def set_comment(self, comment):
-    #     self.dockwidget.Tbx_Comment.setText(comment)
-    #     return comment
-
-    # def increment_comment(self, comment):
-    #     num = self.get_current_num()
-    #     self.set_current_num(num + 1)
-    #     return comment.replace('$', num)
-
-    # def get_current_num(self):
-    #     return self.dockwidget.Spn_Current_Number.value()
-
-    # def set_current_num(self, num):
-    #     self.dockwidget.Spn_Current_Number.setValue(int(num))
-    #     return num
-
     def add_preset_point(self, pt):
         comment = self.get_comment(0)
         if self.dockwidget.Opt_Comment_Popup.isChecked():
@@ -1250,11 +1219,8 @@ class WiscSIMSTool:
 
         # update increment number
         if self.dockwidget.Cbx_Number_Increment.isChecked():
-            self.dockwidget.Spn_Current_Number.setValue(
-                self.dockwidget.Spn_Current_Number.value() - len(id_list))
-
-        # self.undo_preset = []
-        # self.dockwidget.Btn_Undo_Add_Preset_Point.setEnabled(False)
+            spn = self.dockwidget.Spn_Current_Number
+            spn.setValue(spn.value() - len(id_list))
 
     def update_undo_btn_state(self):
         if len(self.undo_preset):
@@ -1298,7 +1264,6 @@ class WiscSIMSTool:
         if self.rb2.size() > 0:
             self.rb2.reset()
         self.rb2 = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
-        # self.rb2 = QgsRubberBand(self.canvas, False)  # False = not a polygon
         self.rb2.setIcon(QgsRubberBand.ICON_CIRCLE)
         self.rb2.setIconSize(10)
         self.rb2.setColor(QColor(255, 20, 20, 90))
@@ -1450,12 +1415,7 @@ class WiscSIMSTool:
 
     def preset_line(self, pt, line_end=False):
         if line_end:
-            # if self.end_point is not None:
-            #     self.rb.removeLastPoint()
-            #     self.init_rb2()
-            #     self.init_scratch_layer()
             self.end_point = pt
-            # self.rb.addPoint(pt, True)
             self.draw_line_points()  # preview spots
             self.line_in_progress = False
         else:  # start line drawing
@@ -1464,6 +1424,7 @@ class WiscSIMSTool:
             # self.init_scratch_layer()
             self.start_point = pt
             self.line_in_progress = True
+
             self.rb_line.addPoint(self.start_point, False)
             self.rb_line.addPoint(self.start_point, True)
             self.rb_start.addPoint(self.start_point, True)
@@ -1479,8 +1440,6 @@ class WiscSIMSTool:
     def draw_line_points(self):
         # update line length in the widget
         length = self.update_line_length(self.end_point)
-        # length = self.get_distance(self.start_point, self.end_point) / self.scale
-        # self.dockwidget.Txt_Line_Length.setText('{:.2f}'.format(length))
 
         if self.dockwidget.Opt_Line_Step_Size.isChecked():
             # use step size
@@ -1552,8 +1511,6 @@ class WiscSIMSTool:
             pt = QgsPointXY(point[0], point[1])
             comment = self.get_comment(i)
             self.rb_line.addPoint(pt, True)
-            # self.rb2.addPoint(pt, True)
-            # self.add_rb_label(comment, pt)
             self.preset_points.append([comment, point[0], point[1]])
 
             geom = QgsGeometry.fromPointXY(pt)
@@ -1571,7 +1528,6 @@ class WiscSIMSTool:
         self.canvas.refresh()
 
     def add_rb_label(self, comment, pt):
-        # layer = self.iface.activeLayer()
         symbol = QgsMarkerSymbol()
         symbol.setSize(0)
         html = f'<body style="color: #222; background-color: #eee;"><b>{comment}</b></body>'
@@ -1631,7 +1587,6 @@ class WiscSIMSTool:
         return math.atan2((pt2[1] - pt1[1]), (pt2[0] - pt1[0]))
 
     def preset_tool_changed(self, tool_index):
-        # self.clear_preview_points()  # rubber_bands
         self.clear_preview_spots()   # scratch layer
 
     def set_value_without_signal(self, target, value):
@@ -1685,7 +1640,6 @@ class WiscSIMSTool:
     """
 
     def mapToolChanged(self, tool, prev_tool):
-        #     r'wiscsims_tool', str(tool)))
         if re.search(r'wiscsims_tool', str(tool)) or re.search(r'WiscSIMSTool', str(tool)):
             self.dockwidget.setEnabled(True)
             return
@@ -1877,8 +1831,6 @@ class WiscSIMSTool:
 
     def canvasClicked(self, pt):
 
-        # self.remove_scratch_layer()
-        # self.clear_preview_points()
         self.init_scratch_layer()
 
         if self.get_current_tool() != 'preset':
@@ -1899,8 +1851,8 @@ class WiscSIMSTool:
             self.add_preset_point(pt)
         elif mode == 'line':
             if self.start_point and self.end_point is None:
-                self.show_tooltip("line-end")
                 # select end-point
+                self.show_tooltip("line-end")
                 self.preset_line(pt, True)
             else:
                 # select start-point
@@ -1917,20 +1869,6 @@ class WiscSIMSTool:
 
     def canvasClickedRight(self, pt):
         self.canvasClicked(pt)
-
-
-
-   def canvasDoubleClicked(self, pt):
-        pass
-        # if self.get_preset_layer() is None:
-        #     return
-        #
-        # if self.get_current_tool() != 'preset':
-        #     return
-        #
-        # # self.clear_preview_points()
-        # self.remove_scratch_layer()
-        #
 
     def canvasMoved(self, pt):
 
