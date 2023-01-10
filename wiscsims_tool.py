@@ -1916,26 +1916,9 @@ class WiscSIMSTool:
             self.preset_grid(pt)
 
     def canvasClickedRight(self, pt):
-        if self.get_preset_layer() is None:
-            return
+        self.canvasClicked(pt)
 
-        if self.get_current_tool() != 'preset':
-            return
 
-        mode = self.get_preset_mode()
-        if mode == 'point':
-            self.handle_undo()
-            # self.undo_add_preset_point()
-        elif mode == 'line' and self.start_point:
-            self.preset_line(pt, True)
-            # activate add_preset_point button
-
-    def canvasDoubleClicked(self, pt):
-        if self.get_preset_layer() is None:
-            return
-
-        if self.get_current_tool() != 'preset':
-            return
 
         # self.clear_preview_points()
         self.remove_scratch_layer()
