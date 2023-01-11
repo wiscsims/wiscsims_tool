@@ -1293,7 +1293,7 @@ class WiscSIMSTool:
     #     # self.init_rb2()
     #     # self.init_rb_s()
 
-    def init_scratch_layer(self):
+    def init_scratch_layer(self, moving=False):
         self.remove_scratch_layer()
         self.scratchLayer = QgsVectorLayer("Point", "tmp",  "memory")
         self.scratchLayer.setFlags(QgsMapLayer.Private)
@@ -1327,10 +1327,10 @@ class WiscSIMSTool:
         pe_stack = QgsEffectStack()
         pe_stack.appendEffect(QgsDropShadowEffect())
         pe_stack.appendEffect(QgsDrawSourceEffect())
-        if self.get_preset_mode() != "point":
+        if self.get_preset_mode() != "point" and not moving:
             symbol = self.scratchLayer.renderer().symbol()
             symbol.symbolLayer(0).setStrokeColor(QColor(255, 255, 255))
-            self.scratchLayer.renderer().symbol().setColor(QColor(64, 143, 176))
+            self.scratchLayer.renderer().symbol().setColor(QColor(64, 143, 176, 102))
 
         self.scratchLayer.renderer().setPaintEffect(pe_stack)
 
@@ -1652,13 +1652,14 @@ class WiscSIMSTool:
         radius = spot_size / 2 / pixel_size
         features = layer.dataProvider().getFeatures()
 
-        near_features = [f for f in features if 0 < geom.distance(f.geometry()) < radius]
-        return near_features
+        out = [f for f in features if 0 < geom.distance(f.geometry()) < radius]
+        return out
 
     def canvasClickedWShift(self, e):
         # Start moving preset point
         # self.f_id = None
-        self.init_scratch_layer()
+        self.init_scratch_layer(moving=True)
+
         layer = self.get_preset_layer()
 
         if layer is None:
@@ -1693,6 +1694,12 @@ class WiscSIMSTool:
         tmp_feature.setGeometry(geom)
         tmp_feature.setFields(self.fields)
         tmp_feature['Comment'] = comment
+
+        symbol = self.scratchLayer.renderer().symbol().symbolLayer(0)
+        col = symbol.fillColor()
+        col.setAlpha(102)  # opacity: 0.4
+        # symbol.setStrokeColor(QColor(0, 0, 0, 255))
+        symbol.setFillColor(col)
         self.add_features_to_scratch_layer([tmp_feature])
 
         return
