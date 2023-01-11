@@ -1666,7 +1666,8 @@ class WiscSIMSTool:
         radius = spot_size / 2 / pixel_size
         features = layer.dataProvider().getFeatures()
 
-        return [f for f in features if geom.distance(f.geometry()) < radius]
+        near_features = [f for f in features if 0 < geom.distance(f.geometry()) < radius]
+        return near_features
 
     def canvasClickedWShift(self, e):
         # Start moving preset point
