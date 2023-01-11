@@ -961,17 +961,19 @@ class WiscSIMSTool:
         self.dockwidget.Cmb_Preset_Layer.clear()
         # Add layers which have Vector, Point geometry and 'Comment' field to combobox for preset
         layers = self.get_vector_point_layers()
+
+        # filter scratch layer
+        layers = [l for l in layers if l.name() != "tmp" and l.storageType() != 'Memory storage']
+
         if len(layers) == 0:
             return
         # filter layers which has 'Comment' field
-        layers = [
-            layer for layer in layers if 'Comment' in self.get_fields(layer)]
+        layers = [layer for layer in layers if 'Comment' in self.get_fields(layer)]
         # add to Cmb_Preset_Layer
         [self.dockwidget.Cmb_Preset_Layer.addItem(l.name(), l) for l in layers]
 
         if current_layer_index > -1:
-            self.dockwidget.Cmb_Preset_Layer.setCurrentIndex(
-                current_layer_index)
+            self.dockwidget.Cmb_Preset_Layer.setCurrentIndex(current_layer_index)
 
     def create_preset_layer(self):
         # ask layer name
