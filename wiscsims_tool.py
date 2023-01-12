@@ -1426,6 +1426,13 @@ class WiscSIMSTool:
 
             # self.init_scratch_layer()
             self.start_point = pt
+
+            geom = QgsGeometry.fromPointXY(pt)
+            feature = QgsFeature()
+            feature.setFields(self.fields)
+            feature.setGeometry(geom)
+            feature['Comment'] = ""
+            self.add_features_to_scratch_layer([feature])
             self.line_in_progress = True
 
             self.rb_line.addPoint(self.start_point, False)
