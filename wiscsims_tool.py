@@ -1731,7 +1731,7 @@ class WiscSIMSTool:
 
         self.init_scratch_layer()
 
-        QGuiApplication.restoreOverrideCursor()
+        self.canvas.setCursor(Qt.CrossCursor)
         self.update_undo_btn_state()
         self.flag_cancel_moving_spot = False
         return
@@ -1759,7 +1759,8 @@ class WiscSIMSTool:
 
         self.state_shift_key = False
         self.state_alt_key = False
-        QGuiApplication.restoreOverrideCursor()
+
+        self.canvas.setCursor(Qt.CrossCursor)
 
         # show confirmation dailog
         rep_message = QMessageBox.warning(
@@ -1780,6 +1781,12 @@ class WiscSIMSTool:
                 'comment': comment,
             }
         })
+
+        self.state_alt_key = False
+        self.state_shift_key = False
+
+        # reset cursor
+        self.canvas.setCursor(Qt.CrossCursor)
 
         self.update_undo_btn_state()
 
@@ -1823,7 +1830,10 @@ class WiscSIMSTool:
                 'comment': default,
             }
         })
-        QGuiApplication.restoreOverrideCursor()
+        # reset curosr and mod_key status
+        self.state_alt_key = False
+        self.canvas.setCursor(Qt.CrossCursor)
+
         self.update_undo_btn_state()
 
     def canvasClicked(self, pt):
@@ -1931,7 +1941,6 @@ class WiscSIMSTool:
             else:
                 # after spot movement
                 self.flag_cancel_moving_spot = False
-            # QGuiApplication.restoreOverrideCursor()
             self.canvas.setCursor(Qt.CrossCursor)
 
     def canvasAltKeyState(self, state):
