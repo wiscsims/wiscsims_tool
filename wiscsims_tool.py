@@ -1494,6 +1494,7 @@ class WiscSIMSTool:
     def update_grid(self):
         if self.start_point is None:
             return
+        self.preset_points = []
         self.init_rb_line()
         self.init_scratch_layer()
         self.draw_grid_points()
@@ -1862,6 +1863,7 @@ class WiscSIMSTool:
                 pass
                 #
         elif mode == 'grid':
+            self.preset_points = []
             self.preset_grid(pt)
 
     def canvasClickedRight(self, pt):
