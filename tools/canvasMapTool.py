@@ -23,7 +23,11 @@ class CanvasMapTool(QgsMapTool):
     canvasShiftKeyState = pyqtSignal('bool')
     canvasAltKeyState = pyqtSignal('bool')
     canvasEscapeKeyState = pyqtSignal()
-    canvasUndoKey = pyqtSignal()
+    canvasUndoKey = pyqtSignal()  # Ctrl/Cmd-Z
+
+    state_ctrl = False
+    state_alt = False
+    state_shift = False
 
     def __init__(self, canvas, toolbarBtn):
         QgsMapTool.__init__(self, canvas)
@@ -55,26 +59,35 @@ class CanvasMapTool(QgsMapTool):
         self.refpoint2 = [None, None]
 
     def keyPressEvent(self, e):
-        if e.key() == 16777248:  # Shift
-            self.canvasShiftKeyState.emit(True)
-        elif e.key() == 16777251:  # Alt/Option
+        # if e.key() == 16777248:  # Shift
+        if e.key() == Qt.Key_Shift:
+            self.state_shift = True
+        # elif e.key() == 16777251:  # Alt/Option
+        elif e.key() == Qt.Key_Alt:
             self.canvasAltKeyState.emit(True)
+            self.state_alt = True
         elif e.key() == Qt.Key_Control:
             # display spot preview
             self.canvasCtrlKeyState.emit(True)
+            self.state_ctrl = True
         elif QtWidgets.QApplication.keyboardModifiers() == Qt.ControlModifier and e.key() == Qt.Key_Z:
             # Undo
             self.canvasUndoKey.emit()
         return
 
     def keyReleaseEvent(self, e):
-        if e.key() == 16777248:  # Shift
+        # if e.key() == 16777248:  # Shift
+        if e.key() == Qt.Key_Shift:
             self.canvasShiftKeyState.emit(False)
-        elif e.key() == 16777251:  # Alt/Option
+            self.state_shift = False
+            # elif e.key() == 16777251:  # Alt/Option
+        elif e.key() == Qt.Key_Alt:
             self.canvasAltKeyState.emit(False)
+            self.state_alt = False
         elif e.key() == Qt.Key_Control:
             # display spot preview
             self.canvasCtrlKeyState.emit(False)
+            self.state_ctrl = False
         elif e.key() == Qt.Key_Escape:
             # Clear preview spots
             self.canvasEscapeKeyState.emit()

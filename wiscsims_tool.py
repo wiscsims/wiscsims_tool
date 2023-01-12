@@ -30,16 +30,12 @@ from PyQt5.QtCore import (
     QSize,
     QModelIndex,
     QVariant,
-    QSizeF,
-    QPointF,
     QRect,
 )
 from PyQt5.QtGui import (
     QIcon,
     QPixmap,
     QColor,
-    QTextDocument,
-    QGuiApplication,
     QCursor,
 )
 from PyQt5.QtWidgets import (
@@ -60,9 +56,7 @@ from qgis.core import (
     QgsGeometry,
     QgsMarkerSymbol,
     QgsPalLayerSettings,
-    QgsTextAnnotation,
     QgsPointXY,
-    QgsMargins,
     QgsVectorLayerSimpleLabeling,
     QgsPropertyCollection,
     QgsFeatureRequest,
@@ -71,17 +65,11 @@ from qgis.core import (
     QgsEffectStack,
     QgsDropShadowEffect,
     QgsDrawSourceEffect,
-    # QgsInnerShadowEffect,
-    # QgsSimpleFillSymbolLayer,
-    # QgsSimpleMarkerSymbolLayer,
     Qgis
 )
 from qgis.gui import (
     QgsRubberBand,
     QgsMapCanvasAnnotationItem,
-    # QgsMapToolIdentifyFeature,
-    # QgsMapToolIdentify,
-    # QgsMapMouseEvent,
 )
 
 # Initialize Qt resources from file resources.py
@@ -1732,6 +1720,7 @@ class WiscSIMSTool:
         self.init_scratch_layer()
 
         self.canvas.setCursor(Qt.CrossCursor)
+
         self.update_undo_btn_state()
         self.flag_cancel_moving_spot = False
         return
@@ -1982,3 +1971,7 @@ class WiscSIMSTool:
 
     def canvasEscapeKeyState(self):
         self.clear_preview_spots(init=False)
+
+    def update_cursor(self):
+
+        pass
