@@ -1290,7 +1290,14 @@ class WiscSIMSTool:
             symbol.symbolLayer(0).setStrokeColor(QColor(255, 255, 255))
             self.scratchLayer.renderer().symbol().setColor(QColor(64, 143, 176, 102))
 
+    def cleanup_old_scratch_layers(self):
+        instance = QgsProject.instance()
+        vals = instance.mapLayers().values()
+        [instance.removeMapLayer(layer) for layer in vals if layer.name() ==
+         "tmp" and layer.storageType() == 'Memory storage']
+
     def create_scratch_layer(self, moving=False):
+        self.cleanup_old_scratch_layers()
         self.scratchLayer = QgsVectorLayer("Point", "tmp",  "memory")
         self.scratchLayer.setFlags(QgsMapLayer.Private)
         self.scratchLayer.startEditing()
@@ -1298,7 +1305,6 @@ class WiscSIMSTool:
         layer = self.get_preset_layer()
         symbol = layer.renderer().symbol()
         props = symbol.symbolLayer(0).properties()
-        print(props)
         self.scratchLayer.renderer().setSymbol(QgsMarkerSymbol.createSimple(props))
 
         self.sc_dp = self.scratchLayer.dataProvider()
@@ -1709,7 +1715,6 @@ class WiscSIMSTool:
     def canvasReleaseWShift(self, e):
         # End move preset point
         if self.feature_id is None:
-            print(">>><<<>>><<<>>><<")
             return
 
         layer = self.get_preset_layer()
@@ -1908,7 +1913,6 @@ class WiscSIMSTool:
 
         # moving preset point
         if self.feature_id or self.state_ctrl_key:
-            print(self.feature_id)
             if self.feature_id:
                 pt.set(pt.x() + self.movement_offset[0], pt.y() + self.movement_offset[1])
             geom = QgsGeometry.fromPointXY(pt)
@@ -1928,7 +1932,6 @@ class WiscSIMSTool:
         return True
 
     def canvasShiftKeyState(self, state):
-        print(f"shift: {state}")
         self.state_shift_key = state
         if state:
             if not self.state_alt_key:
