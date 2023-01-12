@@ -61,6 +61,7 @@ class CanvasMapTool(QgsMapTool):
     def keyPressEvent(self, e):
         # if e.key() == 16777248:  # Shift
         if e.key() == Qt.Key_Shift:
+            self.canvasShiftKeyState.emit(True)
             self.state_shift = True
         # elif e.key() == 16777251:  # Alt/Option
         elif e.key() == Qt.Key_Alt:
