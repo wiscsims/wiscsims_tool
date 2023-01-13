@@ -65,7 +65,7 @@ from qgis.core import (
     QgsEffectStack,
     QgsDropShadowEffect,
     QgsDrawSourceEffect,
-    Qgis
+    Qgis,
 )
 from qgis.gui import (
     QgsRubberBand,
@@ -413,8 +413,9 @@ class WiscSIMSTool:
         dock.Btn_Undo_Add_Preset_Point.clicked.connect(self.handle_undo)
         dock.Btn_Refresh_Preset_Layers.clicked.connect(self.init_preset_layer_combobox)
 
-        dock.Spn_Preset_Pixel_Size.valueChanged.connect(self.change_pixel_size)
-        dock.Spn_Preset_Spot_Size.valueChanged.connect(self.set_spot_size)
+        dock.Cmb_Preset_Layer.currentIndexChanged.connect(self.handle_change_preset_layer)
+        dock.Spn_Preset_Pixel_Size.valueChanged.connect(self.handle_change_pixel_size)
+        dock.Spn_Preset_Spot_Size.valueChanged.connect(self.handle_change_spot_size)
 
         dock.Tbx_Comment.textChanged.connect(self.reset_current_number)
         dock.Tbx_Comment.textChanged.connect(self.handle_comment_change_preview)
@@ -455,8 +456,8 @@ class WiscSIMSTool:
         dock.Btn_Undo_Add_Preset_Point.clicked.disconnect(self.undo_add_preset_point)
         dock.Btn_Refresh_Preset_Layers.clicked.disconnect(self.init_preset_layer_combobox)
 
-        dock.Spn_Preset_Pixel_Size.valueChanged.disconnect(self.change_pixel_size)
-        dock.Spn_Preset_Spot_Size.valueChanged.disconnect(self.set_spot_size)
+        dock.Spn_Preset_Pixel_Size.valueChanged.disconnect(self.handle_change_pixel_size)
+        dock.Spn_Preset_Spot_Size.valueChanged.disconnect(self.handle_change_spot_size)
 
         dock.Tbx_Comment.textChanged.disconnect(self.reset_current_number)
         dock.Tbx_Comment.textChanged.disconnect(self.handle_comment_change_preview)
@@ -958,9 +959,18 @@ class WiscSIMSTool:
         layers = [layer for layer in layers if 'Comment' in self.get_fields(layer)]
         # add to Cmb_Preset_Layer
         [self.dockwidget.Cmb_Preset_Layer.addItem(l.name(), l) for l in layers]
-
         if current_layer_index > -1:
             self.dockwidget.Cmb_Preset_Layer.setCurrentIndex(current_layer_index)
+        self.handle_change_preset_layer(current_layer_index)
+
+    def handle_change_preset_layer(self, idx=-1):
+        if idx < 0:
+            return
+
+        ssps = self.get_ss_ps()
+
+        self.dockwidget.Spn_Preset_Pixel_Size.setValue(ssps['ps'])
+        self.dockwidget.Spn_Preset_Spot_Size.setValue(ssps['ss'])
 
     def create_preset_layer(self):
         # ask layer name
@@ -977,10 +987,16 @@ class WiscSIMSTool:
 
         # create layer with given name
         #  field: [Comment]
+        spot_size = self.dockwidget.Spn_Preset_Spot_Size.value()
+        pixel_size = self.dockwidget.Spn_Preset_Pixel_Size.value()
         vl = QgsVectorLayer("Point?crs=epsg:4326", "temporary_points", "memory")
         vl.setProviderEncoding("UTF-8")
         pr = vl.dataProvider()
-        attrs = [QgsField('Comment', QVariant.String)]
+        attrs = [
+            QgsField('Comment', QVariant.String),
+            QgsField(f"ss_{spot_size}", QVariant.Int),
+            QgsField(f"ps_{pixel_size}", QVariant.Double)
+        ]
 
         pr.addAttributes(attrs)
         vl.setDisplayExpression('Comment')
@@ -1047,7 +1063,58 @@ class WiscSIMSTool:
         self.dockwidget.Cmb_Preset_Layer.setCurrentIndex(
             self.dockwidget.Cmb_Preset_Layer.findText(layer_name))
 
-    def set_spot_size(self, size):
+    def store_ss_ps(self, data):
+        layer = self.get_preset_layer()
+        layer.startEditing()
+        # Rename field
+        flag_rename = False
+        for field in layer.fields():
+            if field.name()[:3] == 'ss_':
+                idx = layer.fields().indexFromName(field.name())
+                layer.renameAttribute(idx, f"ss_{data['ss']}")
+                flag_rename = True
+            elif field.name()[:3] == 'ps_':
+                idx = layer.fields().indexFromName(field.name())
+                layer.renameAttribute(idx, f"ps_{data['ps']}")
+                flag_rename = True
+
+        if not flag_rename:  # no ss_ or ps_
+
+            pr = layer.dataProvider()
+            attrs = [
+                QgsField(f"ss_{data['ss']}", QVariant.Int),
+                QgsField(f"ps_{data['ps']}", QVariant.Double)
+            ]
+            pr.addAttributes(attrs)
+
+        # Close editing session and save changes
+        layer.commitChanges()
+
+    def get_ss_ps(self):
+        layer = self.get_preset_layer()
+        fields = self.get_fields(layer)
+        out = {'ss': 12, 'ps': 1.0}
+        for f in fields:
+            c = f[:3]
+            if c == "ss_":
+                out['ss'] = int(f.split("_")[1])
+                continue
+            elif c == "ps_":
+                out['ps'] = float(f.split("_")[1])
+        return out
+
+    def handle_change_pixel_size(self, size):
+        self.scale = 1 / size
+        current_mode = self.get_preset_mode()
+        if current_mode == "grid":
+            self.update_grid()
+        elif current_mode == "line":
+            self.update_line()
+
+        ss = self.dockwidget.Spn_Preset_Spot_Size.value()
+        self.handle_change_spot_size(ss)
+
+    def handle_change_spot_size(self, size):
         preset_layer = self.dockwidget.Cmb_Preset_Layer
         if preset_layer.currentIndex() < 0:
             return
@@ -1056,6 +1123,15 @@ class WiscSIMSTool:
         layer.renderer().symbol().symbolLayer(0).setSize(1.0 * self.scale * size)
         layer.triggerRepaint()
 
+        ss = self.dockwidget.Spn_Preset_Spot_Size.value()
+        ps = self.dockwidget.Spn_Preset_Pixel_Size.value()
+
+        # save spot and pixel size to the attribute table (shapefile) as field names
+        self.store_ss_ps({'ss': ss, 'ps': ps})
+
+        self.update_preview_spots()
+
+    def update_preview_spots(self):
         current_mode = self.get_preset_mode()
         if current_mode == "grid":
             self.update_grid()
@@ -1619,14 +1695,6 @@ class WiscSIMSTool:
             out = comment
         return out
 
-    def change_pixel_size(self, val):
-        self.scale = 1 / val
-        current_mode = self.get_preset_mode()
-        if current_mode == "grid":
-            self.update_grid()
-        elif current_mode == "line":
-            self.update_line()
-        self.set_spot_size(self.dockwidget.Spn_Preset_Spot_Size.value())
 
     def update_line_length(self, pt=None):
         if pt is None:
