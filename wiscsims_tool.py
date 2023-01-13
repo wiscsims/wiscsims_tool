@@ -67,6 +67,7 @@ from qgis.core import (
     QgsDrawSourceEffect,
     Qgis,
 )
+
 from qgis.gui import (
     QgsRubberBand,
     QgsMapCanvasAnnotationItem,
@@ -151,6 +152,8 @@ class WiscSIMSTool:
         self.undo_preset = []
 
         self.scale = 1
+
+        self.feature_id = None
 
         # self.scratchLayer = QgsVectorLayer("Point", "tmp",  "memory")
         # self.sc_dp = self.scratchLayer.dataProvider()
@@ -309,7 +312,6 @@ class WiscSIMSTool:
         del self.toolbar
 
     # --------------------------------------------------------------------------
-
     def run(self):
         """Run method that loads and starts the plugin"""
         print('run')
@@ -1063,6 +1065,8 @@ class WiscSIMSTool:
         self.dockwidget.Cmb_Preset_Layer.setCurrentIndex(
             self.dockwidget.Cmb_Preset_Layer.findText(layer_name))
 
+        self.create_scratch_layer()
+
     def store_ss_ps(self, data):
         layer = self.get_preset_layer()
         layer.startEditing()
@@ -1379,6 +1383,8 @@ class WiscSIMSTool:
         self.scratchLayer.startEditing()
         # Copy and paste symbol sytle from preset layer
         layer = self.get_preset_layer()
+        if layer is None:
+            return
         symbol = layer.renderer().symbol()
         props = symbol.symbolLayer(0).properties()
         self.scratchLayer.renderer().setSymbol(QgsMarkerSymbol.createSimple(props))
@@ -1694,7 +1700,6 @@ class WiscSIMSTool:
         except (IndexError, KeyError, ValueError):
             out = comment
         return out
-
 
     def update_line_length(self, pt=None):
         if pt is None:
