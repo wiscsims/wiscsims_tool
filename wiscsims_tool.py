@@ -403,6 +403,8 @@ class WiscSIMSTool:
         dock.Spn_Grid_N_Point_Y.valueChanged.connect(self.update_grid)
         dock.Cmb_Grid_Move_Order.currentIndexChanged.connect(self.update_grid)
 
+        dock.Cmb_Preset_Layer.currentIndexChanged.connect(self.handle_change_preset_layer)
+
         dock.Spn_Line_Step_Size.valueChanged.connect(self.update_line)
         dock.Spn_Line_N_Spot.valueChanged.connect(self.update_line)
 
@@ -940,6 +942,7 @@ class WiscSIMSTool:
     """
 
     def init_preset_layer_combobox(self):
+        self.is_preset_initializing = True
         # get current index (selected item) for refresh contents
 
         current_layer_index = self.dockwidget.Cmb_Preset_Layer.currentIndex()
@@ -963,9 +966,15 @@ class WiscSIMSTool:
         [self.dockwidget.Cmb_Preset_Layer.addItem(l.name(), l) for l in layers]
         if current_layer_index > -1:
             self.dockwidget.Cmb_Preset_Layer.setCurrentIndex(current_layer_index)
+
+        self.is_preset_initializing = False
+
         self.handle_change_preset_layer(current_layer_index)
 
     def handle_change_preset_layer(self, idx=-1):
+        if self.is_preset_initializing:
+            return
+
         if idx < 0:
             return
 
@@ -973,6 +982,8 @@ class WiscSIMSTool:
 
         self.dockwidget.Spn_Preset_Pixel_Size.setValue(ssps['ps'])
         self.dockwidget.Spn_Preset_Spot_Size.setValue(ssps['ss'])
+
+        self.handle_change_pixel_size(ssps['ps'])
 
     def create_preset_layer(self):
         # ask layer name
@@ -1134,6 +1145,7 @@ class WiscSIMSTool:
         self.store_ss_ps({'ss': ss, 'ps': ps})
 
         self.update_preview_spots()
+        self.update_scratch_layer_symbol_size()
 
     def update_preview_spots(self):
         current_mode = self.get_preset_mode()
@@ -1493,9 +1505,10 @@ class WiscSIMSTool:
         symbol = layer.renderer().symbol()
         props = symbol.symbolLayer(0).properties()
         size = props['size']
-        sc_props = self.scratchLayer.renderer().symbol().symbolLayer(0).properties()
-        sc_props['size'] = size
-        self.scratchLayer.renderer().setSymbol(QgsMarkerSymbol.createSimple(sc_props))
+        if hasattr(self, 'scratchLayer'):
+            sc_props = self.scratchLayer.renderer().symbol().symbolLayer(0).properties()
+            sc_props['size'] = size
+            self.scratchLayer.renderer().setSymbol(QgsMarkerSymbol.createSimple(sc_props))
 
     def preset_line(self, pt, line_end=False, live_preview=False):
         if line_end:
@@ -1523,14 +1536,12 @@ class WiscSIMSTool:
 
     def update_line(self):
         if self.start_point and self.end_point:
-            # self.init_rb2()
             self.init_scratch_layer()
             self.update_scratch_layer_symbol_size()
+            self.preset_points = []
             self.draw_line_points()
-            # self.rb_start.removeLastPoint()
-            # self.rb_start.addPoint(self.start_point, True)
 
-    def draw_line_points(self, livee_preview=False):
+    def draw_line_points(self, live_preview=False):
         # update line length in the widget
         length = self.update_line_length(self.end_point)
 
@@ -1572,12 +1583,11 @@ class WiscSIMSTool:
 
         self.add_features_to_scratch_layer(features)
 
-        if not livee_preview:
-            # self.rb_start.reset()
-            self.canvas.refresh()
-            self.update_add_points_btn_status(True)
-        else:
+        if live_preview:
             self.preset_points = []
+
+        self.update_add_points_btn_status(True)
+        self.canvas.refresh()
 
     def preset_grid(self, pt):
         self.start_point = pt
@@ -1589,9 +1599,9 @@ class WiscSIMSTool:
         if self.start_point is None:
             return
         self.preset_points = []
-        self.init_rb_line()
         self.init_scratch_layer()
         self.update_scratch_layer_symbol_size()
+        self.init_rb_line()
         self.draw_grid_points()
 
     def draw_grid_points(self):
