@@ -1214,8 +1214,8 @@ class WiscSIMSTool:
         if self.dockwidget.Cbx_Number_Increment.isChecked():
             self.dockwidget.Spn_Current_Number.setValue(
                 self.dockwidget.Spn_Current_Number.value() + len(self.preset_points))
-        self.init_rb_line()
 
+        self.init_rb_line()
         self.clear_preview_spots()
 
     def add_preset_point(self, pt):
@@ -1316,7 +1316,7 @@ class WiscSIMSTool:
             # self.rb2.reset()
             # self.rb_start.reset()
             self.init_rb_line()
-            self.init_annotation()
+            # self.init_annotation()
 
     def clear_preview_spots(self, init=True):
         # clear/init all preview related items
@@ -1360,15 +1360,15 @@ class WiscSIMSTool:
     #     self.rb_start.setIconSize(10)
     #     self.rb_start.setColor(QColor(255, 0, 255, 250))
 
-    def is_annotation_item(self, item):
-        return issubclass(type(item), QgsMapCanvasAnnotationItem)
+    # def is_annotation_item(self, item):
+    #     return issubclass(type(item), QgsMapCanvasAnnotationItem)
+    #
+    # def remove_item(self, item):
+    #     self.canvas.scene().removeItem(item)
 
-    def remove_item(self, item):
-        self.canvas.scene().removeItem(item)
-
-    def init_annotation(self):
-        [self.remove_item(i) for i in self.canvas.scene().items()
-         if self.is_annotation_item(i)]
+    # def init_annotation(self):
+    #     [self.remove_item(i) for i in self.canvas.scene().items()
+    #      if self.is_annotation_item(i)]
 
     # def init_rb(self):
     #     self.init_rb()
@@ -2002,7 +2002,7 @@ class WiscSIMSTool:
             return
 
         # moving preset point
-        if self.feature_id or self.state_ctrl_key:
+        if self.feature_id is not None or self.state_ctrl_key:
             if self.feature_id:
                 pt.set(pt.x() + self.movement_offset[0], pt.y() + self.movement_offset[1])
             geom = QgsGeometry.fromPointXY(pt)
