@@ -1377,10 +1377,9 @@ class WiscSIMSTool:
 
     def init_scratch_layer(self, moving=False):
         self.remove_scratch_layer()
-        if self.get_preset_mode() != "point" and not moving:
-            symbol = self.scratchLayer.renderer().symbol()
-            symbol.symbolLayer(0).setStrokeColor(QColor(255, 255, 255))
-            self.scratchLayer.renderer().symbol().setColor(QColor(64, 143, 176, 102))
+        symbol = self.scratchLayer.renderer().symbol()
+        symbol.symbolLayer(0).setStrokeColor(QColor(255, 255, 255))  # stroke: black
+        self.scratchLayer.renderer().symbol().setColor(QColor(64, 143, 176, 102))  # lightblue, alpha: 0.4
 
     def cleanup_old_scratch_layers(self):
         instance = QgsProject.instance()
@@ -1793,11 +1792,6 @@ class WiscSIMSTool:
         tmp_feature.setFields(self.fields)
         tmp_feature['Comment'] = comment
 
-        symbol = self.scratchLayer.renderer().symbol().symbolLayer(0)
-        col = symbol.fillColor()
-        col.setAlpha(102)  # opacity: 0.4
-        # symbol.setStrokeColor(QColor(0, 0, 0, 255))
-        symbol.setFillColor(col)
         self.add_features_to_scratch_layer([tmp_feature])
 
         return
