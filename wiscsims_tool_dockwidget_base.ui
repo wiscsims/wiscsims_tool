@@ -324,6 +324,12 @@ QTabWidget::pane {
                 <property name="enabled">
                  <bool>true</bool>
                 </property>
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
                 <property name="minimumSize">
                  <size>
                   <width>130</width>
@@ -332,7 +338,7 @@ QTabWidget::pane {
                 </property>
                 <property name="maximumSize">
                  <size>
-                  <width>228</width>
+                  <width>16777215</width>
                   <height>16777215</height>
                  </size>
                 </property>
@@ -1241,7 +1247,7 @@ font-weight: bold;
            <enum>QTabWidget::Rounded</enum>
           </property>
           <property name="currentIndex">
-           <number>1</number>
+           <number>0</number>
           </property>
           <property name="iconSize">
            <size>

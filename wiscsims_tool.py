@@ -46,6 +46,7 @@ from PyQt5.QtWidgets import (
     QMessageBox,
     QLineEdit,
     QToolTip,
+    QHeaderView,
 )
 from qgis.core import (
     QgsProject,
@@ -77,10 +78,10 @@ from qgis.gui import (
 from .resources import *  # noqa: F401, F403
 
 # Import custom tools
-from .tools.alignmentTool import AlignmentModel, AlignmentMarker
+from .tools.alignmentTool import AlignmentModel, AlignmentModelNew, AlignmentMarker
 from .tools.canvasMapTool import CanvasMapTool
 from .tools.sumTableTool import SumTableTool
-from .tools.coordinateTool import CoordinateTool
+from .tools.coordinateTool import CoordinateTool, CoordinateToolNew
 
 # Import the code for the DockWidget
 from .wiscsims_tool_dockwidget import WiscSIMSToolDockWidget
@@ -112,9 +113,9 @@ class WiscSIMSTool:
         self.canvas = self.iface.mapCanvas()
 
         # Tool instances
-        self.model = AlignmentModel()
+        self.model = AlignmentModelNew()
         self.ref_marker = AlignmentMarker(self.canvas, self.model)
-        self.cot = CoordinateTool()
+        self.cot = CoordinateToolNew()
 
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
@@ -144,7 +145,8 @@ class WiscSIMSTool:
         # self.dockwidget = None
 
         self.rb_line = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
-        self.start_point, self.end_point = None, None
+        self.start_point = []
+        self.end_point = []
         self.line_in_progress = False
         self.prev_tool = None
 
@@ -169,6 +171,11 @@ class WiscSIMSTool:
         self.state_alt_key = False
         self.mouse_move_counter = 0
         self.move_throttling_threshold = 3
+
+        # defaut value for aligment parameters
+        self.default_val = -999999999
+
+        self.new_aliginment = True
 
     # noinspection PyMethodMayBeStatic
 
@@ -336,7 +343,7 @@ class WiscSIMSTool:
             self.dockwidget.Btn_Select_Workbook.setIcon(QIcon(icon_open_folder))
             self.dockwidget.Btn_Select_Workbook.setIconSize(QSize(16, 16))
 
-            self.init_alignmentTable()
+            self.init_alignmentTableNew()
             self.dockwidget.Grp_Workbook.setEnabled(False)
             self.dockwidget.Grp_Layer.setEnabled(False)
             self.prev_workbook_path = ''
@@ -516,6 +523,36 @@ class WiscSIMSTool:
             wb_status = False
         self.dockwidget.Grp_Workbook.setEnabled(wb_status)
 
+    def init_alignmentTableNew(self):
+        tbl = self.dockwidget.Tbv_Alignment
+        tbl.setModel(self.model)
+        hiddenColumns = ["stage", "canvas", "beam"]
+        [tbl.setColumnHidden(self.model.getColumnIndex(c), True) for c in hiddenColumns]
+        w = {"0": 20, "2": 0, "3": 0, "4": 0}
+        [tbl.setColumnWidth(c, w[str(c)]) for c in [0, 2, 3, 4]]
+        [
+            tbl.horizontalHeader().setSectionResizeMode(c, QHeaderView.Fixed)
+            for c in [0, 2, 3, 4]
+        ]
+        tbl.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
+
+        tbl.verticalHeader().setDefaultSectionSize(22)
+        tbl.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        tbl.setSelectionBehavior(QAbstractItemView.SelectRows)
+        tbl.setSelectionMode(QAbstractItemView.SingleSelection)
+        tbl.clicked.connect(self.handle_tbl_clicked)
+        self.model.itemChanged.connect(self.handle_item_changed)
+        self.model.refPtUpdated.connect(self.handle_ref_point_updated)
+
+    def handle_tbl_clicked(self):
+        pass
+
+    def handle_item_changed(self):
+        pass
+
+    def handle_ref_point_updated(self):
+        pass
+
     def init_alignmentTable(self):
         self.dockwidget.Tbv_Alignment.setModel(self.model)
         hiddenColumns = [
@@ -542,30 +579,10 @@ class WiscSIMSTool:
         # scale, offset, rotation = self.model.getAlignmentParams(row)
         self.update_ref_point_markers()
 
-    def format_alignment_to_json(self, aln):
-        for a in aln:
-            a['point_1'] = [
-                [a['point_1'][0][0], a['point_1'][0][1]],
-                [a['point_1'][1][0], a['point_1'][1][1]]
-            ]
-            a['point_2'] = [
-                [a['point_2'][0][0], a['point_2'][0][1]],
-                [a['point_2'][1][0], a['point_2'][1][1]]
-            ]
-            a['offset'] = a['point_1'][::-1]
-        return aln
-
-    def format_json_to_alignment(self, aln):
-        for a in aln:
-            for pt in ['point_1', 'point_2']:
-                a[pt] = [QgsPointXY(p[0], p[1]) for p in a[pt]]
-            a['offset'] = a['point_1'][::-1]
-        return aln
-
     def import_alignments(self, alnFile=None):
         project_path = os.path.dirname(QgsProject.instance().fileName())
         if not alnFile:
-            alnFile, _filter = QFileDialog.getOpenFileName(
+            alnFile, _ = QFileDialog.getOpenFileName(
                 self.window,
                 "Open Stage Navigator alignment file",
                 project_path,
@@ -578,11 +595,25 @@ class WiscSIMSTool:
         with open(alnFile) as data_file:
             obj = json.load(data_file)
 
+            self.new_aliginment = self.model.isNewFormat(obj)
+
+            if not self.new_aliginment:
+                # AlignmentModelNew is default
+                self.model = AlignmentModel()
+
             if self.model.isAvailable():
                 self.model.clear()
+
+            if self.new_aliginment:
+                self.model = AlignmentModelNew()
+                self.cot = CoordinateToolNew()
+                self.init_alignmentTableNew()
+            else:
                 self.model = AlignmentModel()
+                self.cot = CoordinateTool()
                 self.init_alignmentTable()
-            self.model.ImportFromsJson(self.format_json_to_alignment(obj))
+
+            self.model.ImportFromsJson(obj)
             # params = self.getParams()
             # self.canvas.setRotation(params['rotation'])
             self.dockwidget.Grp_Workbook.setEnabled(True)
@@ -594,6 +625,9 @@ class WiscSIMSTool:
             self.update_ref_point_markers()
             self.update_canvas_rotation()
 
+    def is_default_values(self, pt):
+        return pt[0] == self.default_val and pt[1] == self.default_val
+
     def update_ref_point_markers(self):
         self.ref_marker.init_ref_point_markers()
         # shwo ref points?
@@ -602,11 +636,22 @@ class WiscSIMSTool:
 
         alignments = self.model.ExportAsObject()
         selected_alignment = self.dockwidget.Tbv_Alignment.currentIndex().row()
-        for aln in alignments:
-            current_flag = selected_alignment == aln['r']
-            self.handle_ref_marker(aln['point_1'][1], aln['refname'] + ' (1)', current_flag)
-            self.handle_ref_marker(aln['point_2'][1], aln['refname'] + ' (2)', current_flag)
-        self.update_canvas_rotation()
+
+        print(f"New Alignment: {self.new_aliginment}")
+
+        if self.new_aliginment:
+            for aln in alignments:
+                if aln["used"] < 2 and aln["r"] != self.ref_selecting["row"]:
+                    continue
+                current_flag = selected_alignment == aln["r"]
+                if not self.is_default_values(aln["stage"]):
+                    self.handle_ref_marker(aln["canvas"], aln["refname"], current_flag)
+        else:
+            for aln in alignments:
+                current_flag = selected_alignment == aln['r']
+                self.handle_ref_marker(aln['point_1'][1], aln['refname'] + ' (1)', current_flag)
+                self.handle_ref_marker(aln['point_2'][1], aln['refname'] + ' (2)', current_flag)
+            self.update_canvas_rotation()
 
     def update_canvas_rotation(self):
         if self.model.isAvailable():
@@ -614,6 +659,7 @@ class WiscSIMSTool:
             self.canvas.setRotation(params['rotation'])
 
     def handle_ref_marker(self, pt, name, current=False):
+        # print(pt, name)
         if self.dockwidget.Cbx_Alignment_Ref_Points.isChecked():
             self.ref_marker.add_ref_marker(pt, name, current)
         if self.dockwidget.Cbx_Alignment_Ref_Names.isChecked():
@@ -664,10 +710,68 @@ class WiscSIMSTool:
             return False
         return True
 
+    def update_conv_params(self):
+        if self.model.isAvailable():
+            # Get available rows (indexes)
+            available_refs = self.model.getAvailableRows()
+            self.conv_params = {}
+            for l in available_refs:
+                for r in available_refs:
+                    if l >= r:
+                        continue
+                    # Get combinations of indexes
+                    key = f"{l}-{r}"
+                    # Calculate ConvertParams
+                    scale, offset, rotation = self.cot.getConvertParams(
+                        self.model.getStagePosition(l),
+                        self.model.getCanvasPosition(l),
+                        self.model.getStagePosition(r),
+                        self.model.getCanvasPosition(r),
+                    )
+                    self.conv_params[key] = {
+                        'scale': scale,
+                        'offset': offset,
+                        'rotation': rotation,
+                    }
+
+            self.update_canvas_rotation()
+        self.update_ref_point_markers()
+
+    def sort_by_distance(self, pt, ref_canvas_pt):
+        out = {}
+        if not isinstance(pt, QgsPointXY):
+            pt = QgsPointXY(pt[0], pt[1])
+        for k, v in ref_canvas_pt.items():
+            out[k] = pt.distance(v[0], v[1])
+        # sorted by distance
+        retval = [(k, v) for k, v in sorted(out.items(), key=lambda item: item[1])]
+        return retval
+
+    def get_conversion_models(self, pt, ref_pos, conv_params, limit=2):
+        sorted_idxes = self.sort_by_distance(pt, ref_pos)
+        # if limit less than 2, all conv_params are going to be used
+        sorted_idxes = sorted_idxes[:limit]
+
+        new_conv_params = []
+        out = {}
+        for j in sorted_idxes:
+            for k in sorted_idxes:
+                if j[0] >= k[0]:
+                    continue
+                key = f"{j[0]}-{k[0]}"
+                new_conv_params.append(conv_params[key])
+                weight = 1 / (j[1] + k[1])**2
+                out[key] = weight
+                new_conv_params[-1]['weight'] = weight
+        wt_sum = sum(out.values())
+        # print([round(100 * a/wt_sum, 1) for a in out.values() if a > 0.0])
+        return new_conv_params
+
     def import_from_excel(self):
         if not self.is_ok_to_import():
             return
 
+        # import date from Excel file
         if self.dockwidget.Opt_Comment.isChecked():
             importing_data = self.xl.filter_by_comment(self.dockwidget.Tbx_Comment_Match.text())
         else:
@@ -684,9 +788,16 @@ class WiscSIMSTool:
         importing_layer = self.dockwidget.Cmb_Target_Layer.itemData(
             self.dockwidget.Cmb_Target_Layer.currentIndex())
         X, Y = self.xl.find_columns(['X', 'Y'], False)
+
         features = []
+
+        # get conversion model
+        #
+        self.update_conv_params()
+
         i = 0
         is_direct_import = not self.dockwidget.Grp_Alignment.isChecked()
+
         for d in importing_data:
             if d[X] == "" or d[Y] == "":
                 continue
@@ -694,11 +805,17 @@ class WiscSIMSTool:
             if is_direct_import:
                 canvasX, canvasY = [d[X], d[Y]]
             else:
-                canvasX, canvasY = self.getWtAverageStageToCanvas([d[X], d[Y]])
+                conv_model = self.get_conversion_models(
+                    [d[X], d[Y]],
+                    self.model.getStagePositions(),
+                    self.conv_params, 2
+                )
+                canvasX, canvasY = self.cot.getWtAveragedStageToCanvas([d[X], d[Y]], conv_model)
             feature = QgsFeature()
             feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(canvasX, canvasY)))
             feature.setAttributes(d)
             features.append(feature)
+
         dpr = importing_layer.dataProvider()
         dpr.addFeatures(features)
         importing_layer.setDisplayExpression('File')
@@ -797,6 +914,8 @@ class WiscSIMSTool:
             props = newVlayer.renderer().symbol().symbolLayer(0).properties()
             props['name'] = "circle"
             props['size_unit'] = "MapUnit"
+            props['offset_unit'] = "MapUnit"
+            props['outline_width_unit'] = "MapUnit"
             spotSize = 1.0 * self.dockwidget.Spn_Spot_Size.value()
             if self.model.isAvailable():
                 scale = self.get_average(self.model.getScales())
@@ -866,6 +985,7 @@ class WiscSIMSTool:
             "ESRI Shapefile"
         )
         if error != QgsVectorFileWriter.NoError:
+            print(_error_str)
             return
         # open shapefile, then get and return headers
         tmp_layer = QgsVectorLayer(tmp_file_path, 'kk', 'ogr')
@@ -1015,7 +1135,7 @@ class WiscSIMSTool:
         vl.setDisplayExpression('Comment')
         vl.updateFields()
 
-        error, _ = QgsVectorFileWriter.writeAsVectorFormat(
+        error, _error_str = QgsVectorFileWriter.writeAsVectorFormat(
             vl,
             saveFile,
             "UTF-8",
@@ -1035,6 +1155,7 @@ class WiscSIMSTool:
 
         spot_size = self.dockwidget.Spn_Preset_Spot_Size.value()
         if error != QgsVectorFileWriter.NoError:
+            print(_error_str)
             return
 
         newVlayer = QgsVectorLayer(saveFile, layer_name, "ogr")
@@ -1042,8 +1163,9 @@ class WiscSIMSTool:
         props = newVlayer.renderer().symbol().symbolLayer(0).properties()
         props['name'] = "circle"
         props['size_unit'] = "MapUnit"
-        spot_size = 1.0 * self.scale * spot_size
-        props['size'] = str(spot_size)
+        props['offset_unit'] = "MapUnit"
+        props['outline_width_unit'] = "MapUnit"
+        props['size'] = f"{1.0 * self.scale * spot_size}"  # spot size
         mySimpleSymbol = QgsMarkerSymbol.createSimple(props)
         newVlayer.renderer().setSymbol(mySimpleSymbol)
         newVlayer.updateExtents()
@@ -1051,6 +1173,7 @@ class WiscSIMSTool:
         # load and register created layer to mapCanvas
         QgsProject.instance().addMapLayer(newVlayer)
         self.iface.setActiveLayer(newVlayer)
+        self.iface.activeLayer().renderer().symbol().symbolLayer(0).setSizeUnit(1)
 
         settings = QgsPalLayerSettings()
         settings.enabled = True
@@ -1065,6 +1188,7 @@ class WiscSIMSTool:
         newVlayer.setLabeling(QgsVectorLayerSimpleLabeling(settings))
         newVlayer.triggerRepaint()
 
+        # show feature count
         root = QgsProject.instance().layerTreeRoot()
         myLayerNode = root.findLayer(newVlayer.id())
         myLayerNode.setCustomProperty("showFeatureCount", True)
@@ -1320,8 +1444,8 @@ class WiscSIMSTool:
 
     def clear_preview_spots(self, init=True):
         # clear/init all preview related items
-        self.start_point = None
-        self.end_point = None
+        self.start_point = []
+        self.end_point = []
         self.feature_id = None
         self.line_in_progress = False
         if init:
@@ -1435,8 +1559,11 @@ class WiscSIMSTool:
 
     def remove_scratch_layer(self):
         layer = self.get_preset_layer()
-        layer.removeSelection()
 
+        if layer is None:
+            return
+
+        layer.removeSelection()
         feature_ids = [f.id() for f in self.sc_dp.getFeatures()]
         self.sc_dp.deleteFeatures(feature_ids)
 
@@ -1534,7 +1661,7 @@ class WiscSIMSTool:
             # self.rb_start.addPoint(self.start_point, True)
 
     def update_line(self):
-        if self.start_point and self.end_point:
+        if len(self.start_point) and len(self.end_point):
             self.init_scratch_layer()
             self.update_scratch_layer_symbol_size()
             self.preset_points = []
@@ -1828,7 +1955,7 @@ class WiscSIMSTool:
         self.flag_cancel_moving_spot = False
         return
 
-    def canvasReleaseWAltShift(self, e):
+    def delete_spot(self, e):
         # delete spot
         layer = self.get_preset_layer()
         if layer is None:
@@ -1881,6 +2008,9 @@ class WiscSIMSTool:
         self.canvas.setCursor(Qt.CrossCursor)
 
         self.update_undo_btn_state()
+
+    def canvasReleaseWAltShift(self, e):
+        self.delete_spot(e)
 
     def canvasReleaseWAlt(self, e):
         layer = self.get_preset_layer()
@@ -1957,8 +2087,8 @@ class WiscSIMSTool:
             else:
                 # select start-point
                 self.show_tooltip("line-start")
-                self.start_point = None
-                self.end_point = None
+                self.start_point = []
+                self.end_point = []
                 # elif self.start_point and self.end_point:
                 self.preset_line(pt)
             # else:
