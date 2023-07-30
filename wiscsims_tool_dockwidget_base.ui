@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>387</width>
-    <height>651</height>
+    <width>556</width>
+    <height>671</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -18,8 +18,8 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>387</width>
-    <height>651</height>
+    <width>556</width>
+    <height>671</height>
    </size>
   </property>
   <property name="maximumSize">
@@ -239,7 +239,7 @@ QTabWidget::pane {
               </size>
              </property>
              <property name="text">
-              <string>Open Alignment File...</string>
+              <string>Open New Alignment File...</string>
              </property>
             </widget>
            </item>
@@ -1104,6 +1104,9 @@ font-weight: bold;
           <property name="title">
            <string>Scale</string>
           </property>
+          <property name="checkable">
+           <bool>false</bool>
+          </property>
           <layout class="QHBoxLayout" name="horizontalLayout_3">
            <property name="spacing">
             <number>6</number>
@@ -1155,6 +1158,28 @@ font-weight: bold;
              </property>
              <property name="value">
               <double>1.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="Btn_Preset_PxSizeCalc">
+             <property name="maximumSize">
+              <size>
+               <width>24</width>
+               <height>24</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>🧮</string>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+             <property name="checked">
+              <bool>false</bool>
+             </property>
+             <property name="flat">
+              <bool>false</bool>
              </property>
             </widget>
            </item>
@@ -1247,7 +1272,7 @@ font-weight: bold;
            <enum>QTabWidget::Rounded</enum>
           </property>
           <property name="currentIndex">
-           <number>0</number>
+           <number>2</number>
           </property>
           <property name="iconSize">
            <size>

@@ -47,7 +47,13 @@ from PyQt5.QtWidgets import (
     QLineEdit,
     QToolTip,
     QHeaderView,
+    QDialog,
+    QLineEdit,
+    QDialogButtonBox,
+    QVBoxLayout,
+    QLabel,
 )
+
 from qgis.core import (
     QgsProject,
     QgsFeature,
@@ -91,6 +97,34 @@ import os
 import re
 import json
 import math
+
+
+class AlignmentInfo(QDialog):
+    def __init__(self, parent=None, info=None):
+        QDialog.__init__(self)
+
+        self.setWindowTitle("Aligment Information")
+
+        QBtn = QDialogButtonBox.Ok
+
+        self.buttonBox = QDialogButtonBox(QBtn)
+        self.buttonBox.accepted.connect(self.accept)
+
+        self.layout = QVBoxLayout()
+        message = ""
+        if info is not None:
+            beampos = info['beam']['position']
+            beamsize = info['beam']['size']
+            stage = info['stage']
+            canvas = info['canvas']
+            refname = info['name']
+
+            message = QLabel(
+                f"\"{refname}\"\n\nStage: ({stage.x():0.0f}, {stage.y():0.0f})\nCanvas: ({canvas.x():0.2f}, {canvas.y():0.2f})\nBeam Position: ({beampos[0]}, {beampos[1]})\nBeam Size: {beamsize} um")
+
+        self.layout.addWidget(message)
+        self.layout.addWidget(self.buttonBox)
+        self.setLayout(self.layout)
 
 
 class WiscSIMSTool:
@@ -145,6 +179,8 @@ class WiscSIMSTool:
         # self.dockwidget = None
 
         self.rb_line = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
+        self.pxsize_line = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
+
         self.start_point = []
         self.end_point = []
         self.line_in_progress = False
@@ -176,6 +212,8 @@ class WiscSIMSTool:
         self.default_val = -999999999
 
         self.new_aliginment = True
+
+        self.flag_pixel_size_tool = False
 
     # noinspection PyMethodMayBeStatic
 
@@ -392,6 +430,7 @@ class WiscSIMSTool:
 
         dock.Grp_Alignment.toggled.connect(self.toggle_use_alignment)
         dock.Tbv_Alignment.clicked.connect(self.change_tableview_selection)
+        dock.Tbv_Alignment.doubleClicked.connect(self.handle_table_doubleClicked)
         dock.Gbx_Alignment_Ref_Point_Markers.toggled.connect(self.update_ref_point_markers)
         dock.Cbx_Alignment_Ref_Points.toggled.connect(self.update_ref_point_markers)
         dock.Cbx_Alignment_Ref_Names.toggled.connect(self.update_ref_point_markers)
@@ -427,6 +466,7 @@ class WiscSIMSTool:
         dock.Cmb_Preset_Layer.currentIndexChanged.connect(self.handle_change_preset_layer)
         dock.Spn_Preset_Pixel_Size.valueChanged.connect(self.handle_change_pixel_size)
         dock.Spn_Preset_Spot_Size.valueChanged.connect(self.handle_change_spot_size)
+        dock.Btn_Preset_PxSizeCalc.clicked.connect(self.handle_pixel_size_tool)
 
         dock.Tbx_Comment.textChanged.connect(self.reset_current_number)
         dock.Tbx_Comment.textChanged.connect(self.handle_comment_change_preview)
@@ -546,6 +586,23 @@ class WiscSIMSTool:
 
     def handle_tbl_clicked(self):
         pass
+
+    def handle_table_doubleClicked(self, clickedRow):
+        r = clickedRow.row()
+        alinfo = {
+            "beam": self.model.getBeam(r),
+            "stage": self.model.getStagePosition(r),
+            "canvas":  self.model.getCanvasPosition(r),
+            "name": self.model.getRefName(r),
+        }
+
+        ex = AlignmentInfo(self, info=alinfo)
+        if ex.exec():
+            print("success")
+        else:
+            print("Canel!")
+
+        print("double click")
 
     def handle_item_changed(self):
         pass
@@ -1245,13 +1302,28 @@ class WiscSIMSTool:
     def handle_change_pixel_size(self, size):
         self.scale = 1 / size
         current_mode = self.get_preset_mode()
-        if current_mode == "grid":
-            self.update_grid()
-        elif current_mode == "line":
-            self.update_line()
+        if not self.flag_pixel_size_tool:
+            if current_mode == "grid":
+                self.update_grid()
+            elif current_mode == "line":
+                self.update_line()
 
         ss = self.dockwidget.Spn_Preset_Spot_Size.value()
         self.handle_change_spot_size(ss)
+
+    def handle_pixel_size_tool(self):
+        self.flag_pixel_size_tool = not self.flag_pixel_size_tool
+
+        self.dockwidget.Btn_Preset_PxSizeCalc.setChecked(self.flag_pixel_size_tool)
+
+        if self.flag_pixel_size_tool:
+            self.init_px_size_tool()
+            self.init_rb_line()
+            QMessageBox.information(
+                self.window,
+                'Pixel Size Tool',
+                'Click both ends of the scale in the map'
+            )
 
     def handle_change_spot_size(self, size):
         preset_layer = self.dockwidget.Cmb_Preset_Layer
@@ -1272,6 +1344,8 @@ class WiscSIMSTool:
         self.update_scratch_layer_symbol_size()
 
     def update_preview_spots(self):
+        if self.flag_pixel_size_tool:
+            return
         current_mode = self.get_preset_mode()
         if current_mode == "grid":
             self.update_grid()
@@ -1462,6 +1536,16 @@ class WiscSIMSTool:
         self.rb_line.setWidth(2)
         self.rb_line.setColor(QColor(255, 20, 20, 60))
         self.dockwidget.Txt_Line_Length.setText('0')
+
+    def init_px_size_tool(self):
+        if self.pxsize_line.size() > 0:
+            self.pxsize_line.reset()
+        self.pxsize_line = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
+        self.pxsize_line.setWidth(4)
+        self.pxsize_line.setColor(QColor(25, 105, 200, 60))
+
+        self.pxsize_start_point = QgsPointXY()
+        self.pxsize_end_point = QgsPointXY()
 
     # def init_rb2(self):
     #     # Points
@@ -2058,11 +2142,60 @@ class WiscSIMSTool:
 
         self.update_undo_btn_state()
 
+    def pixel_size_tool(self):
+        if self.pxsize_end_point.isEmpty():
+            self.pxsize_line.addPoint(self.pxsize_start_point, False)  # add new temp end-point
+            self.pxsize_line.addPoint(self.pxsize_start_point, True)  # add new temp end-point
+        else:
+            # print(f'start: {self.pxsize_start_point}, end: {self.pxsize_end_point}')
+            # print(f'distance: {self.pxsize_start_point.distance(self.pxsize_end_point)}')
+
+            # Show dialog to input scale size (length)
+            d = self.pxsize_start_point.distance(self.pxsize_end_point)
+            scale_length, okPressed = QInputDialog.getDouble(
+                self.window,
+                'Pixel Size Tool',
+                'Length of scale (um): ',
+                QLineEdit.Normal
+            )
+
+            self.init_px_size_tool()
+
+            if not okPressed:
+                return
+
+            px_size = round(scale_length / d, 3)
+            # print(f"scale length = {scale_length}")
+            # print(f"pixel size (um) = {scale_length / d:0.3f}")
+
+            ret = QMessageBox.question(
+                self.window,
+                'Pixel Size Tool',
+                f'Pixel Size is {px_size} um\n\nDo you want to set this?'
+            )
+
+            if ret == QMessageBox.Yes:
+                # set px_size
+                self.dockwidget.Spn_Preset_Pixel_Size.setValue(px_size)
+
     def canvasClicked(self, pt):
 
         self.init_scratch_layer()
 
         if self.get_current_tool() != 'preset':
+            self.remove_scratch_layer()
+            return
+
+        if self.flag_pixel_size_tool:
+            if self.pxsize_start_point.isEmpty():
+                # start point selected
+                self.init_px_size_tool()
+                self.pxsize_start_point = pt
+            else:
+                # end point selected
+                self.pxsize_end_point = pt
+            self.pixel_size_tool()
+
             return
 
         if self.get_preset_layer() is None:
@@ -2076,7 +2209,8 @@ class WiscSIMSTool:
         mode = self.get_preset_mode()
         if self.state_ctrl_key:
             self.state_ctrl_key = False
-        if mode == 'point':
+
+        elif mode == 'point':
             self.add_preset_point(pt)
 
         elif mode == 'line':
@@ -2103,6 +2237,14 @@ class WiscSIMSTool:
         self.canvasClicked(pt)
 
     def canvasMoved(self, pt):
+
+        if self.flag_pixel_size_tool:
+            if not self.pxsize_start_point.isEmpty():
+                self.pxsize_line.removeLastPoint()  # remove temp end-point (cursor)
+                self.pxsize_line.addPoint(pt, True)  # add new temp end-point
+
+            return
+
         # Throttling of preview repainting
         # no throttling for rubberband line of the Line mode
 
