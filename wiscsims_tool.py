@@ -91,6 +91,7 @@ from .tools.coordinateTool import CoordinateTool, CoordinateToolNew
 
 # Import the code for the DockWidget
 from .wiscsims_tool_dockwidget import WiscSIMSToolDockWidget
+from .pixel_size_tool import PixelSizeTool
 
 import os.path
 import os
@@ -359,7 +360,7 @@ class WiscSIMSTool:
     # --------------------------------------------------------------------------
     def run(self):
         """Run method that loads and starts the plugin"""
-        print('run')
+        print('run wiscsims tool')
         if self.pluginIsActive:
             print('already activated')
             if not self.wiscsims_tool_action.isChecked():
@@ -1311,19 +1312,63 @@ class WiscSIMSTool:
         ss = self.dockwidget.Spn_Preset_Spot_Size.value()
         self.handle_change_spot_size(ss)
 
+    def handle_set_pixel_size(self):
+        px_size = self.pixel_size_tool_win.SPN_PixelSize.value()
+        # - close PST window
+        self.pixel_size_tool_win.close()
+        # - set flag to False
+        self.flag_pixel_size_tool = False
+        # - change button state
+        self.dockwidget.Btn_Preset_PxSizeCalc.setChecked(False)
+        # - set pixel size
+        # this will automatically change spot size in preset layer
+        self.dockwidget.Spn_Preset_Pixel_Size.setValue(px_size)
+        # - delete rubberbands
+        self.init_px_size_tool()
+
+    def handle_cancel_pixel_size(self):
+        print('cancel/close PST')
+        # - close PST window
+        self.pixel_size_tool_win.close()
+        # - set flag to False
+        self.flag_pixel_size_tool = False
+        # - change button state
+        self.dockwidget.Btn_Preset_PxSizeCalc.setChecked(False)
+        # - delete rubberbands
+        self.init_px_size_tool()
+
     def handle_pixel_size_tool(self):
-        self.flag_pixel_size_tool = not self.flag_pixel_size_tool
 
-        self.dockwidget.Btn_Preset_PxSizeCalc.setChecked(self.flag_pixel_size_tool)
-
+        params = {}
+        self.init_px_size_tool()
         if self.flag_pixel_size_tool:
-            self.init_px_size_tool()
-            self.init_rb_line()
-            QMessageBox.information(
-                self.window,
-                'Pixel Size Tool',
-                'Click both ends of the scale in the map'
-            )
+            self.flag_pixel_size_tool = False
+            self.pixel_size_tool_win.close()
+            print("after closed PST window: ", self.pixel_size_tool_win)
+        else:
+            self.pixel_size_tool_win = PixelSizeTool(self.window, params)
+
+            # self.pixel_size_tool_win.setPxSize.connect(self.handle_set_pixel_size)
+            # self.pixel_size_tool_win.canceled.connect(self.handle_cancel_pixel_size)
+
+            self.pixel_size_tool_win.accepted.connect(self.handle_set_pixel_size)
+            self.pixel_size_tool_win.rejected.connect(self.handle_cancel_pixel_size)
+
+            self.flag_pixel_size_tool = True
+            retval = self.pixel_size_tool_win.show()
+            print(f"retval: {retval}")
+
+            return
+
+    def init_px_size_tool(self):
+        if self.pxsize_line.size() > 0:
+            self.pxsize_line.reset()
+        self.pxsize_line = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
+        self.pxsize_line.setWidth(4)
+        self.pxsize_line.setColor(QColor(25, 105, 200, 60))
+
+        self.pxsize_start_point = QgsPointXY()
+        self.pxsize_end_point = QgsPointXY()
 
     def handle_change_spot_size(self, size):
         preset_layer = self.dockwidget.Cmb_Preset_Layer
@@ -1374,7 +1419,7 @@ class WiscSIMSTool:
 
     def add_preset_points(self):
 
-        self.remove_scratch_layer()
+        self.remove_objects_from_scratch_layer()
 
         if len(self.preset_points) == 0:
             return
@@ -1525,7 +1570,7 @@ class WiscSIMSTool:
         if init:
             self.init_scratch_layer()
         else:
-            self.remove_scratch_layer()
+            self.remove_objects_from_scratch_layer()
         self.clear_preview_points()
 
     def init_rb_line(self):
@@ -1536,16 +1581,6 @@ class WiscSIMSTool:
         self.rb_line.setWidth(2)
         self.rb_line.setColor(QColor(255, 20, 20, 60))
         self.dockwidget.Txt_Line_Length.setText('0')
-
-    def init_px_size_tool(self):
-        if self.pxsize_line.size() > 0:
-            self.pxsize_line.reset()
-        self.pxsize_line = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
-        self.pxsize_line.setWidth(4)
-        self.pxsize_line.setColor(QColor(25, 105, 200, 60))
-
-        self.pxsize_start_point = QgsPointXY()
-        self.pxsize_end_point = QgsPointXY()
 
     # def init_rb2(self):
     #     # Points
@@ -1584,10 +1619,11 @@ class WiscSIMSTool:
     #     # self.init_rb_s()
 
     def init_scratch_layer(self, moving=False):
-        self.remove_scratch_layer()
-        symbol = self.scratchLayer.renderer().symbol()
-        symbol.symbolLayer(0).setStrokeColor(QColor(255, 255, 255))  # stroke: black
-        self.scratchLayer.renderer().symbol().setColor(QColor(64, 143, 176, 102))  # lightblue, alpha: 0.4
+        self.remove_objects_from_scratch_layer()
+        if hasattr(self, 'scaratcLayer'):
+            symbol = self.scratchLayer.renderer().symbol()
+            symbol.symbolLayer(0).setStrokeColor(QColor(255, 255, 255))  # stroke: black
+            self.scratchLayer.renderer().symbol().setColor(QColor(64, 143, 176, 102))  # lightblue, alpha: 0.4
 
     def cleanup_old_scratch_layers(self):
         instance = QgsProject.instance()
@@ -1641,18 +1677,19 @@ class WiscSIMSTool:
         self.scratchLayer.triggerRepaint()
         QgsProject.instance().addMapLayer(self.scratchLayer)
 
-    def remove_scratch_layer(self):
+    def remove_objects_from_scratch_layer(self):
         layer = self.get_preset_layer()
 
         if layer is None:
             return
 
         layer.removeSelection()
-        feature_ids = [f.id() for f in self.sc_dp.getFeatures()]
-        self.sc_dp.deleteFeatures(feature_ids)
+        if hasattr(self, 'sc_dp'):
+            feature_ids = [f.id() for f in self.sc_dp.getFeatures()]
+            self.sc_dp.deleteFeatures(feature_ids)
 
-        self.scratchLayer.commitChanges()
-        self.scratchLayer.triggerRepaint()
+            self.scratchLayer.commitChanges()
+            self.scratchLayer.triggerRepaint()
 
         self.feature_id = None
 
@@ -1752,6 +1789,8 @@ class WiscSIMSTool:
             self.draw_line_points()
 
     def draw_line_points(self, live_preview=False):
+        if len(self.start_point) == 0:
+            return
         # update line length in the widget
         length = self.update_line_length(self.end_point)
 
@@ -1821,6 +1860,8 @@ class WiscSIMSTool:
         n_step_x = self.dockwidget.Spn_Grid_N_Point_X.value()
         n_step_y = self.dockwidget.Spn_Grid_N_Point_Y.value()
         rotation = self.canvas.rotation()
+        if len(self.start_point) == 0:
+            return
         points = self.calculate_grid_positions(
             self.start_point, [step_x, step_y], [n_step_x, n_step_y], order, self.scale, rotation)
         i = 0
@@ -1934,6 +1975,7 @@ class WiscSIMSTool:
     """
 
     def mapToolChanged(self, tool, prev_tool):
+
         #     r'wiscsims_tool', str(tool)))
         if re.search(r'wiscsims_tool', str(tool)) or re.search(r'WiscSIMSTool', str(tool)):
             self.dockwidget.setEnabled(True)
@@ -1942,7 +1984,7 @@ class WiscSIMSTool:
         try:
             self.unsetMapTool()
             # self.clear_preview_points()
-            self.remove_scratch_layer()
+            self.remove_objects_from_scratch_layer()
             self.wiscsims_tool_action.setChecked(False)
             self.dockwidget.setEnabled(False)
         except Exception:
@@ -2142,59 +2184,44 @@ class WiscSIMSTool:
 
         self.update_undo_btn_state()
 
-    def pixel_size_tool(self):
-        if self.pxsize_end_point.isEmpty():
-            self.pxsize_line.addPoint(self.pxsize_start_point, False)  # add new temp end-point
-            self.pxsize_line.addPoint(self.pxsize_start_point, True)  # add new temp end-point
-        else:
-            # print(f'start: {self.pxsize_start_point}, end: {self.pxsize_end_point}')
-            # print(f'distance: {self.pxsize_start_point.distance(self.pxsize_end_point)}')
-
-            # Show dialog to input scale size (length)
-            d = self.pxsize_start_point.distance(self.pxsize_end_point)
-            scale_length, okPressed = QInputDialog.getDouble(
-                self.window,
-                'Pixel Size Tool',
-                'Length of scale (um): ',
-                QLineEdit.Normal
-            )
-
-            self.init_px_size_tool()
-
-            if not okPressed:
-                return
-
-            px_size = round(scale_length / d, 3)
-            # print(f"scale length = {scale_length}")
-            # print(f"pixel size (um) = {scale_length / d:0.3f}")
-
-            ret = QMessageBox.question(
-                self.window,
-                'Pixel Size Tool',
-                f'Pixel Size is {px_size} um\n\nDo you want to set this?'
-            )
-
-            if ret == QMessageBox.Yes:
-                # set px_size
-                self.dockwidget.Spn_Preset_Pixel_Size.setValue(px_size)
-
     def canvasClicked(self, pt):
 
         self.init_scratch_layer()
 
         if self.get_current_tool() != 'preset':
-            self.remove_scratch_layer()
+            self.remove_objects_from_scratch_layer()
             return
 
         if self.flag_pixel_size_tool:
+            # selecting locations for the Pixel Size Tool (PST)
+
+            if not self.pxsize_end_point.isEmpty():
+                # Activate input
+                self.init_px_size_tool()
+
             if self.pxsize_start_point.isEmpty():
                 # start point selected
-                self.init_px_size_tool()
+                # self.init_px_size_tool()
                 self.pxsize_start_point = pt
+                print('PST win hide')
+                self.pixel_size_tool_win.hide()
+
+                # start showing rubberband
+                self.pxsize_line.addPoint(self.pxsize_start_point, False)  # add start point
+                self.pxsize_line.addPoint(self.pxsize_start_point, True)  # add new temp end-point
             else:
                 # end point selected
                 self.pxsize_end_point = pt
-            self.pixel_size_tool()
+
+                # set value to the PST window
+                self.pixel_size_tool_win.set_scale_start_end(
+                    self.pxsize_start_point, self.pxsize_end_point)
+
+                # Show/activate PST window
+
+                self.pixel_size_tool_win.show()
+
+            # self.pixel_size_tool()
 
             return
 
@@ -2239,10 +2266,9 @@ class WiscSIMSTool:
     def canvasMoved(self, pt):
 
         if self.flag_pixel_size_tool:
-            if not self.pxsize_start_point.isEmpty():
+            if not self.pxsize_start_point.isEmpty() and self.pxsize_end_point.isEmpty():
                 self.pxsize_line.removeLastPoint()  # remove temp end-point (cursor)
                 self.pxsize_line.addPoint(pt, True)  # add new temp end-point
-
             return
 
         # Throttling of preview repainting
@@ -2301,7 +2327,7 @@ class WiscSIMSTool:
             # shift key released
             if self.feature_id:
                 # cancel moving
-                self.remove_scratch_layer()
+                self.remove_objects_from_scratch_layer()
                 self.flag_cancel_moving_spot = True
             else:
                 # after spot movement

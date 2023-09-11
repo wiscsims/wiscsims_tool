@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>556</width>
+    <width>405</width>
     <height>671</height>
    </rect>
   </property>
@@ -18,13 +18,13 @@
   </property>
   <property name="minimumSize">
    <size>
-    <width>556</width>
+    <width>405</width>
     <height>671</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>524287</width>
+    <width>405</width>
     <height>524287</height>
    </size>
   </property>
@@ -1169,8 +1169,21 @@ font-weight: bold;
                <height>24</height>
               </size>
              </property>
+             <property name="toolTip">
+              <string>Pixel Size Tool</string>
+             </property>
+             <property name="whatsThis">
+              <string>Pixel Size Tool</string>
+             </property>
+             <property name="autoFillBackground">
+              <bool>false</bool>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">background-color: #ff0000;
+color: #ffffff;</string>
+             </property>
              <property name="text">
-              <string>🧮</string>
+              <string>📏</string>
              </property>
              <property name="checkable">
               <bool>true</bool>
@@ -1179,7 +1192,7 @@ font-weight: bold;
               <bool>false</bool>
              </property>
              <property name="flat">
-              <bool>false</bool>
+              <bool>true</bool>
              </property>
             </widget>
            </item>
