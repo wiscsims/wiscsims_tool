@@ -48,7 +48,6 @@ from PyQt5.QtWidgets import (
     QToolTip,
     QHeaderView,
     QDialog,
-    QLineEdit,
     QDialogButtonBox,
     QVBoxLayout,
     QLabel,
@@ -88,6 +87,7 @@ from .tools.alignmentTool import AlignmentModel, AlignmentModelNew, AlignmentMar
 from .tools.canvasMapTool import CanvasMapTool
 from .tools.sumTableTool import SumTableTool
 from .tools.coordinateTool import CoordinateTool, CoordinateToolNew
+from .tools.presetPreview import PresetPreview
 
 # Import the code for the DockWidget
 from .wiscsims_tool_dockwidget import WiscSIMSToolDockWidget
@@ -173,7 +173,7 @@ class WiscSIMSTool:
         self.menu = self.tr("&WiscSIMS")
         # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar("WiscSIMS")
-        self.toolbar.setObjectName("WiscSIMS Tool")
+        self.toolbar.setObjectName("WiscSIMS Tool Preview")
 
         self.pluginIsActive = False
         # self.dockwidget = None
@@ -193,10 +193,6 @@ class WiscSIMSTool:
 
         self.feature_id = None
 
-        # self.scratchLayer = QgsVectorLayer("Point", "tmp",  "memory")
-        # self.sc_dp = self.scratchLayer.dataProvider()
-        # self.feature_id = None  # feature id for relocating preset point
-
         # maximum # of undo
         self.undo_max = 100
 
@@ -214,6 +210,8 @@ class WiscSIMSTool:
         self.new_aliginment = True
 
         self.flag_pixel_size_tool = False
+
+        self.cursor_pos = QgsPointXY(0, 0)
 
     # noinspection PyMethodMayBeStatic
 
@@ -392,8 +390,16 @@ class WiscSIMSTool:
         # connect to provide cleanup on closing of dockwidget
         self.dockwidget.closingPlugin.connect(self.onClosePlugin)
 
+        # in memory layer while moving the spot
+        self.preview = PresetPreview(self.get_preset_layer())
+
+        # for show preset preview in the point mode
+        self.handle_change_preset_mode(self.dockwidget.Tab_Preset_Mode.currentIndex())
+
         self.create_ui_connections()
         self.create_legend_connections()
+
+        self.handle_change_preset_mode(self.dockwidget.Tab_Preset_Mode.currentIndex())
 
         # show the dockwidget
         # TODO: fix to allow choice of dock location
@@ -401,9 +407,6 @@ class WiscSIMSTool:
         self.dockwidget.show()
 
         self.init_map_tool()
-
-        # in memory layer while moving the spot
-        self.create_scratch_layer()
 
     def handle_layers_changed(self, layers):
         if self.dockwidget.Cmb_Target_Layer.isEnabled():
@@ -442,7 +445,7 @@ class WiscSIMSTool:
         dock.Btn_Import_From_Excel.clicked.connect(self.import_from_excel)
         dock.Btn_Refresh_Import_Layers.clicked.connect(self.update_import_layers)
 
-        dock.Tab_Preset_Mode.currentChanged.connect(self.preset_tool_changed)
+        dock.Tab_Tool.currentChanged.connect(self.handle_change_tool)
 
         dock.Spn_Grid_Step_Size_X.valueChanged.connect(self.update_grid)
         dock.Spn_Grid_Step_Size_Y.valueChanged.connect(self.update_grid)
@@ -472,9 +475,12 @@ class WiscSIMSTool:
         dock.Spn_Preset_Pixel_Size.valueChanged.connect(self.handle_change_pixel_size)
         dock.Spn_Preset_Spot_Size.valueChanged.connect(self.handle_change_spot_size)
         dock.Btn_Preset_PxSizeCalc.clicked.connect(self.handle_pixel_size_tool)
-
         dock.Tbx_Comment.textChanged.connect(self.reset_current_number)
         dock.Tbx_Comment.textChanged.connect(self.handle_comment_change_preview)
+        dock.Spn_Current_Number.valueChanged.connect(self.handle_comment_change_preview)
+
+        dock.Tab_Preset_Mode.currentChanged.connect(self.handle_change_preset_mode)
+        dock.Opt_Point_Preview.stateChanged.connect(self.handle_change_PointPreview)
 
     def remove_ui_connections(self):
         dock = self.dockwidget
@@ -1031,7 +1037,12 @@ class WiscSIMSTool:
         # Filter by layer type 0: vector
         layers = self.get_layer_list(layertype=0)
         # filter only point geometry layer 0: point
-        return [l for l in layers if l.geometryType() == 0]
+        out = [
+            layer
+            for layer in layers
+            if layer.geometryType() == 0 and layer.name != "tmp layer"
+        ]
+        return out
 
     def get_true_shapefile_headers(self, headers):
         # create tmporal shapefile with provided headers
@@ -1178,6 +1189,7 @@ class WiscSIMSTool:
         self.dockwidget.Spn_Preset_Pixel_Size.setValue(ssps["ps"])
         self.dockwidget.Spn_Preset_Spot_Size.setValue(ssps["ss"])
 
+        self.preview.update_layer(self.get_preset_layer())
         self.handle_change_pixel_size(ssps["ps"])
 
     def create_preset_layer(self):
@@ -1215,7 +1227,7 @@ class WiscSIMSTool:
         )
 
         # Set layer name without duplication
-        layer_names = [l.name() for l in self.get_vector_point_layers()]
+        layer_names = [layer.name() for layer in self.get_vector_point_layers()]
         layer_name = "Preset"
 
         # check layer names to avoid name duplication
@@ -1272,7 +1284,7 @@ class WiscSIMSTool:
             self.dockwidget.Cmb_Preset_Layer.findText(layer_name)
         )
 
-        self.create_scratch_layer()
+        self.preview.create()
 
     def store_ss_ps(self, data):
         layer = self.get_preset_layer()
@@ -1321,6 +1333,8 @@ class WiscSIMSTool:
                 self.update_grid()
             elif current_mode == "line":
                 self.update_line()
+            elif current_mode == "point":
+                self.preview.update_symbol_size()
 
         ss = self.dockwidget.Spn_Preset_Spot_Size.value()
         self.handle_change_spot_size(ss)
@@ -1398,7 +1412,7 @@ class WiscSIMSTool:
         self.store_ss_ps({"ss": ss, "ps": ps})
 
         self.update_preview_spots()
-        self.update_scratch_layer_symbol_size()
+        self.preview.update_symbol_size()
 
     def update_preview_spots(self):
         if self.flag_pixel_size_tool:
@@ -1420,7 +1434,7 @@ class WiscSIMSTool:
         self.dockwidget.Spn_Current_Number.setValue(1)
 
     def get_current_tool(self):
-        tools = ["import", "preset", "alignment"]
+        tools = ["import", "preset", "pixelsize"]
         return tools[self.dockwidget.Tab_Tool.currentIndex()]
 
     def get_preset_layer(self):
@@ -1429,12 +1443,43 @@ class WiscSIMSTool:
         )
         return layer
 
+    def handle_change_PointPreview(self, state):
+        # state 0: Unchecked, 2: Checked
+        self.handle_change_preset_mode(0)
+
+    def handle_change_tool(self):
+        self.handle_change_preset_mode()
+
+    def handle_change_preset_mode(self, idx=-1):
+        if self.get_current_tool() != "preset":
+            self.canvas.setCursor(Qt.CrossCursor)
+            self.preview.reset()
+            return
+
+        if idx < 0:
+            idx = self.dockwidget.Tab_Preset_Mode.currentIndex()
+        modes = ["point", "line", "grid"]
+
+        if modes[idx] == "point" and self.dockwidget.Opt_Point_Preview.isChecked():
+            comment = self.get_comment(0)
+            point = [self.cursor_pos, comment]
+            self.preview.add_points([point])
+            self.canvas.setCursor(Qt.BlankCursor)
+        else:
+            self.canvas.setCursor(Qt.CrossCursor)
+            self.preview.reset()
+
     def get_preset_mode(self):
         modes = ["point", "line", "grid"]
         return modes[self.dockwidget.Tab_Preset_Mode.currentIndex()]
 
+    def reset_preset_points(self):
+        self.preview.remove_objects()
+        self.feature_id = None
+        self.update_add_points_btn_status(False)
+
     def add_preset_points(self):
-        self.remove_objects_from_scratch_layer()
+        self.reset_preset_points()
 
         if len(self.preset_points) == 0:
             return
@@ -1483,7 +1528,12 @@ class WiscSIMSTool:
             if not okPressed:
                 return
         self.preset_points = [[comment, pt[0], pt[1]]]
+        self.preview.remove_objects()
         self.add_preset_points()
+        # get latest comment for next spot
+        comment = self.get_comment(0)
+        if self.dockwidget.Opt_Point_Preview.isChecked():
+            self.preview.add_points([[self.cursor_pos, comment]])
 
     def handle_undo(self):
         if len(self.undo_preset) == 0:
@@ -1580,9 +1630,9 @@ class WiscSIMSTool:
         self.feature_id = None
         self.line_in_progress = False
         if init:
-            self.init_scratch_layer()
+            self.preview.reset()
         else:
-            self.remove_objects_from_scratch_layer()
+            self.reset_preset_points()
         self.clear_preview_points()
 
     def init_rb_line(self):
@@ -1629,93 +1679,6 @@ class WiscSIMSTool:
     #     self.init_rb()
     #     # self.init_rb2()
     #     # self.init_rb_s()
-
-    def init_scratch_layer(self, moving=False):
-        self.remove_objects_from_scratch_layer()
-        if hasattr(self, "scaratcLayer"):
-            symbol = self.scratchLayer.renderer().symbol()
-            symbol.symbolLayer(0).setStrokeColor(QColor(255, 255, 255))  # stroke: black
-            self.scratchLayer.renderer().symbol().setColor(
-                QColor(64, 143, 176, 102)
-            )  # lightblue, alpha: 0.4
-
-    def cleanup_old_scratch_layers(self):
-        instance = QgsProject.instance()
-        vals = instance.mapLayers().values()
-        [
-            instance.removeMapLayer(layer)
-            for layer in vals
-            if layer.name() == "tmp" and layer.storageType() == "Memory storage"
-        ]
-
-    def create_scratch_layer(self, moving=False):
-        self.cleanup_old_scratch_layers()
-        self.scratchLayer = QgsVectorLayer("Point", "tmp", "memory")
-        self.scratchLayer.setFlags(QgsMapLayer.Private)
-        self.scratchLayer.startEditing()
-        # Copy and paste symbol sytle from preset layer
-        layer = self.get_preset_layer()
-        if layer is None:
-            return
-        symbol = layer.renderer().symbol()
-        props = symbol.symbolLayer(0).properties()
-        self.scratchLayer.renderer().setSymbol(QgsMarkerSymbol.createSimple(props))
-
-        self.sc_dp = self.scratchLayer.dataProvider()
-        # add "Comment" field to the attribute table
-        self.sc_dp.addAttributes([QgsField("Comment", QVariant.String)])
-
-        # Label formatting: "Comment" field, diplay all comments, drop shodow, buffer (white)
-        settings = QgsPalLayerSettings()
-        settings.enabled = True
-        settings.fieldName = "Comment"
-        settings.displayAll = True
-        coll = QgsPropertyCollection("preset")
-        coll.setProperty(settings.ShadowDraw, True)
-        coll.setProperty(settings.BufferDraw, True)
-        coll.setProperty(settings.Color, QColor(255, 255, 255))
-        coll.setProperty(settings.BufferColor, QColor(0, 0, 0))
-        settings.setDataDefinedProperties(coll)
-        self.scratchLayer.setLabelsEnabled(True)
-        self.scratchLayer.setLabeling(QgsVectorLayerSimpleLabeling(settings))
-        self.scratchLayer.commitChanges()
-
-        # add drop shadow and color to the spot preview
-        pe_stack = QgsEffectStack()
-        pe_stack.appendEffect(QgsDropShadowEffect())
-        pe_stack.appendEffect(QgsDrawSourceEffect())
-
-        self.scratchLayer.renderer().setPaintEffect(pe_stack)
-
-        self.fields = self.scratchLayer.fields()
-
-        self.feature_id = None
-
-        self.scratchLayer.triggerRepaint()
-        QgsProject.instance().addMapLayer(self.scratchLayer)
-
-    def remove_objects_from_scratch_layer(self):
-        layer = self.get_preset_layer()
-
-        if layer is None:
-            return
-
-        layer.removeSelection()
-        if hasattr(self, "sc_dp"):
-            feature_ids = [f.id() for f in self.sc_dp.getFeatures()]
-            self.sc_dp.deleteFeatures(feature_ids)
-
-            self.scratchLayer.commitChanges()
-            self.scratchLayer.triggerRepaint()
-
-        self.feature_id = None
-
-        self.update_add_points_btn_status(False)
-
-    def add_features_to_scratch_layer(self, features):
-        self.sc_dp.addFeatures(features)
-        self.scratchLayer.commitChanges()
-        self.scratchLayer.triggerRepaint()
 
     def show_tooltip(self, situ):
         self.hide_tooltip()
@@ -1766,18 +1729,6 @@ class WiscSIMSTool:
             btn.setStyleSheet(styles)
             btn.setEnabled(status)
 
-    def update_scratch_layer_symbol_size(self):
-        layer = self.get_preset_layer()
-        symbol = layer.renderer().symbol()
-        props = symbol.symbolLayer(0).properties()
-        size = props["size"]
-        if hasattr(self, "scratchLayer"):
-            sc_props = self.scratchLayer.renderer().symbol().symbolLayer(0).properties()
-            sc_props["size"] = size
-            self.scratchLayer.renderer().setSymbol(
-                QgsMarkerSymbol.createSimple(sc_props)
-            )
-
     def preset_line(self, pt, line_end=False, live_preview=False):
         if line_end:
             self.end_point = pt
@@ -1787,15 +1738,10 @@ class WiscSIMSTool:
         else:  # start line drawing
             self.init_rb_line()
 
-            # self.init_scratch_layer()
+            # self.preview.reset()
             self.start_point = pt
 
-            geom = QgsGeometry.fromPointXY(pt)
-            feature = QgsFeature()
-            feature.setFields(self.fields)
-            feature.setGeometry(geom)
-            feature["Comment"] = ""
-            self.add_features_to_scratch_layer([feature])
+            self.preview.add_points([[pt, ""]])
             self.line_in_progress = True
 
             self.rb_line.addPoint(self.start_point, False)
@@ -1804,8 +1750,9 @@ class WiscSIMSTool:
 
     def update_line(self):
         if len(self.start_point) and len(self.end_point):
-            self.init_scratch_layer()
-            self.update_scratch_layer_symbol_size()
+            if self.preview:
+                self.preview.reset()
+                self.preview.update_symbol_size()
             self.preset_points = []
             self.draw_line_points()
 
@@ -1829,29 +1776,20 @@ class WiscSIMSTool:
         angle = self.get_angle(self.start_point, self.end_point)
         cos = step * math.cos(angle)
         sin = step * math.sin(angle)
-        i, x, y = 0, 0, 0
+        x, y = 0, 0
         pt = QgsPointXY(x, y)
 
-        features = []
+        preview_points = []
 
         for n in range(n_spots):
             x = self.start_point[0] + cos * n * self.scale
             y = self.start_point[1] + sin * n * self.scale
-            comment = self.get_comment(i)
+            comment = self.get_comment(n)
             pt = QgsPointXY(x, y)
-            geom = QgsGeometry.fromPointXY(pt)
-
-            feature = QgsFeature()
-
-            feature.setFields(self.fields)
-            feature.setGeometry(geom)
-            feature["Comment"] = comment
-            features.append(feature)
-
+            preview_points.append([pt, comment])
             self.preset_points.append([comment, x, y])
-            i += 1
 
-        self.add_features_to_scratch_layer(features)
+        self.preview.add_points(preview_points)
 
         if live_preview:
             self.preset_points = []
@@ -1862,15 +1800,16 @@ class WiscSIMSTool:
     def preset_grid(self, pt):
         self.start_point = pt
         self.init_rb_line()
-        self.init_scratch_layer()
+        self.preview.reset()
         self.draw_grid_points()
 
     def update_grid(self):
         if self.start_point is None:
             return
         self.preset_points = []
-        self.init_scratch_layer()
-        self.update_scratch_layer_symbol_size()
+        if self.preview:
+            self.preview.reset()
+            self.preview.update_symbol_size()
         self.init_rb_line()
         self.draw_grid_points()
 
@@ -1883,6 +1822,7 @@ class WiscSIMSTool:
         rotation = self.canvas.rotation()
         if len(self.start_point) == 0:
             return
+
         points = self.calculate_grid_positions(
             self.start_point,
             [step_x, step_y],
@@ -1892,24 +1832,18 @@ class WiscSIMSTool:
             rotation,
         )
         i = 0
-        features = []
+
+        preview_points = []
+
         for point in points:
             pt = QgsPointXY(point[0], point[1])
             comment = self.get_comment(i)
             self.rb_line.addPoint(pt, True)
             self.preset_points.append([comment, point[0], point[1]])
-
-            geom = QgsGeometry.fromPointXY(pt)
-            feature = QgsFeature()
-
-            feature.setFields(self.fields)
-            feature.setGeometry(geom)
-            feature["Comment"] = comment
-            features.append(feature)
-
+            preview_points.append([pt, comment])
             i += 1
 
-        self.add_features_to_scratch_layer(features)
+        self.preview.add_points(preview_points)
         self.update_add_points_btn_status(True)
         self.canvas.refresh()
 
@@ -1972,9 +1906,11 @@ class WiscSIMSTool:
 
     def handle_comment_change_preview(self):
         current_mode = self.get_preset_mode()
-        if current_mode == "point" or self.rb_line.size() == 0:
-            return
-        if current_mode == "line":
+        # if self.rb_line.size() == 0:
+        #     return
+        if current_mode == "point":
+            self.preview.update_comment(self.get_comment(0))
+        elif current_mode == "line":
             self.update_line()
         elif current_mode == "grid":
             self.update_grid()
@@ -2017,7 +1953,7 @@ class WiscSIMSTool:
         try:
             self.unsetMapTool()
             # self.clear_preview_points()
-            self.remove_objects_from_scratch_layer()
+            self.reset_preset_points()
             self.wiscsims_tool_action.setChecked(False)
             self.dockwidget.setEnabled(False)
         except Exception:
@@ -2040,7 +1976,7 @@ class WiscSIMSTool:
     def canvasClickedWShift(self, e):
         # Start moving preset point
         # self.f_id = None
-        self.init_scratch_layer(moving=True)
+        self.preview.reset(moving=True)
         self.init_rb_line()
 
         layer = self.get_preset_layer()
@@ -2064,11 +2000,11 @@ class WiscSIMSTool:
         feature = features[-1]  # select uppermost feature
 
         geom = feature.geometry()
-        geom_p = geom.asPoint()
+        pt = geom.asPoint()
         cursor_geom_p = cursor_geom.asPoint()
         self.movement_offset = [
-            geom_p.x() - cursor_geom_p.x(),
-            geom_p.y() - cursor_geom_p.y(),
+            pt.x() - cursor_geom_p.x(),
+            pt.y() - cursor_geom_p.y(),
         ]
         self.feature_id = feature.id()
         layer.selectByIds([self.feature_id], QgsVectorLayer.SetSelection)
@@ -2076,12 +2012,9 @@ class WiscSIMSTool:
         comment = [
             f["Comment"] for f in layer.getFeatures(QgsFeatureRequest(self.feature_id))
         ][0]
-        tmp_feature = QgsFeature()
-        tmp_feature.setGeometry(geom)
-        tmp_feature.setFields(self.fields)
-        tmp_feature["Comment"] = comment
+        point = [pt, comment]
 
-        self.add_features_to_scratch_layer([tmp_feature])
+        self.preview.add_points([point])
 
         return
 
@@ -2108,9 +2041,12 @@ class WiscSIMSTool:
         }
         self.undo_preset.append(undo_data)
 
-        self.init_scratch_layer()
+        self.preview.reset()
 
-        self.canvas.setCursor(Qt.CrossCursor)
+        if self.state_shift_key:
+            self.canvas.setCursor(Qt.OpenHandCursor)
+        else:
+            self.canvas.setCursor(Qt.CrossCursor)
 
         self.update_undo_btn_state()
         self.flag_cancel_moving_spot = False
@@ -2141,6 +2077,7 @@ class WiscSIMSTool:
         self.state_alt_key = False
 
         self.canvas.setCursor(Qt.CrossCursor)
+        print("delete spot")
 
         # show confirmation dailog
         rep_message = QMessageBox.warning(
@@ -2168,8 +2105,8 @@ class WiscSIMSTool:
         self.state_alt_key = False
         self.state_shift_key = False
 
-        # reset cursor
-        self.canvas.setCursor(Qt.CrossCursor)
+        # # reset cursor
+        # self.canvas.setCursor(Qt.CrossCursor)
 
         self.update_undo_btn_state()
 
@@ -2225,10 +2162,8 @@ class WiscSIMSTool:
         self.update_undo_btn_state()
 
     def canvasClicked(self, pt):
-        self.init_scratch_layer()
-
         if self.get_current_tool() != "preset":
-            self.remove_objects_from_scratch_layer()
+            self.reset_preset_points()
             return
 
         if self.flag_pixel_size_tool:
@@ -2268,6 +2203,8 @@ class WiscSIMSTool:
             # self.pixel_size_tool()
 
             return
+
+        self.preview.remove_objects()
 
         if self.get_preset_layer() is None:
             # preset layer has not been selected yet
@@ -2318,8 +2255,12 @@ class WiscSIMSTool:
                 self.pxsize_line.addPoint(pt, True)  # add new temp end-point
             return
 
+        if self.get_current_tool() != "preset":
+            return
+
         # Throttling of preview repainting
         # no throttling for rubberband line of the Line mode
+        #
 
         if self.line_in_progress:
             # drawing a tie line between start-point and cursor
@@ -2330,27 +2271,28 @@ class WiscSIMSTool:
         self.mouse_move_counter += 1
         if self.mouse_move_counter < self.move_throttling_threshold:
             return
+
         self.mouse_move_counter = 0
 
         self.cursor_pos = pt
 
         if self.line_in_progress:
             # update Line length
-            self.init_scratch_layer()
+            self.preview.reset()
             self.preset_line(pt, True, True)
             return
 
+        if self.get_preset_mode() != "point":
+            return
+
         # moving preset point
-        if self.feature_id is not None or self.state_ctrl_key:
+        if self.feature_id is not None or self.dockwidget.Opt_Point_Preview.isChecked():
+            # self.preview.add_points([[self.cursor_pos, ""]])
             if self.feature_id:
                 pt.set(
                     pt.x() + self.movement_offset[0], pt.y() + self.movement_offset[1]
                 )
-            geom = QgsGeometry.fromPointXY(pt)
-            feature_id = [f.id() for f in self.sc_dp.getFeatures()]
-            self.sc_dp.changeGeometryValues({feature_id[0]: geom})
-            self.scratchLayer.triggerRepaint()
-            return
+            self.preview.update_position(pt)
 
     def set_deleting_spot_cursor(self):
         cursor = QCursor(
@@ -2376,7 +2318,7 @@ class WiscSIMSTool:
             # shift key released
             if self.feature_id:
                 # cancel moving
-                self.remove_objects_from_scratch_layer()
+                self.reset_preset_points()
                 self.flag_cancel_moving_spot = True
             else:
                 # after spot movement
@@ -2407,9 +2349,10 @@ class WiscSIMSTool:
         self.state_ctrl_key = state
         if state:
             # add preview for point mode
-            feature = QgsFeature()
-            feature.setGeometry(QgsGeometry.fromPointXY(self.cursor_pos))
-            self.add_features_to_scratch_layer([feature])
+            # feature = QgsFeature()
+            # feature.setGeometry(QgsGeometry.fromPointXY(self.cursor_pos))
+            # self.preview.add_features([feature])
+            self.preview.add_features([[self.cursor_pos, ""]])
             # hide cursor while showing spot size preview
             self.canvas.setCursor(Qt.BlankCursor)
         else:

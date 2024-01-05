@@ -1285,7 +1285,7 @@ color: #ffffff;</string>
            <enum>QTabWidget::Rounded</enum>
           </property>
           <property name="currentIndex">
-           <number>2</number>
+           <number>0</number>
           </property>
           <property name="iconSize">
            <size>
@@ -1327,7 +1327,25 @@ color: #ffffff;</string>
                   </font>
                  </property>
                  <property name="text">
-                  <string>auto pop-up comment box</string>
+                  <string>Auto pop-up comment box</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="Opt_Point_Preview">
+                 <property name="font">
+                  <font>
+                   <pointsize>-1</pointsize>
+                  </font>
+                 </property>
+                 <property name="text">
+                  <string>Preview</string>
+                 </property>
+                 <property name="shortcut">
+                  <string>Meta+Ctrl+Shift+A</string>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
                  </property>
                 </widget>
                </item>
