@@ -1510,7 +1510,7 @@ class WiscSIMSTool:
         results, newFeatures = dpr.addFeatures(features)
         layer.commitChanges()
         points_for_undo = [f.id() for f in newFeatures]
-        self.undo_preset.append({"type": "addition", "data": points_for_undo})
+        self.add_to_undo("addition", points_for_undo)
 
         # check number of undos
         if len(self.undo_preset) > self.undo_max:
@@ -1541,6 +1541,10 @@ class WiscSIMSTool:
         comment = self.get_comment(0)
         if self.dockwidget.Opt_Point_Preview.isChecked():
             self.preview.add_points([[self.cursor_pos, comment]])
+
+    def add_to_undo(self, undo_type, data):
+        undo_data = {"type": undo_type, "data": data}
+        self.undo_preset.append(undo_data)
 
     def handle_undo(self):
         if len(self.undo_preset) == 0:
@@ -2044,11 +2048,8 @@ class WiscSIMSTool:
         layer.commitChanges()
 
         layer.removeSelection()
-        undo_data = {
-            "type": "movement",
-            "data": {"id": self.feature_id, "geom": original_geo},
-        }
-        self.undo_preset.append(undo_data)
+        undo_data = {"id": self.feature_id, "geom": original_geo}
+        self.add_to_undo("movement", undo_data)
 
         self.preview.reset()
 
@@ -2099,17 +2100,12 @@ class WiscSIMSTool:
         layer.startEditing()
         layer.deleteFeature(f_id)
         layer.commitChanges()
-
-        self.undo_preset.append(
-            {
-                "type": "delete",
-                "data": {
-                    "id": f_id,
-                    "geometry": geom,
-                    "comment": comment,
-                },
-            }
-        )
+        undo_data = {
+            "id": f_id,
+            "geometry": geom,
+            "comment": comment,
+        }
+        self.add_to_undo("delete", undo_data)
 
         self.state_alt_key = False
         self.state_shift_key = False
@@ -2122,8 +2118,6 @@ class WiscSIMSTool:
     def delete_spot(self, layer, f_id, comment):
         title = "Delete Spot"
         label = f'Are you sure you want to delete "{comment}"?'
-
-        print("delete spot")
 
         # show confirmation dailog
         rep_message = QMessageBox.warning(
@@ -2163,49 +2157,29 @@ class WiscSIMSTool:
         comment = f["Comment"]
         geom = f.geometry()
 
-        # show dailog for new comment
+        # show dailog for new comment or delete spot
         params = {"comment": comment}
         self.edit_dialog = EditDialog(self.window, params)
         self.edit_dialog.exec_()
 
         # exit_state 0: Cancel, 1: OK (new comment), 2: Delete
         exit_state = self.edit_dialog.get_exit_state()
-        print(f"exit_state: {exit_state}")
 
         if exit_state == 1:  # Modify Comment
-            print("modify comment")
             new_comment = self.edit_dialog.return_new_comment()
-            print("new comment", new_comment)
             self.modify_comment(layer, f_id, new_comment)
-            self.undo_preset.append(
-                {
-                    "type": "comment",
-                    "data": {
-                        "id": f_id,
-                        "comment": comment,
-                    },
-                }
-            )
+            undo_data = {"id": f_id, "comment": comment}
+            self.add_to_undo("comment", undo_data)
 
         elif exit_state == 2:  # Delete spot
             res_delete = self.delete_spot(layer, f_id, comment)
             if res_delete:
-                self.undo_preset.append(
-                    {
-                        "type": "delete",
-                        "data": {
-                            "id": f_id,
-                            "geometry": geom,
-                            "comment": comment,
-                        },
-                    }
-                )
+                undo_data = {"id": f_id, "geometry": geom, "comment": comment}
+                self.add_to_undo("delete", undo_data)
 
         layer.removeSelection()
         self.update_undo_btn_state()
         self.update_preview_cursor()
-
-        # TODO: Cursor?
 
     def modify_comment(self, layer, f_id, new_comment):
         field_idx = layer.fields().indexOf("Comment")
@@ -2219,8 +2193,7 @@ class WiscSIMSTool:
         self.edit_point(e)
         # reset curosr and mod_key status
         self.state_alt_key = False
-        # TODO: Preset Cursor?
-        self.canvas.setCursor(Qt.CrossCursor)
+        # self.canvas.setCursor(Qt.CrossCursor)
 
     def canvasClicked(self, pt):
         if self.get_current_tool() != "preset":
@@ -2351,16 +2324,6 @@ class WiscSIMSTool:
                     pt.x() + self.movement_offset[0], pt.y() + self.movement_offset[1]
                 )
             self.preview.update_position(pt)
-
-    def set_deleting_spot_cursor(self):
-        cursor = QCursor(
-            QPixmap(":/plugins/wiscsims_tool/img/icon_delete.png"),
-            hotX=0,
-            hotY=0,
-        )
-        self.canvas.setCursor(cursor)
-
-        return True
 
     def canvasShiftKeyState(self, state):
         #
