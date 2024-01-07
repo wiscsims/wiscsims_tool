@@ -92,6 +92,7 @@ from .tools.presetPreview import PresetPreview
 # Import the code for the DockWidget
 from .wiscsims_tool_dockwidget import WiscSIMSToolDockWidget
 from .pixel_size_tool import PixelSizeTool
+from .edit_dialog import EditDialog
 
 import os.path
 import os
@@ -199,7 +200,6 @@ class WiscSIMSTool:
         self.flag_cancel_moving_spot = False
 
         self.state_shift_key = False
-        self.state_ctrl_key = False
         self.state_alt_key = False
         self.mouse_move_counter = 0
         self.move_throttling_threshold = 3
@@ -394,12 +394,12 @@ class WiscSIMSTool:
         self.preview = PresetPreview(self.get_preset_layer())
 
         # for show preset preview in the point mode
-        self.handle_change_preset_mode(self.dockwidget.Tab_Preset_Mode.currentIndex())
+        self.update_preview_cursor(self.dockwidget.Tab_Preset_Mode.currentIndex())
 
         self.create_ui_connections()
         self.create_legend_connections()
 
-        self.handle_change_preset_mode(self.dockwidget.Tab_Preset_Mode.currentIndex())
+        self.update_preview_cursor(self.dockwidget.Tab_Preset_Mode.currentIndex())
 
         # show the dockwidget
         # TODO: fix to allow choice of dock location
@@ -480,6 +480,7 @@ class WiscSIMSTool:
         dock.Spn_Current_Number.valueChanged.connect(self.handle_comment_change_preview)
 
         dock.Tab_Preset_Mode.currentChanged.connect(self.handle_change_preset_mode)
+
         dock.Opt_Point_Preview.stateChanged.connect(self.handle_change_PointPreview)
 
     def remove_ui_connections(self):
@@ -555,7 +556,6 @@ class WiscSIMSTool:
             self.canvasMapTool.canvasMoved.connect(self.canvasMoved)
 
             self.canvasMapTool.canvasShiftKeyState.connect(self.canvasShiftKeyState)
-            self.canvasMapTool.canvasCtrlKeyState.connect(self.canvasCtrlkeyState)
             self.canvasMapTool.canvasAltKeyState.connect(self.canvasAltKeyState)
             self.canvasMapTool.canvasEscapeKeyState.connect(self.canvasEscapeKeyState)
             self.canvasMapTool.canvasUndoKey.connect(self.handle_undo)
@@ -1445,12 +1445,18 @@ class WiscSIMSTool:
 
     def handle_change_PointPreview(self, state):
         # state 0: Unchecked, 2: Checked
-        self.handle_change_preset_mode(0)
+        self.update_preview_cursor(0)
 
     def handle_change_tool(self):
-        self.handle_change_preset_mode()
+        self.clear_preview_spots()
+        self.update_preview_cursor()
 
-    def handle_change_preset_mode(self, idx=-1):
+    def handle_change_preset_mode(self):
+        self.clear_preview_spots()
+        self.update_preview_cursor()
+
+    def update_preview_cursor(self, idx=-1):
+        print("update preview cursor")
         if self.get_current_tool() != "preset":
             self.canvas.setCursor(Qt.CrossCursor)
             self.preview.reset()
@@ -1459,6 +1465,8 @@ class WiscSIMSTool:
         if idx < 0:
             idx = self.dockwidget.Tab_Preset_Mode.currentIndex()
         modes = ["point", "line", "grid"]
+        self.preview.reset()
+        # self.clear_preview_points()
 
         if modes[idx] == "point" and self.dockwidget.Opt_Point_Preview.isChecked():
             comment = self.get_comment(0)
@@ -1467,7 +1475,6 @@ class WiscSIMSTool:
             self.canvas.setCursor(Qt.BlankCursor)
         else:
             self.canvas.setCursor(Qt.CrossCursor)
-            self.preview.reset()
 
     def get_preset_mode(self):
         modes = ["point", "line", "grid"]
@@ -1614,6 +1621,8 @@ class WiscSIMSTool:
                 "Already at oldest change", level=Qgis.Info, duration=3
             )
             self.dockwidget.Btn_Undo_Add_Preset_Point.setEnabled(False)
+
+        print("undo btn state", self.dockwidget.Btn_Undo_Add_Preset_Point.isEnabled())
 
     def clear_preview_points(self):
         if self.rb_line.size() > 0:
@@ -1788,7 +1797,7 @@ class WiscSIMSTool:
             pt = QgsPointXY(x, y)
             preview_points.append([pt, comment])
             self.preset_points.append([comment, x, y])
-
+        print("preview points")
         self.preview.add_points(preview_points)
 
         if live_preview:
@@ -2052,7 +2061,7 @@ class WiscSIMSTool:
         self.flag_cancel_moving_spot = False
         return
 
-    def delete_spot(self, e):
+    def delete_spot_original(self, e):
         # delete spot
         layer = self.get_preset_layer()
         if layer is None:
@@ -2110,10 +2119,33 @@ class WiscSIMSTool:
 
         self.update_undo_btn_state()
 
+    def delete_spot(self, layer, f_id, comment):
+        title = "Delete Spot"
+        label = f'Are you sure you want to delete "{comment}"?'
+
+        print("delete spot")
+
+        # show confirmation dailog
+        rep_message = QMessageBox.warning(
+            self.window, title, label, QMessageBox.Yes | QMessageBox.No, QMessageBox.No
+        )
+
+        if rep_message == QMessageBox.No:
+            return False
+
+        layer.startEditing()
+        layer.deleteFeature(f_id)
+        layer.commitChanges()
+
+        return True
+
+        # # reset cursor
+        # self.canvas.setCursor(Qt.CrossCursor)
+
     def canvasReleaseWAltShift(self, e):
         self.delete_spot(e)
 
-    def canvasReleaseWAlt(self, e):
+    def edit_point(self, e):
         layer = self.get_preset_layer()
         if layer is None:
             return
@@ -2126,40 +2158,69 @@ class WiscSIMSTool:
 
         f_id = features[-1].id()  # select uppermost feature
 
-        # f_id = features[0].mFeature.id()
         layer.selectByIds([f_id], QgsVectorLayer.SetSelection)
-        comment = [f["Comment"] for f in layer.getFeatures(QgsFeatureRequest(f_id))][0]
-        title = "Modifying Comment"
-        label = "Enter New Comment"
-        mode = QLineEdit.Normal
-        default = comment
+        f = [f for f in layer.getFeatures(QgsFeatureRequest(f_id))][0]
+        comment = f["Comment"]
+        geom = f.geometry()
 
         # show dailog for new comment
-        new_comment, ok = QInputDialog.getText(self.window, title, label, mode, default)
+        params = {"comment": comment}
+        self.edit_dialog = EditDialog(self.window, params)
+        self.edit_dialog.exec_()
 
-        if ok:
-            field_idx = layer.fields().indexOf("Comment")
-            layer.startEditing()
-            for feat_id in layer.selectedFeatureIds():
-                layer.changeAttributeValue(feat_id, field_idx, new_comment)
-            layer.commitChanges()
+        # exit_state 0: Cancel, 1: OK (new comment), 2: Delete
+        exit_state = self.edit_dialog.get_exit_state()
+        print(f"exit_state: {exit_state}")
+
+        if exit_state == 1:  # Modify Comment
+            print("modify comment")
+            new_comment = self.edit_dialog.return_new_comment()
+            print("new comment", new_comment)
+            self.modify_comment(layer, f_id, new_comment)
+            self.undo_preset.append(
+                {
+                    "type": "comment",
+                    "data": {
+                        "id": f_id,
+                        "comment": comment,
+                    },
+                }
+            )
+
+        elif exit_state == 2:  # Delete spot
+            res_delete = self.delete_spot(layer, f_id, comment)
+            if res_delete:
+                self.undo_preset.append(
+                    {
+                        "type": "delete",
+                        "data": {
+                            "id": f_id,
+                            "geometry": geom,
+                            "comment": comment,
+                        },
+                    }
+                )
 
         layer.removeSelection()
+        self.update_undo_btn_state()
+        self.update_preview_cursor()
 
-        self.undo_preset.append(
-            {
-                "type": "comment",
-                "data": {
-                    "id": f_id,
-                    "comment": default,
-                },
-            }
-        )
+        # TODO: Cursor?
+
+    def modify_comment(self, layer, f_id, new_comment):
+        field_idx = layer.fields().indexOf("Comment")
+        layer.startEditing()
+        layer.changeAttributeValue(f_id, field_idx, new_comment)
+        # for feat_id in layer.selectedFeatureIds():
+        #     layer.changeAttributeValue(feat_id, field_idx, new_comment)
+        layer.commitChanges()
+
+    def canvasReleaseWAlt(self, e):
+        self.edit_point(e)
         # reset curosr and mod_key status
         self.state_alt_key = False
+        # TODO: Preset Cursor?
         self.canvas.setCursor(Qt.CrossCursor)
-
-        self.update_undo_btn_state()
 
     def canvasClicked(self, pt):
         if self.get_current_tool() != "preset":
@@ -2201,7 +2262,6 @@ class WiscSIMSTool:
                 self.pixel_size_tool_win.show()
 
             # self.pixel_size_tool()
-
             return
 
         self.preview.remove_objects()
@@ -2215,11 +2275,9 @@ class WiscSIMSTool:
             return
 
         mode = self.get_preset_mode()
+        self.update_preview_cursor()
 
-        if self.state_ctrl_key:
-            self.state_ctrl_key = False
-
-        elif mode == "point":
+        if mode == "point":
             self.add_preset_point(pt)
 
         elif mode == "line":
@@ -2305,15 +2363,17 @@ class WiscSIMSTool:
         return True
 
     def canvasShiftKeyState(self, state):
+        #
+        # Move spot (drag and drop)
+        #
+        # Widnows/Linux/MacOS: Shift key
+        #
+
         self.state_shift_key = state
         if state:
-            if not self.state_alt_key:
-                # shift key pressed
-                self.canvas.setCursor(Qt.OpenHandCursor)
-                self.flag_cancel_moving_spot = False
-            else:
-                # shift + alt => delete spot
-                self.set_deleting_spot_cursor()
+            self.preview.remove_objects()
+            self.canvas.setCursor(Qt.OpenHandCursor)
+            self.flag_cancel_moving_spot = False
         else:
             # shift key released
             if self.feature_id:
@@ -2323,43 +2383,24 @@ class WiscSIMSTool:
             else:
                 # after spot movement
                 self.flag_cancel_moving_spot = False
-            self.canvas.setCursor(Qt.CrossCursor)
+            self.update_preview_cursor()
+            # self.canvas.setCursor(Qt.CrossCursor)
 
     def canvasAltKeyState(self, state):
+        #
+        # Edit spot (modify comment, delete post)
+        #
+        # Windows/Linux: Alt, MacOS: Option
+        #
+
         self.state_alt_key = state
         if state:
-            if self.state_shift_key:
-                # shift + alt
-                self.set_deleting_spot_cursor()
-            else:
-                # alt
-                self.canvas.setCursor(Qt.PointingHandCursor)
+            # alt
+            self.canvas.setCursor(Qt.PointingHandCursor)
+            self.preview.remove_objects()
         else:
-            self.canvas.setCursor(Qt.CrossCursor)
-
-    def canvasCtrlkeyState(self, state):
-        # CTRL => CMD on Mac
-        if not state and not self.state_ctrl_key:
-            # do nothing if state_ctrl_key is already False when CTRL key was released
-            # Because CTRL + click trigger clear preview spots (remove a rubberband spot of start-point)
-            self.canvas.setCursor(Qt.CrossCursor)
-            return
-
-        self.clear_preview_spots()
-        self.state_ctrl_key = state
-        if state:
-            # add preview for point mode
-            # feature = QgsFeature()
-            # feature.setGeometry(QgsGeometry.fromPointXY(self.cursor_pos))
-            # self.preview.add_features([feature])
-            self.preview.add_features([[self.cursor_pos, ""]])
-            # hide cursor while showing spot size preview
-            self.canvas.setCursor(Qt.BlankCursor)
-        else:
-            self.canvas.setCursor(Qt.CrossCursor)
+            self.update_preview_cursor()
+            # self.canvas.setCursor(Qt.CrossCursor)
 
     def canvasEscapeKeyState(self):
         self.clear_preview_spots(init=False)
-
-    def update_cursor(self):
-        pass

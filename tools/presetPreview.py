@@ -95,7 +95,6 @@ class PresetPreview:
 
     def __del__(self):
         self.cleanup_old_layers()
-        print("__del__")
 
     def create(self):
         self.cleanup_old_layers()
@@ -103,20 +102,29 @@ class PresetPreview:
         self.preview_layer.setFlags(QgsMapLayer.Private)
         self.preview_layer.setCustomProperty("skipMemoryLayersCheck", 1)
         self.preview_layer.startEditing()
+
         # Copy and paste symbol sytle from preset layer
         symbol = self.preset_layer.renderer().symbol()
         props = symbol.symbolLayer(0).properties()
-        self.preview_layer.renderer().setSymbol(QgsMarkerSymbol.createSimple(props))
-        self.preview_layer.renderer().symbol().symbolLayer(0).setStrokeColor(
-            QColor(255, 255, 255)
-        )  # stroke: black
-        self.preview_layer.renderer().symbol().setColor(QColor(64, 143, 176, 102))
+
+        renderer = self.preview_layer.renderer()
+        renderer.setSymbol(QgsMarkerSymbol.createSimple(props))
+
+        # stroke: black
+        renderer.symbol().symbolLayer(0).setStrokeColor(QColor(255, 255, 255))
+
+        renderer.symbol().setColor(QColor(64, 143, 176, 102))
 
         self.sc_dp = self.preview_layer.dataProvider()
+
         # add "Comment" field to the attribute table
         self.sc_dp.addAttributes([QgsField("Comment", QVariant.String)])
 
-        # Label formatting: "Comment" field, diplay all comments, drop shodow, buffer (white)
+        # Label formatting:
+        #   "Comment" field,
+        #   diplay all comments,
+        #   drop shodow,
+        #   buffer (white)
         settings = QgsPalLayerSettings()
         settings.enabled = True
         settings.fieldName = "Comment"
@@ -136,7 +144,7 @@ class PresetPreview:
         pe_stack.appendEffect(QgsDropShadowEffect())
         pe_stack.appendEffect(QgsDrawSourceEffect())
 
-        self.preview_layer.renderer().setPaintEffect(pe_stack)
+        renderer.setPaintEffect(pe_stack)
 
         self.fields = self.preview_layer.fields()
 
@@ -196,15 +204,19 @@ class PresetPreview:
             return
 
         feature_ids = [f.id() for f in self.sc_dp.getFeatures()]
+        if len(feature_ids) == 0:
+            return
         self.sc_dp.deleteFeatures(feature_ids)
         self.preview_layer.commitChanges()
         self.preview_layer.triggerRepaint()
+        print("remove objects")
 
     def update_comment(self, comment):
         field_index = self.preview_layer.fields().indexOf("Comment")
         features = self.preview_layer.getFeatures()
         feature_list = [f for f in features]
-        print(feature_list)
+        if len(feature_list) == 0:
+            return
         feature_id = feature_list[0].id()
         print(
             f"field_index: {field_index}, feature_id: {feature_id}, comment: {comment}"
@@ -231,5 +243,9 @@ class PresetPreview:
     def update_position(self, pt):
         geom = QgsGeometry.fromPointXY(pt)
         feature_id = [f.id() for f in self.sc_dp.getFeatures()]
+
+        if len(feature_id) == 0:
+            return
+
         self.sc_dp.changeGeometryValues({feature_id[0]: geom})
         self.preview_layer.triggerRepaint()
