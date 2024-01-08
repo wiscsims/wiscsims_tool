@@ -91,10 +91,10 @@ from .tools.pixelSizeTool import PixelSizeTool
 from .tools.presetPreview import PresetPreview
 
 # Import the code for the DockWidget
-from .wiscsims_tool_dockwidget import WiscSIMSToolDockWidget
+from .ui.wiscsims_tool_dockwidget import WiscSIMSToolDockWidget
 
 # from .pixel_size_tool import PixelSizeTool
-from .edit_dialog import EditDialog
+from .ui.edit_dialog import EditDialog
 
 import os.path
 import os
