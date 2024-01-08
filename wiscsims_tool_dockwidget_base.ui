@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>405</width>
-    <height>671</height>
+    <height>698</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,7 +19,7 @@
   <property name="minimumSize">
    <size>
     <width>405</width>
-    <height>671</height>
+    <height>698</height>
    </size>
   </property>
   <property name="maximumSize">
@@ -1162,41 +1162,6 @@ font-weight: bold;
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="Btn_Preset_PxSizeCalc">
-             <property name="maximumSize">
-              <size>
-               <width>24</width>
-               <height>24</height>
-              </size>
-             </property>
-             <property name="toolTip">
-              <string>Pixel Size Tool</string>
-             </property>
-             <property name="whatsThis">
-              <string>Pixel Size Tool</string>
-             </property>
-             <property name="autoFillBackground">
-              <bool>false</bool>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">background-color: #ff0000;
-color: #ffffff;</string>
-             </property>
-             <property name="text">
-              <string>📏</string>
-             </property>
-             <property name="checkable">
-              <bool>true</bool>
-             </property>
-             <property name="checked">
-              <bool>false</bool>
-             </property>
-             <property name="flat">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item>
             <widget class="QLabel" name="label_11">
              <property name="maximumSize">
               <size>
@@ -2147,6 +2112,272 @@ font-weight: bold;
            <string>Undo</string>
           </property>
          </widget>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="tab_3">
+       <attribute name="title">
+        <string>Pixel Size</string>
+       </attribute>
+       <layout class="QGridLayout" name="gridLayout_3">
+        <item row="2" column="0">
+         <widget class="QGroupBox" name="Grp_Step3">
+          <property name="title">
+           <string>Pixel Size</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_4">
+           <item row="0" column="0">
+            <widget class="QDoubleSpinBox" name="SPN_PST_PixelSize">
+             <property name="font">
+              <font>
+               <pointsize>-1</pointsize>
+               <weight>75</weight>
+               <bold>true</bold>
+              </font>
+             </property>
+             <property name="styleSheet">
+              <string notr="true">background-color: transparent;
+font-size: 25px;
+font-weight: bold;</string>
+             </property>
+             <property name="wrapping">
+              <bool>false</bool>
+             </property>
+             <property name="frame">
+              <bool>false</bool>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+             <property name="buttonSymbols">
+              <enum>QAbstractSpinBox::NoButtons</enum>
+             </property>
+             <property name="suffix">
+              <string> µm</string>
+             </property>
+             <property name="minimum">
+              <double>0.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>9999999999.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="1" column="0">
+         <widget class="QGroupBox" name="Grp_Step2">
+          <property name="styleSheet">
+           <string notr="true"/>
+          </property>
+          <property name="title">
+           <string>2. Input Scale Length</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout_2">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label_26">
+             <property name="text">
+              <string>Scale Bar Length</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QDoubleSpinBox" name="SPN_PST_ScaleBar_Len_um">
+             <property name="alignment">
+              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+             </property>
+             <property name="suffix">
+              <string> µm</string>
+             </property>
+             <property name="minimum">
+              <double>0.000000000000000</double>
+             </property>
+             <property name="maximum">
+              <double>9999999999999.000000000000000</double>
+             </property>
+             <property name="value">
+              <double>1.000000000000000</double>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="0" column="0">
+         <widget class="QGroupBox" name="Grp_Step1">
+          <property name="styleSheet">
+           <string notr="true">:</string>
+          </property>
+          <property name="title">
+           <string>1. Click Start and End points of Scale Bar on the Map</string>
+          </property>
+          <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0">
+           <item row="0" column="1">
+            <widget class="QLabel" name="label_21">
+             <property name="text">
+              <string>X</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QLabel" name="TXT_PST_End_X">
+             <property name="styleSheet">
+              <string notr="true">color: rgb(111, 110, 112);</string>
+             </property>
+             <property name="text">
+              <string>0</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="label_22">
+             <property name="text">
+              <string>End</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="2">
+            <widget class="QLabel" name="TXT_PST_End_Y">
+             <property name="styleSheet">
+              <string notr="true">color: rgb(111, 110, 112);</string>
+             </property>
+             <property name="text">
+              <string>0</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="QLabel" name="label_23">
+             <property name="text">
+              <string>Y</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLabel" name="TXT_PST_Start_X">
+             <property name="styleSheet">
+              <string notr="true">color: rgb(111, 110, 112);</string>
+             </property>
+             <property name="text">
+              <string>0</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="label_24">
+             <property name="text">
+              <string>Length</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_25">
+             <property name="text">
+              <string>Start</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QLabel" name="TXT_PST_Start_Y">
+             <property name="styleSheet">
+              <string notr="true">color: rgb(111, 110, 112);</string>
+             </property>
+             <property name="text">
+              <string>0</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0" colspan="3">
+            <widget class="Line" name="line">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <widget class="QSpinBox" name="SPN_PST_ScaleBar_Len_Px">
+             <property name="styleSheet">
+              <string notr="true">background-color: transparent;</string>
+             </property>
+             <property name="frame">
+              <bool>false</bool>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+             </property>
+             <property name="readOnly">
+              <bool>true</bool>
+             </property>
+             <property name="buttonSymbols">
+              <enum>QAbstractSpinBox::NoButtons</enum>
+             </property>
+             <property name="keyboardTracking">
+              <bool>false</bool>
+             </property>
+             <property name="showGroupSeparator" stdset="0">
+              <bool>false</bool>
+             </property>
+             <property name="suffix">
+              <string> px</string>
+             </property>
+             <property name="prefix">
+              <string/>
+             </property>
+             <property name="maximum">
+              <number>999999999</number>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="4" column="0">
+         <widget class="QFrame" name="frame">
+          <property name="maximumSize">
+           <size>
+            <width>16777215</width>
+            <height>50</height>
+           </size>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::StyledPanel</enum>
+          </property>
+          <property name="frameShadow">
+           <enum>QFrame::Raised</enum>
+          </property>
+          <layout class="QHBoxLayout" name="horizontalLayout_14">
+           <item>
+            <widget class="QPushButton" name="Btn_PST_Set">
+             <property name="text">
+              <string>Set Pixel Size</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+             <property name="default">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+        <item row="3" column="0">
+         <spacer name="verticalSpacer_2">
+          <property name="orientation">
+           <enum>Qt::Vertical</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>20</width>
+            <height>40</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
       </widget>
