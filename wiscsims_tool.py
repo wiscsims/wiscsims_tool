@@ -51,7 +51,6 @@ from .tools.coordinateTool import CoordinateTool, CoordinateToolNew
 from .tools.pixelSizeTool import PixelSizeTool
 from .tools.presetPreview import PresetPreview
 from .tools.sumTableTool import SumTableTool
-# from .pixel_size_tool import PixelSizeTool
 from .ui.edit_dialog import EditDialog
 # Import the code for the DockWidget
 from .ui.wiscsims_tool_dockwidget import WiscSIMSToolDockWidget
@@ -134,7 +133,7 @@ class WiscSIMSTool:
         self.menu = self.tr("&WiscSIMS")
         # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar("WiscSIMS")
-        self.toolbar.setObjectName("WiscSIMS Tool Preview")
+        self.toolbar.setObjectName("WiscSIMS Tool")
 
         self.pluginIsActive = False
         # self.dockwidget = None
@@ -172,6 +171,9 @@ class WiscSIMSTool:
         self.flag_pixel_size_tool = False
 
         self.cursor_pos = QgsPointXY(0, 0)
+
+        self.current_tool = "preset"
+        self.current_preset_mode = "point"
 
     # noinspection PyMethodMayBeStatic
 
@@ -428,7 +430,7 @@ class WiscSIMSTool:
         dock.Spn_Preset_Spot_Size.valueChanged.connect(self.handle_change_spot_size)
 
         ## Mode
-        dock.Tab_Preset_Mode.currentChanged.connect(self.handle_change_preset_mode)
+        dock.Tab_Preset_Mode.currentChanged.connect(self.handle_preset_mode_changed)
 
         ### Point
         dock.Opt_Point_Preview.stateChanged.connect(self.handle_change_PointPreview)
@@ -494,7 +496,7 @@ class WiscSIMSTool:
         dock.Spn_Preset_Spot_Size.valueChanged.disconnect(self.handle_change_spot_size)
 
         ## Mode
-        dock.Tab_Preset_Mode.currentChanged.disconnect(self.handle_change_preset_mode)
+        dock.Tab_Preset_Mode.currentChanged.disconnect(self.handle_preset_mode_changed)
 
         ### Point
         dock.Opt_Point_Preview.stateChanged.disconnect(self.handle_change_PointPreview)
@@ -1317,14 +1319,14 @@ class WiscSIMSTool:
 
     def handle_change_pixel_size(self, size):
         self.scale = 1 / size
-        current_mode = self.get_preset_mode()
-        if not self.flag_pixel_size_tool:
-            if current_mode == "grid":
-                self.update_grid()
-            elif current_mode == "line":
-                self.update_line()
-            elif current_mode == "point":
-                self.preview.update_symbol_size()
+        # if not self.flag_pixel_size_tool:
+        #     pass
+        if self.current_preset_mode == "grid":
+            self.update_grid()
+        elif self.current_preset_mode == "line":
+            self.update_line()
+        elif self.current_preset_mode == "point":
+            self.preview.update_symbol_size()
 
         ss = self.dockwidget.Spn_Preset_Spot_Size.value()
         self.handle_change_spot_size(ss)
@@ -1375,12 +1377,6 @@ class WiscSIMSTool:
             return
         self.dockwidget.Spn_Current_Number.setValue(1)
 
-    def get_current_tool(self, idx=-1):
-        if idx < 0:
-            idx = self.dockwidget.Tab_Tool.currentIndex()
-        tools = ["import", "preset", "pixelsize"]
-        return tools[idx]
-
     def get_preset_layer(self):
         layer = self.dockwidget.Cmb_Preset_Layer.itemData(
             self.dockwidget.Cmb_Preset_Layer.currentIndex()
@@ -1391,21 +1387,28 @@ class WiscSIMSTool:
         # state 0: Unchecked, 2: Checked
         self.update_preview_cursor(0)
 
+    def get_current_tool(self, idx=-1):
+        if idx < 0:
+            idx = self.dockwidget.Tab_Tool.currentIndex()
+        tools = ["import", "preset", "pixelsize"]
+        return tools[idx]
+
     def handle_tool_changed(self, idx):
-        tool = self.get_current_tool(idx)
-        print(f"Current Tool: {tool}")
+        self.current_tool = self.get_current_tool(idx)
+        print(f"Current Tool: {self.current_tool}")
 
         # resets
         self.clear_preview_spots()
         self.update_preview_cursor()
         self.pst.reset()
 
-    def handle_change_preset_mode(self):
+    def handle_preset_mode_changed(self):
+        self.current_preset_mode = self.get_preset_mode()
         self.clear_preview_spots()
         self.update_preview_cursor()
 
     def update_preview_cursor(self, idx=-1):
-        if self.get_current_tool() != "preset":
+        if self.current_tool != "preset":
             self.canvas.setCursor(Qt.CrossCursor)
             self.preview.reset()
             return
@@ -1664,12 +1667,11 @@ class WiscSIMSTool:
         QToolTip.hideText()
 
     def update_add_points_btn_status(self, status):
-        mode = self.get_preset_mode()
         btns = []
 
-        if mode == "line":
+        if self.current_preset_mode == "line":
             btns.append(self.dockwidget.Btn_Line_Add_Points)
-        elif mode == "grid":
+        elif self.current_preset_mode == "grid":
             btns.append(self.dockwidget.Btn_Grid_Add_Points)
         else:
             btns.append(self.dockwidget.Btn_Line_Add_Points)
@@ -2135,30 +2137,25 @@ class WiscSIMSTool:
         field_idx = layer.fields().indexOf("Comment")
         layer.startEditing()
         layer.changeAttributeValue(f_id, field_idx, new_comment)
-        # for feat_id in layer.selectedFeatureIds():
-        #     layer.changeAttributeValue(feat_id, field_idx, new_comment)
         layer.commitChanges()
 
     def canvasReleaseWAlt(self, e):
         self.edit_point(e)
         # reset curosr and mod_key status
         self.state_alt_key = False
-        # self.canvas.setCursor(Qt.CrossCursor)
 
     def canvasClicked(self, pt):
-        tool = self.get_current_tool()
-
-        if tool == "preset":
+        if self.current_tool == "preset":
             pass
 
-        elif tool == "pixelsize":
+        elif self.current_tool == "pixelsize":
             self.pst.handle_selecting_point(pt)
             return
 
-        elif tool == "import":
+        elif self.current_tool == "import":
             return
 
-        if tool != "preset":
+        if self.current_tool != "preset":
             self.reset_preset_points()
 
         self.preview.remove_objects()
@@ -2171,13 +2168,12 @@ class WiscSIMSTool:
             self.flag_cancel_moving_spot = False
             return
 
-        mode = self.get_preset_mode()
         self.update_preview_cursor()
 
-        if mode == "point":
+        if self.current_preset_mode == "point":
             self.add_preset_point(pt)
 
-        elif mode == "line":
+        elif self.current_preset_mode == "line":
             if self.line_in_progress:
                 # select end-point
                 self.show_tooltip("line-end")
@@ -2192,7 +2188,7 @@ class WiscSIMSTool:
                 # else:
                 pass
                 #
-        elif mode == "grid":
+        elif self.current_preset_mode == "grid":
             self.preset_points = []
             self.init_rb_line()
             self.preset_grid(pt)
@@ -2201,13 +2197,11 @@ class WiscSIMSTool:
         self.canvasClicked(pt)
 
     def canvasMoved(self, pt):
-        tool = self.get_current_tool()
-
-        if tool == "pixelsize":
+        if self.current_tool == "pixelsize":
             self.pst.handle_cursor_moved(pt)
             return
 
-        if tool == "import":
+        if self.current_tool == "import":
             return
 
         # Throttling of preview repainting
@@ -2234,7 +2228,7 @@ class WiscSIMSTool:
             self.preset_line(pt, True, True)
             return
 
-        if self.get_preset_mode() != "point":
+        if self.current_preset_mode != "point":
             return
 
         # moving preset point
