@@ -560,20 +560,25 @@ class WiscSIMSTool:
 
     def handle_table_doubleClicked(self, clickedRow):
         r = clickedRow.row()
-        alinfo = {
-            "beam": self.model.getBeam(r),
-            "stage": self.model.getStagePosition(r),
-            "canvas": self.model.getCanvasPosition(r),
-            "name": self.model.getRefName(r),
-        }
 
-        ex = AlignmentInfo(self, info=alinfo)
-        if ex.exec():
-            print("success")
+        if self.new_aliginment:
+            alinfo = {
+                "beam": self.model.getBeam(r),
+                "stage": self.model.getStagePosition(r),
+                "canvas": self.model.getCanvasPosition(r),
+                "name": self.model.getRefName(r),
+            }
         else:
-            print("Canel!")
+            p1 = self.model.getRefPoint(r, 1)
+            p2 = self.model.getRefPoint(r, 2)
+            alinfo = {
+                "name": self.model.getRefName(r),
+                "Point 1": {"stage": p1[0], "canvas": p1[1]},
+                "Point 2": {"stage": p2[0], "canvas": p2[1]},
+            }
 
-        print("double click")
+        ex = AlignmentInfo(self.window, info=alinfo, isNew=self.new_aliginment)
+        ex.exec()
 
     def handle_item_changed(self):
         pass
