@@ -78,7 +78,6 @@ class WiscSIMSTool:
         # Tool instances
         self.model = AlignmentModelNew()
         self.ref_marker = AlignmentMarker(self.canvas, self.model)
-        self.cot = CoordinateToolNew()
 
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
@@ -323,8 +322,8 @@ class WiscSIMSTool:
         # in memory layer while moving the spot
         self.preview = PresetPreview(self.get_preset_layer())
 
-        # for show preset preview in the point mode
-        self.update_preview_cursor(self.dockwidget.Tab_Preset_Mode.currentIndex())
+        # # for showing preset preview in the point mode
+        # self.update_preview_cursor(self.dockwidget.Tab_Preset_Mode.currentIndex())
 
         self.pst = PixelSizeTool(self.dockwidget, self.canvas)
         self.pst.setPixelSize.connect(self.handle_set_pixel_size)
@@ -647,11 +646,11 @@ class WiscSIMSTool:
 
             if self.new_aliginment:
                 self.model = AlignmentModelNew()
-                self.cot = CoordinateToolNew()
+                self.cot = CoordinateTool(new=True)
                 self.init_alignmentTableNew()
             else:
                 self.model = AlignmentModel()
-                self.cot = CoordinateTool()
+                self.cot = CoordinateTool(new=False)
                 self.init_alignmentTable()
 
             self.model.ImportFromsJson(obj)

@@ -5,9 +5,16 @@ import math
 class CoordinateTool:
     """docstring for CoordinateTool"""
 
-    def __init__(self):
+    def __init__(self, new=True):
         # super(CoordinateTool, self).__init__()
         self.initParams()
+
+        if new:
+            self.toCanvasCoordinates2 = self._toCanvasCoordinates2New
+            self.toStageCoordinates2 = self._toStageCoordinates2New
+        else:
+            self.toCanvasCoordinates2 = self._toCanvasCoordinates2
+            self.toStageCoordinates2 = self._toStageCoordinates2
 
     def initParams(self):
         self.aligned = False
@@ -110,16 +117,16 @@ class CoordinateTool:
         offset = [canvas1, stage1]
         return (scale, offset, rotation)
 
-    def toStageCoordinates2(self, pt, params):
+    def _toStageCoordinates2(self, pt, params):
         # params: [scale, offset, rotation]
         scale, offset, rotation = params
         pt = [pt[0] - offset[0][0], pt[1] - offset[0][1]]
         return self.rotateCoordinates([p * scale for p in pt], rotation, offset[1])
 
-    def toCanvasCoordinates2(self, pt, params):
+    def _toCanvasCoordinates2(self, pt, params):
         # params: [scale, offset, rotation]
         params = [1 / params[0], params[1][::-1], -1 * params[2]]
-        return self.toStageCoordinates2(pt, params)
+        return self._toStageCoordinates2(pt, params)
 
     def toStageCoordinates(self, pt):
         if len(self.ref1c) < 2:
@@ -139,6 +146,93 @@ class CoordinateTool:
             (pt[1] - self.ref1s[1]) / self.scale,
         ]
         return self.rotateCoordinates(tmp, -1 * self.rotation, self.ref1c)
+
+    def getWtAverageNew(self, pt, conv_param, toStage=False, debug=False):
+        # position_index = int(toStage)
+        weights, wpt_x, wpt_y = [], [], []
+        tmp = []  # for debug
+
+        # print(conv_param)
+
+        for cp in conv_param:
+            params = [cp["scale"], cp["offset"], cp["rotation"]]
+            w = cp["weight"]
+            tmp2 = []  # for debug
+            if toStage:
+                np = self._toStageCoordinates2New(pt, params)
+            else:
+                np = self._toCanvasCoordinates2New(pt, params)
+            weights.append(w)
+            wpt_x.append(w * np[0])
+            wpt_y.append(w * np[1])
+            tmp2.append(w)
+            tmp.append(tmp2)
+        sum_weights = sum(weights)
+        if debug:
+            for i in range(len(tmp)):
+                print(i + 1, [100 * ww / sum_weights for ww in tmp[i]])
+        out = [p / sum_weights for p in [sum(wpt_x), sum(wpt_y)]]
+        if toStage:
+            # round for stage cooridnates (integer)
+            out = [self.true_round_int(p) for p in out]
+        return out
+
+    def getWtAverage(self, pt, model, toStage=False, debug=False):
+        position_index = int(toStage)
+        weights, wpt_x, wpt_y = [], [], []
+        tmp = []  # for debug
+        for m in model:
+            if m["used"] == 0:
+                continue
+            params = [m["scale"], m["offset"], m["rotation"]]
+            tmp2 = []  # for debug
+            for i in [1, 2]:
+                d = self.getDistance(pt, m["point_" + str(i)][position_index])
+                if d == 0:
+                    d = 1e-10
+                w = 1 / (d**2)
+                if i == 1:
+                    if toStage:
+                        np = self._toStageCoordinates2New(pt, params)
+                    else:
+                        np = self._toCanvasCoordinates2New(pt, params)
+                weights.append(w)
+                wpt_x.append(w * np[0])
+                wpt_y.append(w * np[1])
+                tmp2.append(w)
+            tmp.append(tmp2)
+        sum_weights = sum(weights)
+        if debug:
+            for i in range(len(tmp)):
+                print(i + 1, [100 * ww / sum_weights for ww in tmp[i]])
+        out = [p / sum_weights for p in [sum(wpt_x), sum(wpt_y)]]
+        if toStage:
+            # round for stage cooridnates (integer)
+            out = [self.true_round_int(p) for p in out]
+        return out
+
+    def getWtAveragedCanvasToStage(self, pt, model, debug=False):
+        return self.getWtAverageNew(pt, model, toStage=True, debug=debug)
+
+    def getWtAveragedStageToCanvas(self, pt, model, debug=False):
+        return self.getWtAverageNew(pt, model, toStage=False, debug=debug)
+
+    def _toStageCoordinates2New(self, pt, params, toCanvas=False):
+        # params: [scale, offset, rotation]
+        scale, offset, rotation = params
+        pt = [pt[0] - offset[0][0], pt[1] - offset[0][1]]
+        pt = self.rotateCoordinates([p * scale for p in pt], rotation, offset[1])
+        if not toCanvas:
+            pt = [self.true_round_int(v) for v in pt]
+        return pt
+
+    def _toCanvasCoordinates2New(self, pt, params):
+        # params: [scale, offset, rotation]
+        params = [1 / params[0], params[1][::-1], -1 * params[2]]
+        return self._toStageCoordinates2New(pt, params, toCanvas=True)
+
+    def true_round_int(self, val):
+        return int((val * 2 + 1) // 2)
 
 
 class CoordinateToolNew:
@@ -261,9 +355,9 @@ class CoordinateToolNew:
             w = cp["weight"]
             tmp2 = []  # for debug
             if toStage:
-                np = self.toStageCoordinates2(pt, params)
+                np = self._toStageCoordinates2New(pt, params)
             else:
-                np = self.toCanvasCoordinates2(pt, params)
+                np = self._toCanvasCoordinates2New(pt, params)
             weights.append(w)
             wpt_x.append(w * np[0])
             wpt_y.append(w * np[1])
@@ -295,9 +389,9 @@ class CoordinateToolNew:
                 w = 1 / (d**2)
                 if i == 1:
                     if toStage:
-                        np = self.toStageCoordinates2(pt, params)
+                        np = self._toStageCoordinates2New(pt, params)
                     else:
-                        np = self.toCanvasCoordinates2(pt, params)
+                        np = self._toCanvasCoordinates2New(pt, params)
                 weights.append(w)
                 wpt_x.append(w * np[0])
                 wpt_y.append(w * np[1])
@@ -319,7 +413,7 @@ class CoordinateToolNew:
     def getWtAveragedStageToCanvas(self, pt, model, debug=False):
         return self.getWtAverageNew(pt, model, toStage=False, debug=debug)
 
-    def toStageCoordinates2(self, pt, params, toCanvas=False):
+    def _toStageCoordinates2New(self, pt, params, toCanvas=False):
         # params: [scale, offset, rotation]
         scale, offset, rotation = params
         pt = [pt[0] - offset[0][0], pt[1] - offset[0][1]]
@@ -328,10 +422,10 @@ class CoordinateToolNew:
             pt = [self.true_round_int(v) for v in pt]
         return pt
 
-    def toCanvasCoordinates2(self, pt, params):
+    def _toCanvasCoordinates2New(self, pt, params):
         # params: [scale, offset, rotation]
         params = [1 / params[0], params[1][::-1], -1 * params[2]]
-        return self.toStageCoordinates2(pt, params, toCanvas=True)
+        return self._toStageCoordinates2New(pt, params, toCanvas=True)
 
     def true_round_int(self, val):
         return int((val * 2 + 1) // 2)
