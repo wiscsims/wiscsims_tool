@@ -612,7 +612,7 @@ QTabWidget::pane {
           <property name="title">
            <string>3. Select Layer to Import SIMS Data</string>
           </property>
-          <layout class="QGridLayout" name="gridLayout_9" columnstretch="0,0,0">
+          <layout class="QGridLayout" name="gridLayout_9" columnstretch="0,0">
            <property name="topMargin">
             <number>6</number>
            </property>
@@ -641,29 +641,16 @@ QTabWidget::pane {
              </property>
             </widget>
            </item>
-           <item row="0" column="2">
+           <item row="0" column="1">
             <widget class="QPushButton" name="Btn_Create_New_Layer">
              <property name="maximumSize">
               <size>
-               <width>65</width>
+               <width>90</width>
                <height>16777215</height>
               </size>
              </property>
              <property name="text">
-              <string>New</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="Btn_Refresh_Import_Layers">
-             <property name="maximumSize">
-              <size>
-               <width>75</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Update</string>
+              <string>Create…</string>
              </property>
             </widget>
            </item>

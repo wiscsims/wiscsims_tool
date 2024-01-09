@@ -444,7 +444,6 @@ class WiscSIMSTool:
         dock.Tbx_Workbook.textChanged.connect(self.workbook_udpated)
         dock.Btn_Create_New_Layer.clicked.connect(self.create_new_layer)
         dock.Btn_Import_From_Excel.clicked.connect(self.import_from_excel)
-        dock.Btn_Refresh_Import_Layers.clicked.connect(self.update_import_layers)
 
         # Preset
         ## Comment
@@ -504,7 +503,6 @@ class WiscSIMSTool:
         dock.Tbx_Workbook.textChanged.disconnect(self.workbook_udpated)
         dock.Btn_Create_New_Layer.clicked.disconnect(self.create_new_layer)
         dock.Btn_Import_From_Excel.clicked.disconnect(self.import_from_excel)
-        dock.Btn_Refresh_Import_Layers.clicked.disconnect(self.update_import_layers)
 
         # Preset
         ## Comment
@@ -647,10 +645,7 @@ class WiscSIMSTool:
             "ref1",
             "ref2",
         ]
-        [
-            self.dockwidget.Tbv_Alignment.setColumnHidden(self.model.getColumnIndex(c), True)
-            for c in hiddenColumns
-        ]
+        [self.dockwidget.Tbv_Alignment.setColumnHidden(self.model.getColumnIndex(c), True) for c in hiddenColumns]
         self.dockwidget.Tbv_Alignment.setColumnWidth(0, 20)
         self.dockwidget.Tbv_Alignment.horizontalHeader().setStretchLastSection(True)
         self.dockwidget.Tbv_Alignment.setSelectionBehavior(QAbstractItemView.SelectRows)
@@ -759,9 +754,7 @@ class WiscSIMSTool:
     def select_workbook(self):
         title = "Select WiscSIMS sesssion Workbook"
         mypath = os.path.dirname(QgsProject.instance().fileName())
-        self.workbook_path, _ = QFileDialog.getOpenFileName(
-            self.window, title, mypath, "Excel (*.xls *.xlsx)"
-        )
+        self.workbook_path, _ = QFileDialog.getOpenFileName(self.window, title, mypath, "Excel (*.xls *.xlsx)")
 
         if self.workbook_path == "":
             return
@@ -872,9 +865,7 @@ class WiscSIMSTool:
             end_asc = self.dockwidget.Cmb_Excel_To.itemData(end_idx)
             importing_data = self.xl.filter_by_asc(start=start_asc, end=end_asc)
 
-        importing_layer = self.dockwidget.Cmb_Target_Layer.itemData(
-            self.dockwidget.Cmb_Target_Layer.currentIndex()
-        )
+        importing_layer = self.dockwidget.Cmb_Target_Layer.itemData(self.dockwidget.Cmb_Target_Layer.currentIndex())
         X, Y = self.xl.find_columns(["X", "Y"], False)
 
         features = []
@@ -965,9 +956,7 @@ class WiscSIMSTool:
         [reg.removeMapLayer(layer) for layer in layers if layer == saveFile]
 
         # write shape + etc files
-        error, _ = QgsVectorFileWriter.writeAsVectorFormat(
-            vl, saveFile, "UTF-8", vl.crs(), "ESRI Shapefile"
-        )
+        error, _ = QgsVectorFileWriter.writeAsVectorFormat(vl, saveFile, "UTF-8", vl.crs(), "ESRI Shapefile")
         if not fpath:
             fpath = self.xl.get_workbook_name()
         parsedPath = os.path.basename(fpath).split(".")[:-1]
@@ -999,9 +988,7 @@ class WiscSIMSTool:
             QgsProject.instance().addMapLayer(newVlayer)
             self.iface.setActiveLayer(newVlayer)
             self.update_import_layers()
-            self.dockwidget.Cmb_Target_Layer.setCurrentIndex(
-                self.dockwidget.Cmb_Target_Layer.findText(layerName)
-            )
+            self.dockwidget.Cmb_Target_Layer.setCurrentIndex(self.dockwidget.Cmb_Target_Layer.findText(layerName))
             return newVlayer
 
         return None
@@ -1036,9 +1023,7 @@ class WiscSIMSTool:
         out = [
             layer
             for layer in layers
-            if layer.geometryType() == 0
-            and layer.name() != "tmp"
-            and layer.storageType() != "Memory storage"
+            if layer.geometryType() == 0 and layer.name() != "tmp" and layer.storageType() != "Memory storage"
         ]
         return out
 
@@ -1084,11 +1069,7 @@ class WiscSIMSTool:
         except Exception:
             return []
 
-        return [
-            layer
-            for layer in layers
-            if self.is_identical_field_names(layer, xl_fields, field_max_len)
-        ]
+        return [layer for layer in layers if self.is_identical_field_names(layer, xl_fields, field_max_len)]
 
     """
     Functions for Aliginment and Coordinate Calculations
@@ -1212,9 +1193,7 @@ class WiscSIMSTool:
         vl.setDisplayExpression("Comment")
         vl.updateFields()
 
-        error, _error_str = QgsVectorFileWriter.writeAsVectorFormat(
-            vl, saveFile, "UTF-8", vl.crs(), "ESRI Shapefile"
-        )
+        error, _error_str = QgsVectorFileWriter.writeAsVectorFormat(vl, saveFile, "UTF-8", vl.crs(), "ESRI Shapefile")
 
         # Set layer name without duplication
         layer_names = [layer.name() for layer in self.get_vector_point_layers()]
@@ -1270,9 +1249,7 @@ class WiscSIMSTool:
         self.init_preset_layer_combobox()
 
         # select/highlight created layer
-        self.dockwidget.Cmb_Preset_Layer.setCurrentIndex(
-            self.dockwidget.Cmb_Preset_Layer.findText(layer_name)
-        )
+        self.dockwidget.Cmb_Preset_Layer.setCurrentIndex(self.dockwidget.Cmb_Preset_Layer.findText(layer_name))
 
         self.preview.create()
 
@@ -1379,9 +1356,7 @@ class WiscSIMSTool:
         return tools[idx]
 
     def get_preset_layer(self):
-        layer = self.dockwidget.Cmb_Preset_Layer.itemData(
-            self.dockwidget.Cmb_Preset_Layer.currentIndex()
-        )
+        layer = self.dockwidget.Cmb_Preset_Layer.itemData(self.dockwidget.Cmb_Preset_Layer.currentIndex())
         return layer
 
     def handle_change_PointPreview(self, state):
@@ -1564,9 +1539,7 @@ class WiscSIMSTool:
         if len(self.undo_preset):
             self.dockwidget.Btn_Undo_Add_Preset_Point.setEnabled(True)
         else:
-            self.iface.messageBar().pushMessage(
-                "Already at oldest change", level=Qgis.Info, duration=3
-            )
+            self.iface.messageBar().pushMessage("Already at oldest change", level=Qgis.Info, duration=3)
             self.dockwidget.Btn_Undo_Add_Preset_Point.setEnabled(False)
 
         print("undo btn state", self.dockwidget.Btn_Undo_Add_Preset_Point.isEnabled())
@@ -2018,9 +1991,7 @@ class WiscSIMSTool:
         print("delete spot")
 
         # show confirmation dailog
-        rep_message = QMessageBox.warning(
-            self.window, title, label, QMessageBox.Yes | QMessageBox.No, QMessageBox.No
-        )
+        rep_message = QMessageBox.warning(self.window, title, label, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
         if rep_message == QMessageBox.No:
             layer.removeSelection()
             return
@@ -2048,9 +2019,7 @@ class WiscSIMSTool:
         label = f'Are you sure you want to delete "{comment}"?'
 
         # show confirmation dailog
-        rep_message = QMessageBox.warning(
-            self.window, title, label, QMessageBox.Yes | QMessageBox.No, QMessageBox.No
-        )
+        rep_message = QMessageBox.warning(self.window, title, label, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
 
         if rep_message == QMessageBox.No:
             return False
