@@ -85,7 +85,7 @@ QTabWidget::pane {
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="iconSize">
        <size>
@@ -343,7 +343,7 @@ QTabWidget::pane {
                  </size>
                 </property>
                 <property name="toolTip">
-                 <string notr="true" extracomment="this is tooltip">test test test</string>
+                 <string notr="true" extracomment="this is tooltip"/>
                 </property>
                 <property name="readOnly">
                  <bool>true</bool>

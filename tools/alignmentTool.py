@@ -435,6 +435,7 @@ class AlignmentModel(QStandardItemModel):
                     o["offset"],
                     o["rotation"],
                 )
+            self.update_tooltips()
             return True
         except Exception:
             print("Error on importing JSON")
@@ -540,6 +541,25 @@ class AlignmentModel(QStandardItemModel):
 
     def setCheckState(self, row, state):
         self.item(row, self.c["used"]).setCheckState(state)
+
+    def update_tooltips(self):
+        n = self.rowCount()
+        for row in range(n):
+            tooltip = ""
+            stage, canvas = self.getRefPoint(row, 1)
+            tooltip += "Reference Point 1:\n"
+            tooltip += "  \t\tX\t\tY\n"
+            tooltip += f"  Stage\t\t{stage[0]:0.0f}\t\t{stage[1]:0.0f}\n"
+            tooltip += f"  Canvas\t\t{canvas[0]:0.3f}\t{canvas[1]:0.3f}\n\n"
+
+            stage, canvas = self.getRefPoint(row, 2)
+            tooltip += "Reference Point 2:\n"
+            tooltip += "  \t\tX\t\tY\n"
+            tooltip += f"  Stage\t\t{stage[0]:0.0f}\t\t{stage[1]:0.0f}\n"
+            tooltip += f"  Canvas\t\t{canvas[0]:0.3f}\t{canvas[1]:0.3f}\n\n"
+
+            # print(tooltip)
+            self.item(row, 1).setToolTip(tooltip)
 
 
 """""" """""" """""" """""" """""" """""" """
