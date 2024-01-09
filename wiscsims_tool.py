@@ -422,7 +422,6 @@ class WiscSIMSTool:
         dock.Cmb_Preset_Layer.currentIndexChanged.connect(
             self.handle_change_preset_layer
         )
-        dock.Btn_Refresh_Preset_Layers.clicked.connect(self.init_preset_layer_combobox)
 
         ## Scale
         dock.Spn_Preset_Pixel_Size.valueChanged.connect(self.handle_change_pixel_size)
@@ -486,9 +485,6 @@ class WiscSIMSTool:
         dock.Btn_Create_Preset_Layer.clicked.disconnect(self.create_preset_layer)
         dock.Cmb_Preset_Layer.currentIndexChanged.disconnect(
             self.handle_change_preset_layer
-        )
-        dock.Btn_Refresh_Preset_Layers.clicked.disconnect(
-            self.init_preset_layer_combobox
         )
 
         ## Scale
