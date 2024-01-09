@@ -22,63 +22,32 @@
  ***************************************************************************/
 """
 from PyQt5.QtCore import (
-    QSettings,
-    QTranslator,
-    qVersion,
-    QCoreApplication,
-    Qt,
-    QSize,
-    QModelIndex,
     QVariant,
-    QRect,
 )
 from PyQt5.QtGui import (
-    QIcon,
-    QPixmap,
     QColor,
-    QCursor,
 )
-from PyQt5.QtWidgets import (
-    QAction,
-    QInputDialog,
-    QFileDialog,
-    QAbstractItemView,
-    QMessageBox,
-    QLineEdit,
-    QToolTip,
-    QHeaderView,
-    QDialog,
-    QDialogButtonBox,
-    QVBoxLayout,
-    QLabel,
-)
+
+# from PyQt5.QtWidgets import ()
 
 from qgis.core import (
     QgsProject,
     QgsFeature,
     QgsVectorLayer,
     QgsField,
-    QgsVectorFileWriter,
     QgsGeometry,
     QgsMarkerSymbol,
     QgsPalLayerSettings,
-    QgsPointXY,
     QgsVectorLayerSimpleLabeling,
     QgsPropertyCollection,
-    QgsFeatureRequest,
     QgsMapLayer,
-    QgsWkbTypes,
     QgsEffectStack,
     QgsDropShadowEffect,
     QgsDrawSourceEffect,
-    Qgis,
     QgsDataProvider,
 )
 
-from qgis.gui import (
-    QgsRubberBand,
-    QgsMapCanvasAnnotationItem,
-)
+# from qgis.gui import ()
 
 
 class PresetPreview:
@@ -125,11 +94,14 @@ class PresetPreview:
         #   diplay all comments,
         #   drop shodow,
         #   buffer (white)
+        #
         settings = QgsPalLayerSettings()
+        # print(dir(settings))
         settings.enabled = True
         settings.fieldName = "Comment"
         settings.displayAll = True
-        coll = QgsPropertyCollection("preset")
+        coll = QgsPropertyCollection("preview")
+        coll.setProperty(settings.Size, 25)
         coll.setProperty(settings.ShadowDraw, True)
         coll.setProperty(settings.BufferDraw, True)
         coll.setProperty(settings.Color, QColor(255, 255, 255))
@@ -153,8 +125,6 @@ class PresetPreview:
         self.preview_layer.triggerRepaint()
         QgsProject.instance().addMapLayer(self.preview_layer)
 
-        print("preview layer was created")
-
     def reset(self, moving=False):
         self.remove_objects()
         if self.preview_layer is None:
@@ -163,7 +133,6 @@ class PresetPreview:
         symbol = self.preview_layer.renderer().symbol()
         symbol.symbolLayer(0).setStrokeColor(QColor(255, 255, 255))  # stroke: black
         symbol.setColor(QColor(64, 143, 176, 102))
-        # self.preview_layer.renderer().symbol().setColor( QColor(64, 143, 176, 102))  # lightblue, alpha: 0.4
 
     def update_layer(self, new_layer):
         self.preset_layer = new_layer
@@ -209,7 +178,6 @@ class PresetPreview:
         self.sc_dp.deleteFeatures(feature_ids)
         self.preview_layer.commitChanges()
         self.preview_layer.triggerRepaint()
-        print("remove objects")
 
     def update_comment(self, comment):
         field_index = self.preview_layer.fields().indexOf("Comment")
@@ -218,9 +186,6 @@ class PresetPreview:
         if len(feature_list) == 0:
             return
         feature_id = feature_list[0].id()
-        print(
-            f"field_index: {field_index}, feature_id: {feature_id}, comment: {comment}"
-        )
         self.preview_layer.startEditing()
         self.preview_layer.changeAttributeValue(feature_id, field_index, comment)
         self.preview_layer.commitChanges()

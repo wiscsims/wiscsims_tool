@@ -69,8 +69,6 @@ from qgis.core import (
     QgsMapLayer,
     QgsWkbTypes,
     QgsEffectStack,
-    QgsDropShadowEffect,
-    QgsDrawSourceEffect,
     Qgis,
 )
 
@@ -1442,7 +1440,6 @@ class WiscSIMSTool:
         self.update_preview_cursor()
 
     def update_preview_cursor(self, idx=-1):
-        print("update preview cursor")
         if self.get_current_tool() != "preset":
             self.canvas.setCursor(Qt.CrossCursor)
             self.preview.reset()
