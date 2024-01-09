@@ -43,6 +43,7 @@ from qgis.gui import QgsRubberBand
 
 # Initialize Qt resources from file resources.py
 from .resources import *  # noqa: F401, F403
+from .tools.alignmentInfo import AlignmentInfo
 # Import custom tools
 from .tools.alignmentTool import (AlignmentMarker, AlignmentModel,
                                   AlignmentModelNew)
@@ -54,39 +55,6 @@ from .tools.sumTableTool import SumTableTool
 from .ui.edit_dialog import EditDialog
 # Import the code for the DockWidget
 from .ui.wiscsims_tool_dockwidget import WiscSIMSToolDockWidget
-
-
-class AlignmentInfo(QDialog):
-    def __init__(self, parent=None, info=None):
-        QDialog.__init__(self)
-
-        self.setWindowTitle("Aligment Information")
-
-        QBtn = QDialogButtonBox.Ok
-
-        self.buttonBox = QDialogButtonBox(QBtn)
-        self.buttonBox.accepted.connect(self.accept)
-
-        self.layout = QVBoxLayout()
-        message = ""
-        if info is not None:
-            beampos = info["beam"]["position"]
-            beamsize = info["beam"]["size"]
-            stage = info["stage"]
-            canvas = info["canvas"]
-            refname = info["name"]
-
-            message = QLabel(
-                f'"{refname}"\n\n'
-                + f"Stage: ({stage.x():0.0f}, {stage.y():0.0f})\n"
-                + f"Canvas: ({canvas.x():0.2f}, {canvas.y():0.2f})\n"
-                + f"Beam Position: ({beampos[0]}, {beampos[1]})\n"
-                + f"Beam Size: {beamsize} um"
-            )
-
-        self.layout.addWidget(message)
-        self.layout.addWidget(self.buttonBox)
-        self.setLayout(self.layout)
 
 
 class WiscSIMSTool:
