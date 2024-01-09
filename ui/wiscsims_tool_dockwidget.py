@@ -24,7 +24,7 @@
 
 import os
 
-from PyQt5 import QtGui, QtWidgets, uic
+from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import pyqtSignal
 
 FORM_CLASS, _ = uic.loadUiType(

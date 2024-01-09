@@ -66,15 +66,12 @@ from qgis.core import (
     QgsVectorLayerSimpleLabeling,
     QgsPropertyCollection,
     QgsFeatureRequest,
-    QgsMapLayer,
     QgsWkbTypes,
-    QgsEffectStack,
     Qgis,
 )
 
 from qgis.gui import (
     QgsRubberBand,
-    QgsMapCanvasAnnotationItem,
 )
 
 # Initialize Qt resources from file resources.py
@@ -122,7 +119,11 @@ class AlignmentInfo(QDialog):
             refname = info["name"]
 
             message = QLabel(
-                f'"{refname}"\n\nStage: ({stage.x():0.0f}, {stage.y():0.0f})\nCanvas: ({canvas.x():0.2f}, {canvas.y():0.2f})\nBeam Position: ({beampos[0]}, {beampos[1]})\nBeam Size: {beamsize} um'
+                f'"{refname}"\n\n'
+                + f"Stage: ({stage.x():0.0f}, {stage.y():0.0f})\n"
+                + f"Canvas: ({canvas.x():0.2f}, {canvas.y():0.2f})\n"
+                + f"Beam Position: ({beampos[0]}, {beampos[1]})\n"
+                + f"Beam Size: {beamsize} um"
             )
 
         self.layout.addWidget(message)
@@ -496,6 +497,10 @@ class WiscSIMSTool:
 
     def remove_ui_connections(self):
         dock = self.dockwidget
+
+        dock.Tab_Tool.currentChanged.disconnect(self.handle_tool_changed)
+
+        # Import/Alignment
         dock.Grp_Alignment.toggled.disconnect(self.toggle_use_alignment)
         dock.Tbv_Alignment.clicked.disconnect(self.change_tableview_selection)
         dock.Tbv_Alignment.doubleClicked.disconnect(self.handle_table_doubleClicked)
@@ -511,49 +516,51 @@ class WiscSIMSTool:
         dock.Btn_Import_From_Excel.clicked.disconnect(self.import_from_excel)
         dock.Btn_Refresh_Import_Layers.clicked.disconnect(self.update_import_layers)
 
-        dock.Tab_Tool.currentChanged.disconnect(self.handle_tool_changed)
-
-        dock.Spn_Grid_Step_Size_X.valueChanged.disconnect(self.update_grid)
-        dock.Spn_Grid_Step_Size_Y.valueChanged.disconnect(self.update_grid)
-        dock.Spn_Grid_N_Point_X.valueChanged.disconnect(self.update_grid)
-        dock.Spn_Grid_N_Point_Y.valueChanged.disconnect(self.update_grid)
-        dock.Cmb_Grid_Move_Order.currentIndexChanged.disconnect(self.update_grid)
-
-        dock.Cmb_Preset_Layer.currentIndexChanged.disconnect(
-            self.handle_change_preset_layer
-        )
-
-        dock.Spn_Line_Step_Size.valueChanged.disconnect(self.update_line)
-        dock.Spn_Line_N_Spot.valueChanged.disconnect(self.update_line)
-
-        dock.Btn_Create_Preset_Layer.clicked.disconnect(self.create_preset_layer)
-
-        dock.Btn_Grid_Add_Points.clicked.disconnect(self.add_preset_points)
-        dock.Btn_Line_Add_Points.clicked.disconnect(self.add_preset_points)
-
-        dock.Btn_Reset_Current_Number.clicked.disconnect(self.reset_current_number)
-        dock.Btn_Undo_Add_Preset_Point.clicked.disconnect(self.handle_undo)
-        dock.Btn_Refresh_Preset_Layers.clicked.disconnect(
-            self.init_preset_layer_combobox
-        )
-
-        dock.Cmb_Preset_Layer.currentIndexChanged.disconnect(
-            self.handle_change_preset_layer
-        )
-        dock.Spn_Preset_Pixel_Size.valueChanged.disconnect(
-            self.handle_change_pixel_size
-        )
-        dock.Spn_Preset_Spot_Size.valueChanged.disconnect(self.handle_change_spot_size)
-        dock.Btn_Preset_PxSizeCalc.clicked.disconnect(self.handle_pixel_size_tool)
+        # Preset
+        ## Comment
         dock.Tbx_Comment.textChanged.disconnect(self.reset_current_number)
         dock.Tbx_Comment.textChanged.disconnect(self.handle_comment_change_preview)
         dock.Spn_Current_Number.valueChanged.disconnect(
             self.handle_comment_change_preview
         )
+        dock.Btn_Reset_Current_Number.clicked.disconnect(self.reset_current_number)
 
+        ## Layer
+        dock.Btn_Create_Preset_Layer.clicked.disconnect(self.create_preset_layer)
+        dock.Cmb_Preset_Layer.currentIndexChanged.disconnect(
+            self.handle_change_preset_layer
+        )
+        dock.Btn_Refresh_Preset_Layers.clicked.disconnect(
+            self.init_preset_layer_combobox
+        )
+
+        ## Scale
+        dock.Spn_Preset_Pixel_Size.valueChanged.disconnect(
+            self.handle_change_pixel_size
+        )
+        dock.Spn_Preset_Spot_Size.valueChanged.disconnect(self.handle_change_spot_size)
+
+        ## Mode
         dock.Tab_Preset_Mode.currentChanged.disconnect(self.handle_change_preset_mode)
 
+        ### Point
         dock.Opt_Point_Preview.stateChanged.disconnect(self.handle_change_PointPreview)
+
+        ### Line
+        dock.Spn_Line_Step_Size.valueChanged.disconnect(self.update_line)
+        dock.Spn_Line_N_Spot.valueChanged.disconnect(self.update_line)
+        dock.Btn_Line_Add_Points.clicked.disconnect(self.add_preset_points)
+
+        ### Grid
+        dock.Spn_Grid_Step_Size_X.valueChanged.disconnect(self.update_grid)
+        dock.Spn_Grid_Step_Size_Y.valueChanged.disconnect(self.update_grid)
+        dock.Spn_Grid_N_Point_X.valueChanged.disconnect(self.update_grid)
+        dock.Spn_Grid_N_Point_Y.valueChanged.disconnect(self.update_grid)
+        dock.Cmb_Grid_Move_Order.currentIndexChanged.disconnect(self.update_grid)
+        dock.Btn_Grid_Add_Points.clicked.disconnect(self.add_preset_points)
+
+        ## Undo
+        dock.Btn_Undo_Add_Preset_Point.clicked.disconnect(self.handle_undo)
 
     def init_map_tool(self):
         # check the plugin activation state
@@ -680,9 +687,10 @@ class WiscSIMSTool:
         if type(index) == QModelIndex:
             if index.column() == 0:
                 return
-            row = index.row()
-        else:
-            row = index
+        #     row = index.row()
+        # else:
+        #     row = index
+
         # stage1, canvas1 = self.model.getRefPoint(row, 1)
         # stage2, canvas2 = self.model.getRefPoint(row, 2)
         # scale, offset, rotation = self.model.getAlignmentParams(row)
@@ -825,16 +833,16 @@ class WiscSIMSTool:
             # Get available rows (indexes)
             available_refs = self.model.getAvailableRows()
             self.conv_params = {}
-            for l in available_refs:
+            for g in available_refs:
                 for r in available_refs:
-                    if l >= r:
+                    if g >= r:
                         continue
                     # Get combinations of indexes
-                    key = f"{l}-{r}"
+                    key = f"{g}-{r}"
                     # Calculate ConvertParams
                     scale, offset, rotation = self.cot.getConvertParams(
-                        self.model.getStagePosition(l),
-                        self.model.getCanvasPosition(l),
+                        self.model.getStagePosition(g),
+                        self.model.getCanvasPosition(g),
                         self.model.getStagePosition(r),
                         self.model.getCanvasPosition(r),
                     )
@@ -873,7 +881,7 @@ class WiscSIMSTool:
                 weight = 1 / (j[1] + k[1]) ** 2
                 out[key] = weight
                 new_conv_params[-1]["weight"] = weight
-        wt_sum = sum(out.values())
+        # wt_sum = sum(out.values())
         # print([round(100 * a/wt_sum, 1) for a in out.values() if a > 0.0])
         return new_conv_params
 
@@ -961,7 +969,10 @@ class WiscSIMSTool:
         self.dockwidget.Cmb_Target_Layer.clear()
         layers = self.get_excel_layers(self.xl)
         if len(layers) > 0:
-            [self.dockwidget.Cmb_Target_Layer.addItem(l.name(), l) for l in layers]
+            [
+                self.dockwidget.Cmb_Target_Layer.addItem(layer.name(), layer)
+                for layer in layers
+            ]
 
             self.dockwidget.Btn_Import_From_Excel.setEnabled(True)
             if current_layer_index > -1:
@@ -990,7 +1001,7 @@ class WiscSIMSTool:
 
         reg = QgsProject.instance()
         # Remove layers which have same souce file as shape file to be overwritten
-        layers = [l.source() for l in self.get_layer_list(layertype=0)]
+        layers = [layer.source() for layer in self.get_layer_list(layertype=0)]
         [reg.removeMapLayer(layer) for layer in layers if layer == saveFile]
 
         # write shape + etc files
@@ -1044,7 +1055,7 @@ class WiscSIMSTool:
         return QVariant.Double
 
     def intersect(self, list1, list2):
-        return [l for l in list1 if l in list2]
+        return [lst for lst in list1 if lst in list2]
 
     def get_layer_list(self, layertype=-1):
         # Layer Types
@@ -1116,9 +1127,9 @@ class WiscSIMSTool:
             return []
 
         return [
-            l
-            for l in layers
-            if self.is_identical_field_names(l, xl_fields, field_max_len)
+            layer
+            for layer in layers
+            if self.is_identical_field_names(layer, xl_fields, field_max_len)
         ]
 
     """
@@ -1184,9 +1195,9 @@ class WiscSIMSTool:
 
         # filter scratch layer
         layers = [
-            l
-            for l in layers
-            if l.name() != "tmp" and l.storageType() != "Memory storage"
+            layer
+            for layer in layers
+            if layer.name() != "tmp" and layer.storageType() != "Memory storage"
         ]
 
         if len(layers) == 0:
@@ -1194,7 +1205,10 @@ class WiscSIMSTool:
         # filter layers which has 'Comment' field
         layers = [layer for layer in layers if "Comment" in self.get_fields(layer)]
         # add to Cmb_Preset_Layer
-        [self.dockwidget.Cmb_Preset_Layer.addItem(l.name(), l) for l in layers]
+        [
+            self.dockwidget.Cmb_Preset_Layer.addItem(layer.name(), layer)
+            for layer in layers
+        ]
         if current_layer_index > -1:
             self.dockwidget.Cmb_Preset_Layer.setCurrentIndex(current_layer_index)
 
@@ -1871,7 +1885,9 @@ class WiscSIMSTool:
             out = self.rotate_coordinates(out, rotation, start_xy)
         return out
 
-    def rotate_coordinates(self, points, rotation, origin=[0, 0]):
+    def rotate_coordinates(self, points, rotation, origin=None):
+        if origin is None:
+            origin = [0, 0]
         # poinsts: list of point
         # rotation: rotation in degree (0 to +180, 0 to -180), CW = +, CCW = -
         # origin: coordiates of origin of rotation. Default is [0, 0]
