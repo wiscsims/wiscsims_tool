@@ -45,9 +45,11 @@ class AlignmentModelNew(QStandardItemModel):
     * Methods
     """ """""" """""" """""" """""" """""" """"""
 
-    def isNewFormat(self, json_obj):
-        print("checking file formats")
-        return len(json_obj) and "beam" in json_obj[0].keys()
+    @staticmethod
+    def isNewFormat(json_obj):
+        is_new = len(json_obj) and "beam" in json_obj[0].keys()
+        print("Is new format? ", is_new)
+        return is_new
 
     def isAvailable(self):
         n = self.rowCount()

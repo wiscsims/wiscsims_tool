@@ -713,7 +713,7 @@ class WiscSIMSTool:
         with open(alnFile) as data_file:
             obj = json.load(data_file)
 
-            self.new_aliginment = self.model.isNewFormat(obj)
+            self.new_aliginment = AlignmentModelNew.isNewFormat(obj)
 
             if not self.new_aliginment:
                 # AlignmentModelNew is default
