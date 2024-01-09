@@ -159,9 +159,7 @@ class WiscSIMSTool:
 
         # initialize locale
         locale = QSettings().value("locale/userLocale")[0:2]
-        locale_path = os.path.join(
-            self.plugin_dir, "i18n", "WiscSIMSTool_{}.qm".format(locale)
-        )
+        locale_path = os.path.join(self.plugin_dir, "i18n", "WiscSIMSTool_{}.qm".format(locale))
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
@@ -373,9 +371,7 @@ class WiscSIMSTool:
             # Create the dockwidget (after translation) and keep reference
             plugin_path = ":plugins/wiscsims_tool"
             self.dockwidget = WiscSIMSToolDockWidget()
-            icon_open_folder = QPixmap(
-                os.path.join(plugin_path, "img", "icon_open_folder.png")
-            )
+            icon_open_folder = QPixmap(os.path.join(plugin_path, "img", "icon_open_folder.png"))
             # icon_open_folder = os.path.join(plugin_path, 'img', 'icon_open_folder.png')
             self.dockwidget.Btn_Select_Workbook.setIcon(QIcon(icon_open_folder))
             self.dockwidget.Btn_Select_Workbook.setIconSize(QSize(16, 16))
@@ -440,9 +436,7 @@ class WiscSIMSTool:
         dock.Grp_Alignment.toggled.connect(self.toggle_use_alignment)
         dock.Tbv_Alignment.clicked.connect(self.change_tableview_selection)
         dock.Tbv_Alignment.doubleClicked.connect(self.handle_table_doubleClicked)
-        dock.Gbx_Alignment_Ref_Point_Markers.toggled.connect(
-            self.update_ref_point_markers
-        )
+        dock.Gbx_Alignment_Ref_Point_Markers.toggled.connect(self.update_ref_point_markers)
         dock.Cbx_Alignment_Ref_Points.toggled.connect(self.update_ref_point_markers)
         dock.Cbx_Alignment_Ref_Names.toggled.connect(self.update_ref_point_markers)
         dock.Btn_Import_Alignments.clicked.connect(self.import_alignments)
@@ -461,9 +455,7 @@ class WiscSIMSTool:
 
         ## Layer
         dock.Btn_Create_Preset_Layer.clicked.connect(self.create_preset_layer)
-        dock.Cmb_Preset_Layer.currentIndexChanged.connect(
-            self.handle_change_preset_layer
-        )
+        dock.Cmb_Preset_Layer.currentIndexChanged.connect(self.handle_change_preset_layer)
         dock.Btn_Refresh_Preset_Layers.clicked.connect(self.init_preset_layer_combobox)
 
         ## Scale
@@ -504,9 +496,7 @@ class WiscSIMSTool:
         dock.Grp_Alignment.toggled.disconnect(self.toggle_use_alignment)
         dock.Tbv_Alignment.clicked.disconnect(self.change_tableview_selection)
         dock.Tbv_Alignment.doubleClicked.disconnect(self.handle_table_doubleClicked)
-        dock.Gbx_Alignment_Ref_Point_Markers.toggled.disconnect(
-            self.update_ref_point_markers
-        )
+        dock.Gbx_Alignment_Ref_Point_Markers.toggled.disconnect(self.update_ref_point_markers)
         dock.Cbx_Alignment_Ref_Points.toggled.disconnect(self.update_ref_point_markers)
         dock.Cbx_Alignment_Ref_Names.toggled.disconnect(self.update_ref_point_markers)
         dock.Btn_Import_Alignments.clicked.disconnect(self.import_alignments)
@@ -520,24 +510,16 @@ class WiscSIMSTool:
         ## Comment
         dock.Tbx_Comment.textChanged.disconnect(self.reset_current_number)
         dock.Tbx_Comment.textChanged.disconnect(self.handle_comment_change_preview)
-        dock.Spn_Current_Number.valueChanged.disconnect(
-            self.handle_comment_change_preview
-        )
+        dock.Spn_Current_Number.valueChanged.disconnect(self.handle_comment_change_preview)
         dock.Btn_Reset_Current_Number.clicked.disconnect(self.reset_current_number)
 
         ## Layer
         dock.Btn_Create_Preset_Layer.clicked.disconnect(self.create_preset_layer)
-        dock.Cmb_Preset_Layer.currentIndexChanged.disconnect(
-            self.handle_change_preset_layer
-        )
-        dock.Btn_Refresh_Preset_Layers.clicked.disconnect(
-            self.init_preset_layer_combobox
-        )
+        dock.Cmb_Preset_Layer.currentIndexChanged.disconnect(self.handle_change_preset_layer)
+        dock.Btn_Refresh_Preset_Layers.clicked.disconnect(self.init_preset_layer_combobox)
 
         ## Scale
-        dock.Spn_Preset_Pixel_Size.valueChanged.disconnect(
-            self.handle_change_pixel_size
-        )
+        dock.Spn_Preset_Pixel_Size.valueChanged.disconnect(self.handle_change_pixel_size)
         dock.Spn_Preset_Spot_Size.valueChanged.disconnect(self.handle_change_spot_size)
 
         ## Mode
@@ -580,9 +562,7 @@ class WiscSIMSTool:
             # edit comment
             self.canvasMapTool.canvasReleaseWAlt.connect(self.canvasReleaseWAlt)
             # delete spot
-            self.canvasMapTool.canvasReleaseWAltShift.connect(
-                self.canvasReleaseWAltShift
-            )
+            self.canvasMapTool.canvasReleaseWAltShift.connect(self.canvasReleaseWAltShift)
 
             self.canvasMapTool.canvasClickedRight.connect(self.canvasClickedRight)
             self.canvasMapTool.canvasMoved.connect(self.canvasMoved)
@@ -619,10 +599,7 @@ class WiscSIMSTool:
         [tbl.setColumnHidden(self.model.getColumnIndex(c), True) for c in hiddenColumns]
         w = {"0": 20, "2": 0, "3": 0, "4": 0}
         [tbl.setColumnWidth(c, w[str(c)]) for c in [0, 2, 3, 4]]
-        [
-            tbl.horizontalHeader().setSectionResizeMode(c, QHeaderView.Fixed)
-            for c in [0, 2, 3, 4]
-        ]
+        [tbl.horizontalHeader().setSectionResizeMode(c, QHeaderView.Fixed) for c in [0, 2, 3, 4]]
         tbl.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
 
         tbl.verticalHeader().setDefaultSectionSize(22)
@@ -671,17 +648,13 @@ class WiscSIMSTool:
             "ref2",
         ]
         [
-            self.dockwidget.Tbv_Alignment.setColumnHidden(
-                self.model.getColumnIndex(c), True
-            )
+            self.dockwidget.Tbv_Alignment.setColumnHidden(self.model.getColumnIndex(c), True)
             for c in hiddenColumns
         ]
         self.dockwidget.Tbv_Alignment.setColumnWidth(0, 20)
         self.dockwidget.Tbv_Alignment.horizontalHeader().setStretchLastSection(True)
         self.dockwidget.Tbv_Alignment.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.dockwidget.Tbv_Alignment.setSelectionMode(
-            QAbstractItemView.SingleSelection
-        )
+        self.dockwidget.Tbv_Alignment.setSelectionMode(QAbstractItemView.SingleSelection)
 
     def change_tableview_selection(self, index):
         if type(index) == QModelIndex:
@@ -767,12 +740,8 @@ class WiscSIMSTool:
         else:
             for aln in alignments:
                 current_flag = selected_alignment == aln["r"]
-                self.handle_ref_marker(
-                    aln["point_1"][1], aln["refname"] + " (1)", current_flag
-                )
-                self.handle_ref_marker(
-                    aln["point_2"][1], aln["refname"] + " (2)", current_flag
-                )
+                self.handle_ref_marker(aln["point_1"][1], aln["refname"] + " (1)", current_flag)
+                self.handle_ref_marker(aln["point_2"][1], aln["refname"] + " (2)", current_flag)
             self.update_canvas_rotation()
 
     def update_canvas_rotation(self):
@@ -891,9 +860,7 @@ class WiscSIMSTool:
 
         # import date from Excel file
         if self.dockwidget.Opt_Comment.isChecked():
-            importing_data = self.xl.filter_by_comment(
-                self.dockwidget.Tbx_Comment_Match.text()
-            )
+            importing_data = self.xl.filter_by_comment(self.dockwidget.Tbx_Comment_Match.text())
         else:
             start_idx = self.dockwidget.Cmb_Excel_From.currentIndex()
             end_idx = self.dockwidget.Cmb_Excel_To.currentIndex()
@@ -929,9 +896,7 @@ class WiscSIMSTool:
                 conv_model = self.get_conversion_models(
                     [d[X], d[Y]], self.model.getStagePositions(), self.conv_params, 2
                 )
-                canvasX, canvasY = self.cot.getWtAveragedStageToCanvas(
-                    [d[X], d[Y]], conv_model
-                )
+                canvasX, canvasY = self.cot.getWtAveragedStageToCanvas([d[X], d[Y]], conv_model)
             feature = QgsFeature()
             feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(canvasX, canvasY)))
             feature.setAttributes(d)
@@ -941,9 +906,7 @@ class WiscSIMSTool:
         dpr.addFeatures(features)
         importing_layer.setDisplayExpression("File")
         importing_layer.triggerRepaint()
-        QMessageBox.information(
-            self.window, "Import Excel Data", f"{i} data were imported!"
-        )
+        QMessageBox.information(self.window, "Import Excel Data", f"{i} data were imported!")
 
     # self.canvas.refresh()
 
@@ -969,10 +932,7 @@ class WiscSIMSTool:
         self.dockwidget.Cmb_Target_Layer.clear()
         layers = self.get_excel_layers(self.xl)
         if len(layers) > 0:
-            [
-                self.dockwidget.Cmb_Target_Layer.addItem(layer.name(), layer)
-                for layer in layers
-            ]
+            [self.dockwidget.Cmb_Target_Layer.addItem(layer.name(), layer) for layer in layers]
 
             self.dockwidget.Btn_Import_From_Excel.setEnabled(True)
             if current_layer_index > -1:
@@ -1076,7 +1036,9 @@ class WiscSIMSTool:
         out = [
             layer
             for layer in layers
-            if layer.geometryType() == 0 and layer.name != "tmp layer"
+            if layer.geometryType() == 0
+            and layer.name() != "tmp"
+            and layer.storageType() != "Memory storage"
         ]
         return out
 
@@ -1118,11 +1080,7 @@ class WiscSIMSTool:
         legend = QgsProject.instance().layerTreeRoot()
         try:
             vec_layers = self.get_vector_point_layers()
-            layers = [
-                layer
-                for layer in vec_layers
-                if legend.findLayer(layer.id()).isVisible()
-            ]
+            layers = [layer for layer in vec_layers if legend.findLayer(layer.id()).isVisible()]
         except Exception:
             return []
 
@@ -1194,21 +1152,14 @@ class WiscSIMSTool:
         layers = self.get_vector_point_layers()
 
         # filter scratch layer
-        layers = [
-            layer
-            for layer in layers
-            if layer.name() != "tmp" and layer.storageType() != "Memory storage"
-        ]
+        layers = [layer for layer in layers]
 
         if len(layers) == 0:
             return
         # filter layers which has 'Comment' field
         layers = [layer for layer in layers if "Comment" in self.get_fields(layer)]
         # add to Cmb_Preset_Layer
-        [
-            self.dockwidget.Cmb_Preset_Layer.addItem(layer.name(), layer)
-            for layer in layers
-        ]
+        [self.dockwidget.Cmb_Preset_Layer.addItem(layer.name(), layer) for layer in layers]
         if current_layer_index > -1:
             self.dockwidget.Cmb_Preset_Layer.setCurrentIndex(current_layer_index)
 
@@ -1417,10 +1368,7 @@ class WiscSIMSTool:
     def reset_current_number(self, btn):
         # hit reset button => btn = bool
         # comment changed => btn = unicode
-        if (
-            isinstance(btn, str)
-            and not self.dockwidget.Cbx_Reset_Increment_Number.isChecked()
-        ):
+        if isinstance(btn, str) and not self.dockwidget.Cbx_Reset_Increment_Number.isChecked():
             return
         self.dockwidget.Spn_Current_Number.setValue(1)
 
@@ -1577,9 +1525,7 @@ class WiscSIMSTool:
 
         preset_layer.commitChanges()
 
-        self.iface.messageBar().pushMessage(
-            "Undo", undo_message, level=Qgis.Info, duration=1
-        )
+        self.iface.messageBar().pushMessage("Undo", undo_message, level=Qgis.Info, duration=1)
         self.update_undo_btn_state()
 
     def undo_editing_comment(self, preset_layer, data):
@@ -1698,15 +1644,10 @@ class WiscSIMSTool:
         if situ == "line-start":
             txt = "🌱 Click end-point to see preview spots!"
         elif situ == "line-end":
-            txt = (
-                "🌱 If the preview spots look good,\n"
-                '🌱 click the "Add Points" button➡️'
-            )
+            txt = "🌱 If the preview spots look good,\n" '🌱 click the "Add Points" button➡️'
         else:
             txt = ""
-        QToolTip.showText(
-            pos, txt, self.canvas, QRect(pos.x(), pos.y(), 200, 200), 30000
-        )
+        QToolTip.showText(pos, txt, self.canvas, QRect(pos.x(), pos.y(), 200, 200), 30000)
         # QToolTip.showText(pos, txt, self.window)
 
     def hide_tooltip(self):
@@ -1731,9 +1672,7 @@ class WiscSIMSTool:
             fg_color = "rgb(128, 128, 128)"
             bg_color = "rgb(192, 192, 192)"
 
-        styles = (
-            f"background-color: {bg_color};" f"color: {fg_color};" "font-weight: bold;"
-        )
+        styles = f"background-color: {bg_color};" f"color: {fg_color};" "font-weight: bold;"
 
         for btn in btns:
             btn.setStyleSheet(styles)
@@ -1857,9 +1796,7 @@ class WiscSIMSTool:
         self.update_add_points_btn_status(True)
         self.canvas.refresh()
 
-    def calculate_grid_positions(
-        self, start_xy, step_xy, n_xy, order, scale=1, rotation=0
-    ):
+    def calculate_grid_positions(self, start_xy, step_xy, n_xy, order, scale=1, rotation=0):
         # start, step, n are lists
         # order: 0 = Horizontal, then vertical
         #        1 = Vertical, then horizontal
@@ -1956,9 +1893,7 @@ class WiscSIMSTool:
 
     def mapToolChanged(self, tool, prev_tool):
         #     r'wiscsims_tool', str(tool)))
-        if re.search(r"wiscsims_tool", str(tool)) or re.search(
-            r"WiscSIMSTool", str(tool)
-        ):
+        if re.search(r"wiscsims_tool", str(tool)) or re.search(r"WiscSIMSTool", str(tool)):
             self.dockwidget.setEnabled(True)
             return
 
@@ -1995,9 +1930,7 @@ class WiscSIMSTool:
 
         if layer is None:
             # there is no preset layer
-            QMessageBox.warning(
-                self.window, "No Preset Layer", "Preset layer is not selected."
-            )
+            QMessageBox.warning(self.window, "No Preset Layer", "Preset layer is not selected.")
             return
 
         cursor_geom = QgsGeometry.fromPointXY(self.canvasMapTool.getMapCoordinates(e))
@@ -2021,9 +1954,7 @@ class WiscSIMSTool:
         self.feature_id = feature.id()
         layer.selectByIds([self.feature_id], QgsVectorLayer.SetSelection)
 
-        comment = [
-            f["Comment"] for f in layer.getFeatures(QgsFeatureRequest(self.feature_id))
-        ][0]
+        comment = [f["Comment"] for f in layer.getFeatures(QgsFeatureRequest(self.feature_id))][0]
         point = [pt, comment]
 
         self.preview.add_points([point])
@@ -2036,9 +1967,7 @@ class WiscSIMSTool:
             return
 
         layer = self.get_preset_layer()
-        original_geo = [
-            f.geometry() for f in layer.getFeatures() if f.id() == self.feature_id
-        ][0]
+        original_geo = [f.geometry() for f in layer.getFeatures() if f.id() == self.feature_id][0]
         layer.startEditing()
         pt = self.canvasMapTool.getMapCoordinates(e)
         pt.set(pt.x() + self.movement_offset[0], pt.y() + self.movement_offset[1])
@@ -2290,9 +2219,7 @@ class WiscSIMSTool:
         if self.feature_id is not None or self.dockwidget.Opt_Point_Preview.isChecked():
             # self.preview.add_points([[self.cursor_pos, ""]])
             if self.feature_id:
-                pt.set(
-                    pt.x() + self.movement_offset[0], pt.y() + self.movement_offset[1]
-                )
+                pt.set(pt.x() + self.movement_offset[0], pt.y() + self.movement_offset[1])
             self.preview.update_position(pt)
 
     def canvasShiftKeyState(self, state):
