@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-from PyQt5 import QtWidgets
-from PyQt5.QtCore import pyqtSignal, QPoint, Qt
-from PyQt5.QtGui import QColor
-from qgis.core import QgsPoint, QgsRectangle, Qgis
-from qgis.gui import QgsRubberBand, QgsMapTool
 import math
+
+from PyQt5 import QtWidgets
+from PyQt5.QtCore import QPoint, Qt, pyqtSignal
+from PyQt5.QtGui import QColor
+from qgis.core import Qgis, QgsPoint, QgsRectangle
+from qgis.gui import QgsMapTool, QgsRubberBand
 
 
 class CanvasMapTool(QgsMapTool):

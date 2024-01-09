@@ -21,31 +21,16 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt5.QtCore import (
-    QVariant,
-)
-from PyQt5.QtGui import (
-    QColor,
-)
+from PyQt5.QtCore import QVariant
+from PyQt5.QtGui import QColor
+from qgis.core import (QgsDataProvider, QgsDrawSourceEffect,
+                       QgsDropShadowEffect, QgsEffectStack, QgsFeature,
+                       QgsField, QgsGeometry, QgsMapLayer, QgsMarkerSymbol,
+                       QgsPalLayerSettings, QgsProject, QgsPropertyCollection,
+                       QgsVectorLayer, QgsVectorLayerSimpleLabeling)
 
 # from PyQt5.QtWidgets import ()
 
-from qgis.core import (
-    QgsProject,
-    QgsFeature,
-    QgsVectorLayer,
-    QgsField,
-    QgsGeometry,
-    QgsMarkerSymbol,
-    QgsPalLayerSettings,
-    QgsVectorLayerSimpleLabeling,
-    QgsPropertyCollection,
-    QgsMapLayer,
-    QgsEffectStack,
-    QgsDropShadowEffect,
-    QgsDrawSourceEffect,
-    QgsDataProvider,
-)
 
 # from qgis.gui import ()
 

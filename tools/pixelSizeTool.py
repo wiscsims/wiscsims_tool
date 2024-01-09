@@ -21,7 +21,7 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt5.QtCore import QRect, pyqtSignal, QObject
+from PyQt5.QtCore import QObject, QRect, pyqtSignal
 from PyQt5.QtGui import QColor, QCursor
 from PyQt5.QtWidgets import QToolTip
 from qgis.core import QgsPointXY, QgsWkbTypes

@@ -1,12 +1,7 @@
-from PyQt5 import (
-    QtWidgets,
-    uic,
-)
-
-from PyQt5.QtCore import Qt, pyqtSignal
-
-
 import os
+
+from PyQt5 import QtWidgets, uic
+from PyQt5.QtCore import Qt, pyqtSignal
 
 FORM_CLASS, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "edit_dialog.ui")
