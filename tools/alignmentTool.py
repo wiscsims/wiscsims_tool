@@ -341,6 +341,10 @@ class AlignmentModel(QStandardItemModel):
             return False
         return sum([self.getCheckStatus(r) for r in range(n)])
 
+    def getAvailableRows(self):
+        n = self.rowCount()
+        return [r for r in range(n) if self.getCheckStatus(r)]
+
     def addNewRefPoints(self, used, refname, pt1, pt2, scale, offset, rotation):
         return self.addRefPoints(
             used, refname, pt1, pt2, scale, offset, rotation, import_from_json=False
