@@ -136,6 +136,9 @@ class WiscSIMSTool:
 
         self.cursor_pos = QgsPointXY(0, 0)
 
+        self.tools = ["import", "preset", "pixelsize"]
+        self.preset_modes = ["point", "line", "grid"]
+
         self.current_tool = "preset"
         self.current_preset_mode = "point"
 
@@ -323,11 +326,16 @@ class WiscSIMSTool:
         self.create_ui_connections()
         self.create_legend_connections()
 
-        self.update_preview_cursor(self.dockwidget.Tab_Preset_Mode.currentIndex())
-
         # show the dockwidget
         # TODO: fix to allow choice of dock location
         self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
+
+        # initiallize tool and preset mode tabs, and cursor
+        self.dockwidget.Tab_Tool.setCurrentIndex(self.tools.index(self.current_tool))
+        self.handle_tool_changed(self.tools.index(self.current_tool))
+        self.dockwidget.Tab_Preset_Mode.setCurrentIndex(self.preset_modes.index(self.current_preset_mode))
+        self.handle_preset_mode_changed(self.preset_modes.index(self.current_preset_mode))
+
         self.dockwidget.show()
 
         self.init_map_tool()
@@ -356,7 +364,8 @@ class WiscSIMSTool:
 
         dock.Tab_Tool.currentChanged.connect(self.handle_tool_changed)
 
-        # Import/Alignment
+        # Import
+        ## Alignment
         dock.Grp_Alignment.toggled.connect(self.toggle_use_alignment)
         dock.Tbv_Alignment.clicked.connect(self.change_tableview_selection)
         dock.Tbv_Alignment.doubleClicked.connect(self.handle_table_doubleClicked)
@@ -364,9 +373,15 @@ class WiscSIMSTool:
         dock.Cbx_Alignment_Ref_Points.toggled.connect(self.update_ref_point_markers)
         dock.Cbx_Alignment_Ref_Names.toggled.connect(self.update_ref_point_markers)
         dock.Btn_Import_Alignments.clicked.connect(self.import_alignments)
+
+        ## Workbook
         dock.Btn_Select_Workbook.clicked.connect(self.select_workbook)
         dock.Tbx_Workbook.textChanged.connect(self.workbook_udpated)
+
+        ## Import layer
         dock.Btn_Create_New_Layer.clicked.connect(self.create_new_layer)
+
+        ## Import
         dock.Btn_Import_From_Excel.clicked.connect(self.import_from_excel)
 
         # Preset
@@ -1295,20 +1310,24 @@ class WiscSIMSTool:
     def get_current_tool(self, idx=-1):
         if idx < 0:
             idx = self.dockwidget.Tab_Tool.currentIndex()
-        tools = ["import", "preset", "pixelsize"]
-        return tools[idx]
+        return self.tools[idx]
 
     def handle_tool_changed(self, idx):
         self.current_tool = self.get_current_tool(idx)
-        print(f"Current Tool: {self.current_tool}")
 
         # resets
         self.clear_preview_spots()
         self.update_preview_cursor()
         self.pst.reset()
 
-    def handle_preset_mode_changed(self):
-        self.current_preset_mode = self.get_preset_mode()
+    def get_preset_mode(self, idx=-1):
+        if idx < 0:
+            idx = self.dockwidget.Tab_Preset_Mode.currentIndex()
+        return self.preset_modes[idx]
+
+    def handle_preset_mode_changed(self, idx):
+        if idx < 0:
+            self.current_preset_mode = self.get_preset_mode()
         self.clear_preview_spots()
         self.update_preview_cursor()
 
@@ -1320,21 +1339,16 @@ class WiscSIMSTool:
 
         if idx < 0:
             idx = self.dockwidget.Tab_Preset_Mode.currentIndex()
-        modes = ["point", "line", "grid"]
         self.preview.reset()
         # self.clear_preview_points()
 
-        if modes[idx] == "point" and self.dockwidget.Opt_Point_Preview.isChecked():
+        if self.preset_modes[idx] == "point" and self.dockwidget.Opt_Point_Preview.isChecked():
             comment = self.get_comment(0)
             point = [self.cursor_pos, comment]
             self.preview.add_points([point])
             self.canvas.setCursor(Qt.BlankCursor)
         else:
             self.canvas.setCursor(Qt.CrossCursor)
-
-    def get_preset_mode(self):
-        modes = ["point", "line", "grid"]
-        return modes[self.dockwidget.Tab_Preset_Mode.currentIndex()]
 
     def reset_preset_points(self):
         self.preview.remove_objects()
