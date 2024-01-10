@@ -47,7 +47,7 @@ from .tools.alignmentInfo import AlignmentInfo
 from .tools.alignmentTool import (AlignmentMarker, AlignmentModel,
                                   AlignmentModelNew)
 from .tools.canvasMapTool import CanvasMapTool
-from .tools.coordinateTool import CoordinateTool, CoordinateToolNew
+from .tools.coordinateTool import CoordinateTool
 from .tools.pixelSizeTool import PixelSizeTool
 from .tools.presetPreview import PresetPreview
 from .tools.sumTableTool import SumTableTool
@@ -294,7 +294,7 @@ class WiscSIMSTool:
         # dockwidget may not exist if:
         #    first run of plugin
         #    removed on close (see self.onClosePlugin method)
-        if not hasattr("self", "dockwidget"):
+        if not hasattr(self, "dockwidget"):
             # Create the dockwidget (after translation) and keep reference
             plugin_path = ":plugins/wiscsims_tool"
             self.dockwidget = WiscSIMSToolDockWidget()
@@ -316,9 +316,6 @@ class WiscSIMSTool:
 
         # in memory layer while moving the spot
         self.preview = PresetPreview(self.get_preset_layer())
-
-        # # for showing preset preview in the point mode
-        # self.update_preview_cursor(self.dockwidget.Tab_Preset_Mode.currentIndex())
 
         self.pst = PixelSizeTool(self.dockwidget, self.canvas)
         self.pst.setPixelSize.connect(self.handle_set_pixel_size)
