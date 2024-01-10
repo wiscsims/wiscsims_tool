@@ -56,12 +56,8 @@ class AlignmentModelNew(QStandardItemModel):
         return [r for r in range(n) if self.getCheckStatus(r)]
 
     # def addNewRefPoints(self, used, refname, pt1, pt2, scale, offset, rotation):
-    def addNewRefPoints(
-        self, used, refname, stage, canvas, beam, import_from_json=False
-    ):
-        return self.addRefPoints(
-            used, refname, stage, canvas, beam, import_from_json=False
-        )
+    def addNewRefPoints(self, used, refname, stage, canvas, beam, import_from_json=False):
+        return self.addRefPoints(used, refname, stage, canvas, beam, import_from_json=False)
 
     def addRefPoints(self, used, refname, stage, canvas, beam, import_from_json=True):
         newRow = [QStandardItem() for _ in range(self.n)]
@@ -134,9 +130,7 @@ class AlignmentModelNew(QStandardItemModel):
         json = self.format_json_to_alignment(json)
         try:
             for o in json:
-                self.addRefPoints(
-                    o["used"], o["refname"], o["stage"], o["canvas"], o["beam"], True
-                )
+                self.addRefPoints(o["used"], o["refname"], o["stage"], o["canvas"], o["beam"], True)
             self.update_tooltips()
             return True
         except Exception:
@@ -209,12 +203,8 @@ class AlignmentModelNew(QStandardItemModel):
                     continue
                 j_stage = self.item(j, self.c["stage"]).data(0)
                 j_canvas = self.item(j, self.c["canvas"]).data(0)
-                stage_l = (
-                    (i_stage[0] - j_stage[0]) ** 2 + (i_stage[1] - j_stage[1]) ** 2
-                ) ** 0.5
-                canvas_l = (
-                    (i_canvas[0] - j_canvas[0]) ** 2 + (i_canvas[1] - j_canvas[1]) ** 2
-                ) ** 0.5
+                stage_l = ((i_stage[0] - j_stage[0]) ** 2 + (i_stage[1] - j_stage[1]) ** 2) ** 0.5
+                canvas_l = ((i_canvas[0] - j_canvas[0]) ** 2 + (i_canvas[1] - j_canvas[1]) ** 2) ** 0.5
                 if i_stage[0] == j_stage[0]:
                     stage_r = 0
                 else:
@@ -326,9 +316,7 @@ class AlignmentModel(QStandardItemModel):
         }
         self.n = len(self.c)
         _ = [self.insertColumn(i) for i in range(self.n)]
-        self.setHorizontalHeaderLabels(
-            ["", "Name", "", "", "", "", "", "Ref. 1", "Ref. 2"]
-        )
+        self.setHorizontalHeaderLabels(["", "Name", "", "", "", "", "", "Ref. 1", "Ref. 2"])
         print("Initialized Table View Model")
 
     """""" """""" """""" """""" """""" """""" """
@@ -346,13 +334,9 @@ class AlignmentModel(QStandardItemModel):
         return [r for r in range(n) if self.getCheckStatus(r)]
 
     def addNewRefPoints(self, used, refname, pt1, pt2, scale, offset, rotation):
-        return self.addRefPoints(
-            used, refname, pt1, pt2, scale, offset, rotation, import_from_json=False
-        )
+        return self.addRefPoints(used, refname, pt1, pt2, scale, offset, rotation, import_from_json=False)
 
-    def addRefPoints(
-        self, used, refname, pt1, pt2, scale, offset, rotation, import_from_json=True
-    ):
+    def addRefPoints(self, used, refname, pt1, pt2, scale, offset, rotation, import_from_json=True):
         newRow = [QStandardItem() for _ in range(self.n)]
 
         # scale, offset, rotation = [1, [0, 0], 0]
@@ -487,19 +471,13 @@ class AlignmentModel(QStandardItemModel):
         return self.item(row, self.c["scale"]).data(0)
 
     def getScales(self):
-        return [
-            self.getScale(r) for r in range(self.rowCount()) if self.getCheckStatus(r)
-        ]
+        return [self.getScale(r) for r in range(self.rowCount()) if self.getCheckStatus(r)]
 
     def getRotation(self, row):
         return self.item(row, self.c["rotation"]).data(0)
 
     def getRotations(self):
-        return [
-            self.getRotation(r)
-            for r in range(self.rowCount())
-            if self.getCheckStatus(r)
-        ]
+        return [self.getRotation(r) for r in range(self.rowCount()) if self.getCheckStatus(r)]
 
     def getRefPoint(self, row, pointNum):
         stage, canvas = self.item(row, self.c["point_{}".format(pointNum)]).data(0)
@@ -564,94 +542,3 @@ class AlignmentModel(QStandardItemModel):
 
             # print(tooltip)
             self.item(row, 1).setToolTip(tooltip)
-
-
-"""""" """""" """""" """""" """""" """""" """
-*** Alignment Marker Class
-""" """""" """""" """""" """""" """""" """"""
-
-
-class AlignmentMarker:
-    """docstring for AlignmentMarker"""
-
-    def __init__(self, canvas, model):
-        self.canvas = canvas
-        self.scene = self.canvas.scene()
-        self.model = model
-        self.ref_markers = []
-        self.cursor_ann = None
-
-    def add_ref_marker(self, pt, name, current=False):
-        rb = QgsRubberBand(self.canvas, False)
-        rb.setIconSize(15)
-        rb.setIcon(QgsRubberBand.ICON_CROSS)
-        color = QColor(255, 40, 0) if current else QColor(0, 40, 255)
-        rb.setColor(color)
-        rb.addPoint(pt, True)
-        self.ref_markers.append(rb)
-
-    def add_ref_marker_annotation(self, pt, name, current):
-        symbol = QgsMarkerSymbol()
-        symbol.setSize(0)
-        frm = QgsFillSymbol()
-        html = '<body style="color: #ffffff; background-color: {};"><b>{}</b></body>'
-        if current:
-            frm.setColor(QColor(255, 0, 0))
-            bg_color = "#FF0000"
-        else:
-            frm.setColor(QColor(0, 0, 0))
-            bg_color = "#000000"
-        a = QgsTextAnnotation()
-        c = QTextDocument()
-        c.setHtml(html.format(bg_color, name))
-        a.setDocument(c)
-        a.setFrameSize(QSizeF(c.size().width(), c.size().height()))
-        a.setMarkerSymbol(symbol)
-        a.setFrameOffsetFromReferencePoint(QPointF(20, -70))
-        a.setMapPosition(pt)
-        a.setFillSymbol(frm)
-        a.setContentsMargin(QgsMargins(0, 0, 0, 0))
-        QgsMapCanvasAnnotationItem(a, self.canvas)
-
-    def init_cursor_annotation(self, name=None):
-        symbol = QgsMarkerSymbol()
-        symbol.setSize(0)
-        frm = QgsFillSymbol()
-        # frm.createSimple({'color': 'black'})
-        frm.setColor(QColor("#f00"))
-        # frm.setOpacity(0.5)
-        html = (
-            '<body><div style="backround-color: #f00;'
-            ' color: #fff; font-weight: bold">{}</div></body>'
-        )
-        a = QgsTextAnnotation()
-        c = QTextDocument()
-        c.setHtml(html.format(name))
-        a.setDocument(c)
-        a.setFrameSize(QSizeF(c.size().width(), c.size().height()))
-        a.setMarkerSymbol(symbol)
-        a.setFrameOffsetFromReferencePoint(QPointF(20, -70))
-        a.setFillSymbol(frm)
-        a.setContentsMargin(QgsMargins(0, 0, 0, 0))
-        self.cursor_ann = a
-        QgsMapCanvasAnnotationItem(self.cursor_ann, self.canvas)
-
-    def init_ref_point_markers(self):
-        # print('init markers')
-        [marker.reset() for marker in self.ref_markers]
-        self.ref_markers = []
-        self.init_annotation()
-        return True
-
-    def init_annotation(self):
-        [
-            self.remove_scene_item(i)
-            for i in self.scene.items()
-            if self.is_annotation_item(i)
-        ]
-
-    def is_annotation_item(self, item):
-        return issubclass(type(item), QgsMapCanvasAnnotationItem)
-
-    def remove_scene_item(self, item):
-        self.scene.removeItem(item)

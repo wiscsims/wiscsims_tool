@@ -44,8 +44,8 @@ from qgis.gui import QgsRubberBand
 from .resources import *  # noqa: F401, F403
 from .tools.alignmentInfo import AlignmentInfo
 # Import custom tools
-from .tools.alignmentTool import (AlignmentMarker, AlignmentModel,
-                                  AlignmentModelNew)
+from .tools.alignmentMarker import AlignmentMarker
+from .tools.alignmentTool import AlignmentModel, AlignmentModelNew
 from .tools.canvasMapTool import CanvasMapTool
 from .tools.coordinateTool import CoordinateTool
 from .tools.pixelSizeTool import PixelSizeTool
