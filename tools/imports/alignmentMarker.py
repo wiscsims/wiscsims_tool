@@ -1,6 +1,4 @@
 # -*- coding: utf-8 -*-
-import math
-
 from PyQt5.QtCore import QPointF, QSizeF
 from PyQt5.QtGui import QColor, QTextDocument
 from qgis.core import (QgsFillSymbol, QgsMargins, QgsMarkerSymbol,

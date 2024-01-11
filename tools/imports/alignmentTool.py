@@ -1,12 +1,9 @@
 # -*- coding: utf-8 -*-
 import math
 
-from PyQt5.QtCore import QPointF, QSizeF, Qt, pyqtSignal
-from PyQt5.QtGui import (QColor, QStandardItem, QStandardItemModel,
-                         QTextDocument)
-from qgis.core import (QgsFillSymbol, QgsMargins, QgsMarkerSymbol, QgsPointXY,
-                       QgsTextAnnotation)
-from qgis.gui import QgsMapCanvasAnnotationItem, QgsRubberBand
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QStandardItem, QStandardItemModel
+from qgis.core import QgsPointXY
 
 
 class AlignmentModelNew(QStandardItemModel):

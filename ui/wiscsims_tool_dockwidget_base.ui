@@ -626,7 +626,7 @@ QTabWidget::pane {
             <number>0</number>
            </property>
            <item row="0" column="0">
-            <widget class="QComboBox" name="Cmb_Target_Layer">
+            <widget class="QComboBox" name="Cmb_Import_Layer">
              <property name="minimumSize">
               <size>
                <width>0</width>

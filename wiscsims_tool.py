@@ -42,15 +42,12 @@ from qgis.gui import QgsRubberBand
 
 # Initialize Qt resources from file resources.py
 from .resources import *  # noqa: F401, F403
-from .tools.alignmentInfo import AlignmentInfo
-# Import custom tools
-from .tools.alignmentMarker import AlignmentMarker
-from .tools.alignmentTool import AlignmentModel, AlignmentModelNew
 from .tools.canvasMapTool import CanvasMapTool
-from .tools.coordinateTool import CoordinateTool
-from .tools.pixelSizeTool import PixelSizeTool
-from .tools.presetPreview import PresetPreview
-from .tools.sumTableTool import SumTableTool
+from .tools.imports.importTool import ImportTool
+# Import custom tools
+from .tools.layerTool import LayerTool
+from .tools.pixelsize.pixelSizeTool import PixelSizeTool
+from .tools.preset.presetPreview import PresetPreview
 from .ui.edit_dialog import EditDialog
 # Import the code for the DockWidget
 from .ui.wiscsims_tool_dockwidget import WiscSIMSToolDockWidget
@@ -74,9 +71,7 @@ class WiscSIMSTool:
         self.window = self.iface.mainWindow()
         self.canvas = self.iface.mapCanvas()
 
-        # Tool instances
-        self.model = AlignmentModelNew()
-        self.ref_marker = AlignmentMarker(self.canvas, self.model)
+        self.lt = LayerTool()
 
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
@@ -128,10 +123,6 @@ class WiscSIMSTool:
         self.move_throttling_threshold = 3
 
         # defaut value for aligment parameters
-        self.default_val = -999999999
-
-        self.new_aliginment = True
-
         self.flag_pixel_size_tool = False
 
         self.cursor_pos = QgsPointXY(0, 0)
@@ -273,7 +264,7 @@ class WiscSIMSTool:
         """Removes the plugin menu item and icon from QGIS GUI."""
 
         self.clear_preview_points()
-        self.ref_marker.init_ref_point_markers()
+        # self.imp.unload()
 
         for action in self.actions:
             self.iface.removePluginMenu(self.tr("&WiscSIMS"), action)
@@ -299,18 +290,8 @@ class WiscSIMSTool:
         #    removed on close (see self.onClosePlugin method)
         if not hasattr(self, "dockwidget"):
             # Create the dockwidget (after translation) and keep reference
-            plugin_path = ":plugins/wiscsims_tool"
             self.dockwidget = WiscSIMSToolDockWidget()
-            icon_open_folder = QPixmap(os.path.join(plugin_path, "img", "icon_open_folder.png"))
             # icon_open_folder = os.path.join(plugin_path, 'img', 'icon_open_folder.png')
-            self.dockwidget.Btn_Select_Workbook.setIcon(QIcon(icon_open_folder))
-            self.dockwidget.Btn_Select_Workbook.setIconSize(QSize(16, 16))
-
-            self.init_alignmentTableNew()
-            self.dockwidget.Grp_Workbook.setEnabled(False)
-            self.dockwidget.Grp_Layer.setEnabled(False)
-            self.prev_workbook_path = ""
-            self.workbook_path = ""
 
             self.init_preset_layer_combobox()
 
@@ -320,8 +301,12 @@ class WiscSIMSTool:
         # in memory layer while moving the spot
         self.preview = PresetPreview(self.get_preset_layer())
 
+        self.imp = ImportTool(self.dockwidget, self.canvas)
         self.pst = PixelSizeTool(self.dockwidget, self.canvas)
+
+        # Signal handlers
         self.pst.setPixelSize.connect(self.handle_set_pixel_size)
+        self.imp.setActiveLayer.connect(self.handle_set_active_layer)
 
         self.create_ui_connections()
         self.create_legend_connections()
@@ -340,49 +325,33 @@ class WiscSIMSTool:
 
         self.init_map_tool()
 
-    def handle_layers_changed(self, layers):
-        if self.dockwidget.Cmb_Target_Layer.isEnabled():
-            self.update_import_layers()
+    def handle_legend_layers_changed(self, layers):
+        print("handle legend layer")
+        self.imp.update_import_layers()
         self.init_preset_layer_combobox()
 
     def create_legend_connections(self):
         ltr = QgsProject.instance().layerTreeRoot()
-        ltr.visibilityChanged.connect(self.handle_layers_changed)
-        ltr.addedChildren.connect(self.handle_layers_changed)
-        ltr.removedChildren.connect(self.handle_layers_changed)
-        ltr.nameChanged.connect(self.handle_layers_changed)
+        ltr.visibilityChanged.connect(self.handle_legend_layers_changed)
+        ltr.addedChildren.connect(self.handle_legend_layers_changed)
+        ltr.removedChildren.connect(self.handle_legend_layers_changed)
+        ltr.nameChanged.connect(self.handle_legend_layers_changed)
 
     def remove_legend_connections(self):
         ltr = QgsProject.instance().layerTreeRoot()
-        ltr.visibilityChanged.disconnect(self.handle_layers_changed)
-        ltr.addedChildren.disconnect(self.handle_layers_changed)
-        ltr.removedChildren.disconnect(self.handle_layers_changed)
-        ltr.nameChanged.disconnect(self.handle_layers_changed)
+        ltr.visibilityChanged.disconnect(self.handle_legend_layers_changed)
+        ltr.addedChildren.disconnect(self.handle_legend_layers_changed)
+        ltr.removedChildren.disconnect(self.handle_legend_layers_changed)
+        ltr.nameChanged.disconnect(self.handle_legend_layers_changed)
+
+    def handle_set_active_layer(self, layer):
+        print("handle set active layer")
+        self.iface.setActiveLayer(layer)
 
     def create_ui_connections(self):
         dock = self.dockwidget
 
         dock.Tab_Tool.currentChanged.connect(self.handle_tool_changed)
-
-        # Import
-        ## Alignment
-        dock.Grp_Alignment.toggled.connect(self.toggle_use_alignment)
-        dock.Tbv_Alignment.clicked.connect(self.change_tableview_selection)
-        dock.Tbv_Alignment.doubleClicked.connect(self.handle_table_doubleClicked)
-        dock.Gbx_Alignment_Ref_Point_Markers.toggled.connect(self.update_ref_point_markers)
-        dock.Cbx_Alignment_Ref_Points.toggled.connect(self.update_ref_point_markers)
-        dock.Cbx_Alignment_Ref_Names.toggled.connect(self.update_ref_point_markers)
-        dock.Btn_Import_Alignments.clicked.connect(self.import_alignments)
-
-        ## Workbook
-        dock.Btn_Select_Workbook.clicked.connect(self.select_workbook)
-        dock.Tbx_Workbook.textChanged.connect(self.workbook_udpated)
-
-        ## Import layer
-        dock.Btn_Create_New_Layer.clicked.connect(self.create_new_layer)
-
-        ## Import
-        dock.Btn_Import_From_Excel.clicked.connect(self.import_from_excel)
 
         # Preset
         ## Comment
@@ -521,549 +490,29 @@ class WiscSIMSTool:
             except Exception:
                 pass
 
-    def toggle_use_alignment(self, status):
-        wb_status = True
-        if status and not self.model.isAvailable():
-            wb_status = False
-        self.dockwidget.Grp_Workbook.setEnabled(wb_status)
-
-    def init_alignmentTable(self):
-        self.dockwidget.Tbv_Alignment.setModel(self.model)
-        hiddenColumns = [
-            "point_1",
-            "point_2",
-            "scale",
-            "offset",
-            "rotation",
-            "ref1",
-            "ref2",
-        ]
-        [self.dockwidget.Tbv_Alignment.setColumnHidden(self.model.getColumnIndex(c), True) for c in hiddenColumns]
-        self.dockwidget.Tbv_Alignment.setColumnWidth(0, 20)
-        self.dockwidget.Tbv_Alignment.horizontalHeader().setStretchLastSection(True)
-        self.dockwidget.Tbv_Alignment.setSelectionBehavior(QAbstractItemView.SelectRows)
-        self.dockwidget.Tbv_Alignment.setSelectionMode(QAbstractItemView.SingleSelection)
-
-    def init_alignmentTableNew(self):
-        tbl = self.dockwidget.Tbv_Alignment
-        tbl.setModel(self.model)
-        hiddenColumns = ["stage", "canvas", "beam"]
-        [tbl.setColumnHidden(self.model.getColumnIndex(c), True) for c in hiddenColumns]
-        w = {"0": 20, "2": 0, "3": 0, "4": 0}
-        [tbl.setColumnWidth(c, w[str(c)]) for c in [0, 2, 3, 4]]
-        [tbl.horizontalHeader().setSectionResizeMode(c, QHeaderView.Fixed) for c in [0, 2, 3, 4]]
-        tbl.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
-
-        tbl.verticalHeader().setDefaultSectionSize(22)
-        tbl.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
-        tbl.setSelectionBehavior(QAbstractItemView.SelectRows)
-        tbl.setSelectionMode(QAbstractItemView.SingleSelection)
-        tbl.clicked.connect(self.handle_tbl_clicked)
-        self.model.itemChanged.connect(self.handle_item_changed)
-        self.model.refPtUpdated.connect(self.handle_ref_point_updated)
-
-    def handle_tbl_clicked(self):
-        pass
-
-    def handle_table_doubleClicked(self, clickedRow):
-        r = clickedRow.row()
-
-        if self.new_aliginment:
-            alinfo = {
-                "beam": self.model.getBeam(r),
-                "stage": self.model.getStagePosition(r),
-                "canvas": self.model.getCanvasPosition(r),
-                "name": self.model.getRefName(r),
-            }
-        else:
-            p1 = self.model.getRefPoint(r, 1)
-            p2 = self.model.getRefPoint(r, 2)
-            alinfo = {
-                "name": self.model.getRefName(r),
-                "Point 1": {"stage": p1[0], "canvas": p1[1]},
-                "Point 2": {"stage": p2[0], "canvas": p2[1]},
-            }
-
-        ex = AlignmentInfo(self.window, info=alinfo, isNew=self.new_aliginment)
-        ex.exec()
-
-    def handle_item_changed(self):
-        pass
-
-    def handle_ref_point_updated(self):
-        pass
-
-    def change_tableview_selection(self, index):
-        if type(index) == QModelIndex:
-            if index.column() == 0:
-                return
-        #     row = index.row()
-        # else:
-        #     row = index
-
-        # stage1, canvas1 = self.model.getRefPoint(row, 1)
-        # stage2, canvas2 = self.model.getRefPoint(row, 2)
-        # scale, offset, rotation = self.model.getAlignmentParams(row)
-        self.update_ref_point_markers()
-
-    def import_alignments(self, alnFile=None):
-        project_path = os.path.dirname(QgsProject.instance().fileName())
-        if not alnFile:
-            alnFile, _ = QFileDialog.getOpenFileName(
-                self.window,
-                "Open Stage Navigator alignment file",
-                project_path,
-                "Stage Navigator alignment file (*.json)",
-            )
-
-        self.dockwidget.Grp_Workbook.setEnabled(False)
-        if alnFile == "":
-            return
-
-        with open(alnFile) as data_file:
-            obj = json.load(data_file)
-
-            self.new_aliginment = AlignmentModelNew.isNewFormat(obj)
-
-            if not self.new_aliginment:
-                # AlignmentModelNew is default
-                self.model = AlignmentModel()
-
-            if self.model.isAvailable():
-                self.model.clear()
-
-            old_new = "OLD"
-            if self.new_aliginment:
-                self.model = AlignmentModelNew()
-                self.cot = CoordinateTool(new=True)
-                self.init_alignmentTableNew()
-                old_new = "NEW"
-            else:
-                self.model = AlignmentModel()
-                self.cot = CoordinateTool(new=False)
-                self.init_alignmentTable()
-
-            self.model.ImportFromsJson(obj)
-            # params = self.getParams()
-            # self.canvas.setRotation(params['rotation'])
-            self.dockwidget.Grp_Workbook.setEnabled(True)
-            # calculate average scale for preset
-            scales = self.model.getScales()
-            average_scale = sum(scales) / len(scales)
-            # set average scale to preset scales
-            self.dockwidget.Spn_Preset_Pixel_Size.setValue(average_scale)
-            self.update_ref_point_markers()
-            self.update_canvas_rotation()
-
-            self.dockwidget.Grp_Alignment.setTitle(f"1. Import Alignment File ({old_new})")
-
-    def is_default_values(self, pt):
-        return pt[0] == self.default_val and pt[1] == self.default_val
-
-    def update_ref_point_markers(self):
-        self.ref_marker.init_ref_point_markers()
-        # shwo ref points?
-        if not self.dockwidget.Gbx_Alignment_Ref_Point_Markers.isChecked():
-            return
-
-        alignments = self.model.ExportAsObject()
-        selected_alignment = self.dockwidget.Tbv_Alignment.currentIndex().row()
-
-        # print(f"New Alignment: {self.new_aliginment}")
-
-        if self.new_aliginment:
-            for aln in alignments:
-                if aln["used"] < 2 and aln["r"] != selected_alignment:
-                    continue
-                current_flag = selected_alignment == aln["r"]
-                if not self.is_default_values(aln["stage"]):
-                    self.handle_ref_marker(aln["canvas"], aln["refname"], current_flag)
-        else:
-            for aln in alignments:
-                current_flag = selected_alignment == aln["r"]
-                self.handle_ref_marker(aln["point_1"][1], aln["refname"] + " (1)", current_flag)
-                self.handle_ref_marker(aln["point_2"][1], aln["refname"] + " (2)", current_flag)
-            self.update_canvas_rotation()
-
-    def update_canvas_rotation(self):
-        if self.model.isAvailable():
-            params = self.model.getParams()
-            self.canvas.setRotation(params["rotation"])
-
-    def handle_ref_marker(self, pt, name, current=False):
-        # print(pt, name)
-        if self.dockwidget.Cbx_Alignment_Ref_Points.isChecked():
-            self.ref_marker.add_ref_marker(pt, name, current)
-        if self.dockwidget.Cbx_Alignment_Ref_Names.isChecked():
-            self.ref_marker.add_ref_marker_annotation(pt, name, current)
-
-    def select_workbook(self):
-        title = "Select WiscSIMS sesssion Workbook"
-        mypath = os.path.dirname(QgsProject.instance().fileName())
-        self.workbook_path, _ = QFileDialog.getOpenFileName(self.window, title, mypath, "Excel (*.xls *.xlsx)")
-
-        if self.workbook_path == "":
-            return
-        if self.prev_workbook_path == self.workbook_path:
-            return
-
-        self.xl = SumTableTool(self.workbook_path)
-        if self.xl.ws is None:
-            QMessageBox.warning(
-                self.window,
-                "Excel File Selection",
-                "Open appropriate workbook in Excel, then select the workbook.\n\n"
-                'The workbook must have a sheet named "Sum_table" or "Data".',
-            )
-            self.workbook_path = None
-            self.dockwidget.Grp_Layer.setEnabled(False)
-        else:
-            self.prev_workbook_path = self.workbook_path
-            self.dockwidget.Tbx_Workbook.setText(os.path.basename(self.workbook_path))
-            self.dockwidget.Tbx_Workbook.setToolTip(self.workbook_path)
-
-    def is_ok_to_import(self):
-        """check importing condition"""
-        if self.dockwidget.Grp_Alignment.isChecked() and not self.model.isAvailable():
-            """use alignment but no alignment file imported"""
-            return False
-
-        if self.xl.ws is None:
-            """no excel file"""
-            return False
-
-        if self.dockwidget.Cmb_Target_Layer.currentIndex() == -1:
-            """no layer is selected"""
-            return False
-        return True
-
-    def update_conv_params(self):
-        if self.model.isAvailable():
-            # Get available rows (indexes)
-            available_refs = self.model.getAvailableRows()
-            self.conv_params = {}
-            for g in available_refs:
-                for r in available_refs:
-                    if g >= r:
-                        continue
-                    # Get combinations of indexes
-                    key = f"{g}-{r}"
-                    # Calculate ConvertParams
-                    scale, offset, rotation = self.cot.getConvertParams(
-                        self.model.getStagePosition(g),
-                        self.model.getCanvasPosition(g),
-                        self.model.getStagePosition(r),
-                        self.model.getCanvasPosition(r),
-                    )
-                    self.conv_params[key] = {
-                        "scale": scale,
-                        "offset": offset,
-                        "rotation": rotation,
-                    }
-
-            self.update_canvas_rotation()
-        self.update_ref_point_markers()
-
-    def sort_by_distance(self, pt, ref_canvas_pt):
-        out = {}
-        if not isinstance(pt, QgsPointXY):
-            pt = QgsPointXY(pt[0], pt[1])
-        for k, v in ref_canvas_pt.items():
-            out[k] = pt.distance(v[0], v[1])
-        # sorted by distance
-        retval = [(k, v) for k, v in sorted(out.items(), key=lambda item: item[1])]
-        return retval
-
-    def get_conversion_models(self, pt, ref_pos, conv_params, limit=2):
-        sorted_idxes = self.sort_by_distance(pt, ref_pos)
-        # if limit less than 2, all conv_params are going to be used
-        sorted_idxes = sorted_idxes[:limit]
-
-        new_conv_params = []
-        out = {}
-        for j in sorted_idxes:
-            for k in sorted_idxes:
-                if j[0] >= k[0]:
-                    continue
-                key = f"{j[0]}-{k[0]}"
-                new_conv_params.append(conv_params[key])
-                weight = 1 / (j[1] + k[1]) ** 2
-                out[key] = weight
-                new_conv_params[-1]["weight"] = weight
-        # wt_sum = sum(out.values())
-        # print([round(100 * a/wt_sum, 1) for a in out.values() if a > 0.0])
-        return new_conv_params
-
-    def import_from_excel(self):
-        if not self.is_ok_to_import():
-            return
-
-        # import date from Excel file
-        if self.dockwidget.Opt_Comment.isChecked():
-            importing_data = self.xl.filter_by_comment(self.dockwidget.Tbx_Comment_Match.text())
-        else:
-            start_idx = self.dockwidget.Cmb_Excel_From.currentIndex()
-            end_idx = self.dockwidget.Cmb_Excel_To.currentIndex()
-            if start_idx > end_idx:
-                start_idx, end_idx = end_idx, start_idx
-                self.dockwidget.Cmb_Excel_From.setCurrentIndex(start_idx)
-                self.dockwidget.Cmb_Excel_To.setCurrentIndex(end_idx)
-            start_asc = self.dockwidget.Cmb_Excel_From.itemData(start_idx)
-            end_asc = self.dockwidget.Cmb_Excel_To.itemData(end_idx)
-            importing_data = self.xl.filter_by_asc(start=start_asc, end=end_asc)
-
-        importing_layer = self.dockwidget.Cmb_Target_Layer.itemData(self.dockwidget.Cmb_Target_Layer.currentIndex())
-        X, Y = self.xl.find_columns(["X", "Y"], False)
-
-        features = []
-        i = 0
-        is_direct_import = not self.dockwidget.Grp_Alignment.isChecked()
-
-        if self.new_aliginment:
-            self.update_conv_params()
-
-        for d in importing_data:
-            if d[X] == "" or d[Y] == "":
-                continue
-            i += 1
-            if is_direct_import:
-                canvasX, canvasY = [d[X], d[Y]]
-            else:
-                if self.new_aliginment:
-                    # get conversion model
-                    conv_model = self.get_conversion_models(
-                        [d[X], d[Y]], self.model.getStagePositions(), self.conv_params, 2
-                    )
-                    canvasX, canvasY = self.cot.getWtAveragedStageToCanvas([d[X], d[Y]], conv_model)
-                else:
-                    canvasX, canvasY = self.getWtAverageStageToCanvas([d[X], d[Y]])
-            feature = QgsFeature()
-            feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(canvasX, canvasY)))
-            feature.setAttributes(d)
-
-            features.append(feature)
-
-        dpr = importing_layer.dataProvider()
-        dpr.addFeatures(features)
-        importing_layer.setDisplayExpression("File")
-        importing_layer.triggerRepaint()
-        QMessageBox.information(self.window, "Import Excel Data", f"{i} data were imported!")
-
-    # self.canvas.refresh()
-
-    def workbook_udpated(self):
-        # addItems asc files
-        if self.xl.ws is None:
-            self.xl = SumTableTool(self.workbook_path)
-        asc_list = self.xl.get_asc_list()
-        # asc_list_s = map(lambda x: x[8:], asc_list)
-        self.dockwidget.Cmb_Excel_From.clear()
-        self.dockwidget.Cmb_Excel_To.clear()
-        [self.dockwidget.Cmb_Excel_From.addItem(asc[8:], asc) for asc in asc_list]
-        [self.dockwidget.Cmb_Excel_To.addItem(asc[8:], asc) for asc in asc_list]
-        self.dockwidget.Cmb_Excel_To.setCurrentIndex(len(asc_list) - 1)
-        self.dockwidget.Grp_Layer.setEnabled(True)
-        self.dockwidget.Opt_Range.setChecked(True)
-        # add appropriate layers to combobox
-        self.update_import_layers()
-
-    def update_import_layers(self):
-        current_layer_index = self.dockwidget.Cmb_Target_Layer.currentIndex()
-
-        self.dockwidget.Cmb_Target_Layer.clear()
-        layers = self.get_excel_layers(self.xl)
-        if len(layers) > 0:
-            [self.dockwidget.Cmb_Target_Layer.addItem(layer.name(), layer) for layer in layers]
-
-            self.dockwidget.Btn_Import_From_Excel.setEnabled(True)
-            if current_layer_index > -1:
-                self.dockwidget.Cmb_Target_Layer.setCurrentIndex(current_layer_index)
-        else:
-            self.dockwidget.Btn_Import_From_Excel.setEnabled(False)
-
-    def create_new_layer(self, fpath=None):
-        project_path = os.path.dirname(QgsProject.instance().fileName())
-        saveFile, _ = QFileDialog.getSaveFileName(
-            self.window, "Save a Shape file", project_path, "ESRI Shapefile (*.shp)"
-        )
-
-        if saveFile == "":
-            return None
-
-        vl = QgsVectorLayer("Point?crs=epsg:4326", "temporary_points", "memory")
-        vl.setProviderEncoding("UTF-8")
-        pr = vl.dataProvider()
-        labels = self.xl.get_headers()
-        attrs = [QgsField(label, self.get_field_type(label)) for label in labels]
-
-        pr.addAttributes(attrs)
-        vl.setDisplayExpression("File")
-        vl.updateFields()
-
-        reg = QgsProject.instance()
-        # Remove layers which have same souce file as shape file to be overwritten
-        layers = [layer.source() for layer in self.get_layer_list(layertype=0)]
-        [reg.removeMapLayer(layer) for layer in layers if layer == saveFile]
-
-        # write shape + etc files
-        error, _ = QgsVectorFileWriter.writeAsVectorFormat(vl, saveFile, "UTF-8", vl.crs(), "ESRI Shapefile")
-        if not fpath:
-            fpath = self.xl.get_workbook_name()
-        parsedPath = os.path.basename(fpath).split(".")[:-1]
-        layerName = ".".join(parsedPath)
-        text, okPressed = QInputDialog.getText(
-            self.window, "Input Layer Name", "Layer name: ", QLineEdit.Normal, layerName
-        )
-        if okPressed:
-            layerName = text
-
-        if error == QgsVectorFileWriter.NoError:
-            newVlayer = QgsVectorLayer(saveFile, layerName, "ogr")
-            newVlayer.setCustomProperty("workbookPath", fpath)
-            props = newVlayer.renderer().symbol().symbolLayer(0).properties()
-            props["name"] = "circle"
-            props["size_unit"] = "MapUnit"
-            props["offset_unit"] = "MapUnit"
-            props["outline_width_unit"] = "MapUnit"
-            spotSize = 1.0 * self.dockwidget.Spn_Spot_Size.value()
-            if self.model.isAvailable():
-                scale = self.get_average(self.model.getScales())
-            else:
-                scale = 1.0
-            # scale = self.ct[self.getNavAlign()].scale / 1.0
-            props["size"] = str(spotSize / scale)
-            mySimpleSymbol = QgsMarkerSymbol.createSimple(props)
-            newVlayer.renderer().setSymbol(mySimpleSymbol)
-            newVlayer.updateExtents()
-            QgsProject.instance().addMapLayer(newVlayer)
-            self.iface.setActiveLayer(newVlayer)
-            self.update_import_layers()
-            self.dockwidget.Cmb_Target_Layer.setCurrentIndex(self.dockwidget.Cmb_Target_Layer.findText(layerName))
-            return newVlayer
-
-        return None
-
-    def get_fields(self, layer):
-        return [f.name() for f in layer.fields()]
-
-    def get_field_type(self, fieldName):
-        if re.match(r"^(file|comment|sample)", fieldName, re.I):
-            return QVariant.String
-        return QVariant.Double
-
-    def intersect(self, list1, list2):
-        return [lst for lst in list1 if lst in list2]
-
-    def get_layer_list(self, layertype=-1):
-        # Layer Types
-        #  Vector: 0
-        #  Raster: 1
-        #  Plugin: 2
-        #  Mesh:   3
-        layers = QgsProject.instance().mapLayers().values()
-        if layertype == -1:
-            return layers
-        # Filter by layer type.
-        return [layer for layer in layers if layer.type() == layertype]
-
-    def get_vector_point_layers(self):
-        # Filter by layer type 0: vector
-        layers = self.get_layer_list(layertype=0)
-        # filter only point geometry layer 0: point
-        out = [
-            layer
-            for layer in layers
-            if layer.geometryType() == 0 and layer.name() != "tmp" and layer.storageType() != "Memory storage"
-        ]
-        return out
-
-    def get_true_shapefile_headers(self, headers):
-        # create tmporal shapefile with provided headers
-        tmp_file_path = "KK_tmp_file.shp"
-        vl = QgsVectorLayer("Point?crs=epsg:4326", "temporary_points", "memory")
-        vl.setProviderEncoding("UTF-8")
-        pr = vl.dataProvider()
-        attrs = [QgsField(header, self.get_field_type(header)) for header in headers]
-
-        pr.addAttributes(attrs)
-        vl.setDisplayExpression("File")
-        vl.updateFields()
-        error, _error_str = QgsVectorFileWriter.writeAsVectorFormat(
-            vl, tmp_file_path, "UTF-8", vl.crs(), "ESRI Shapefile"
-        )
-        if error != QgsVectorFileWriter.NoError:
-            print(_error_str)
-            return
-        # open shapefile, then get and return headers
-        tmp_layer = QgsVectorLayer(tmp_file_path, "kk", "ogr")
-        fields = self.get_fields(tmp_layer)
-
-        return fields
-
-    def is_identical_field_names(self, layer, xl_fields, field_max_len=5):
-        my_fields = self.get_fields(layer)
-        my_fileds_names = [f[:field_max_len] for f in my_fields]
-        xl_fields_len = len(self.intersect(my_fileds_names, xl_fields))
-        return xl_fields_len == len(my_fields)
-
-    def get_excel_layers(self, xl):
-        field_max_len = 5
-        # field names in vector layers have been chopped
-        if xl.ws is None:
-            return []
-        xl_fields = [h[:field_max_len] for h in xl.get_headers()]
-        legend = QgsProject.instance().layerTreeRoot()
-        try:
-            vec_layers = self.get_vector_point_layers()
-            layers = [layer for layer in vec_layers if legend.findLayer(layer.id()).isVisible()]
-        except Exception:
-            return []
-
-        return [layer for layer in layers if self.is_identical_field_names(layer, xl_fields, field_max_len)]
-
-    """
-    Functions for Aliginment and Coordinate Calculations
-    """
-
-    def get_average(self, arr):
-        return sum(arr) / len(arr) * 1.0
-
-    def getParams(self):
-        if not self.model.isAvailable():
-            return None
-        scales = self.model.getScales()
-        rotations = self.model.getRotations()
-        return {
-            "scale": self.get_average(scales),
-            "rotation": self.get_average(rotations),
-        }
-
-    def my_round_int(self, val):
-        return int((val * 2 + 1) // 2)
-
-    def getWtAverageStageToCanvas(self, pt):
-        model = self.model.ExportAsObject()
-        weights, wpt_x, wpt_y, np = [], [], [], [0, 0]
-        tmp_out = []
-        for m in model:
-            if m["used"] == 0:
-                continue
-            params = [m["scale"], m["offset"], m["rotation"]]
-            for i in [1, 2]:
-                pt_name = "point_" + str(i)
-                d = self.cot.getDistance(pt, m[pt_name][0])
-                if d == 0:
-                    d = 1e-10
-                w = 1.0 / (d**2)
-                if i == 1:
-                    np = self.cot.toCanvasCoordinates2(pt, params)
-                tmp_out.append(w)
-                weights.append(w)
-                wpt_x.append(w * np[0])
-                wpt_y.append(w * np[1])
-        sum_weights = sum(weights)
-        return [p / sum_weights for p in [sum(wpt_x), sum(wpt_y)]]
-
+    # def get_true_shapefile_headers(self, headers):
+    #     # create tmporal shapefile with provided headers
+    #     tmp_file_path = "KK_tmp_file.shp"
+    #     vl = QgsVectorLayer("Point?crs=epsg:4326", "temporary_points", "memory")
+    #     vl.setProviderEncoding("UTF-8")
+    #     pr = vl.dataProvider()
+    #     attrs = [QgsField(header, self.get_field_type(header)) for header in headers]
+    #
+    #     pr.addAttributes(attrs)
+    #     vl.setDisplayExpression("File")
+    #     vl.updateFields()
+    #     error, _error_str = QgsVectorFileWriter.writeAsVectorFormat(
+    #         vl, tmp_file_path, "UTF-8", vl.crs(), "ESRI Shapefile"
+    #     )
+    #     if error != QgsVectorFileWriter.NoError:
+    #         print(_error_str)
+    #         return
+    #     # open shapefile, then get and return headers
+    #     tmp_layer = QgsVectorLayer(tmp_file_path, "kk", "ogr")
+    #     fields = self.get_fields(tmp_layer)
+    #
+    #     return fields
+    #
     """
     Functions for Preset
     """
@@ -1080,7 +529,7 @@ class WiscSIMSTool:
         # clear current items
         self.dockwidget.Cmb_Preset_Layer.clear()
         # Add layers which have Vector, Point geometry and 'Comment' field to combobox for preset
-        layers = self.get_vector_point_layers()
+        layers = self.lt.get_vector_point_layers()
 
         # filter scratch layer
         layers = [layer for layer in layers]
@@ -1088,7 +537,7 @@ class WiscSIMSTool:
         if len(layers) == 0:
             return
         # filter layers which has 'Comment' field
-        layers = [layer for layer in layers if "Comment" in self.get_fields(layer)]
+        layers = [layer for layer in layers if "Comment" in self.lt.get_fields(layer)]
         # add to Cmb_Preset_Layer
         [self.dockwidget.Cmb_Preset_Layer.addItem(layer.name(), layer) for layer in layers]
         if current_layer_index > -1:
@@ -1146,7 +595,7 @@ class WiscSIMSTool:
         error, _error_str = QgsVectorFileWriter.writeAsVectorFormat(vl, saveFile, "UTF-8", vl.crs(), "ESRI Shapefile")
 
         # Set layer name without duplication
-        layer_names = [layer.name() for layer in self.get_vector_point_layers()]
+        layer_names = [layer.name() for layer in self.lt.get_vector_point_layers()]
         layer_name = "Preset"
 
         # check layer names to avoid name duplication
@@ -1231,7 +680,7 @@ class WiscSIMSTool:
 
     def get_ss_ps(self):
         layer = self.get_preset_layer()
-        fields = self.get_fields(layer)
+        fields = self.lt.get_fields(layer)
         out = {"ss": 12, "ps": 1.0}
         for f in fields:
             c = f[:3]
