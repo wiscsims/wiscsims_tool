@@ -96,15 +96,9 @@ class SumTableTool:
 
     def get_values(self):
         # last_row = self.find_last_row()
-        self.values = [
-            list(r)
-            for r in self.ws._cell_values
-            if r[0] is not None and self.asc_pattern.match(r[0])
-        ]
+        self.values = [list(r) for r in self.ws._cell_values if r[0] is not None and self.asc_pattern.match(r[0])]
         if self.asc_filter["from"] is not None or self.asc_filter["to"] is not None:
-            self.values = self.filter_by_asc(
-                self.asc_filter["from"], self.asc_filter["to"]
-            )
+            self.values = self.filter_by_asc(self.asc_filter["from"], self.asc_filter["to"])
         elif self.comment_filter != "":
             print("comfil: ", self.comment_filter)
             self.values = self.filter_by_comment(self.comment_filter)
@@ -168,10 +162,6 @@ class SumTableTool:
         out = []
         self.get_values()
         if self.is_modified():
-            out = [
-                r
-                for r in range(len(self.values))
-                if r >= len(self.prev) or not self.prev[r] == self.values[r]
-            ]
+            out = [r for r in range(len(self.values)) if r >= len(self.prev) or not self.prev[r] == self.values[r]]
 
         return out

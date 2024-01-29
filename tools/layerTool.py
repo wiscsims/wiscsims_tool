@@ -16,7 +16,11 @@ class LayerTool(object):
         pass
 
     def get_fields(self, layer):
-        return [f.name() for f in layer.fields()]
+        try:
+            out = [f.name() for f in layer.fields()]
+        except Exception:
+            print("Error: ", layer)
+        return out
 
     def get_field_type(self, fieldName):
         if re.match(r"^(file|comment|sample)", fieldName, re.I):
@@ -29,11 +33,15 @@ class LayerTool(object):
         #  Raster: 1
         #  Plugin: 2
         #  Mesh:   3
-        layers = QgsProject.instance().mapLayers().values()
+        # layers = QgsProject.instance().mapLayers().values()
+        #
+        # maplayers() cannot detect removed layers, so layerTreeRoot is used
+        layers = QgsProject.instance().layerTreeRoot().findLayers()
         if layertype == -1:
-            return layers
+            return [layer.layer() for layer in layers]
         # Filter by layer type.
-        return [layer for layer in layers if layer.type() == layertype]
+        out = [layer.layer() for layer in layers if layer.layer().type() == layertype]
+        return out
 
     def get_vector_point_layers(self):
         # Filter by layer type 0: vector

@@ -27,28 +27,49 @@ import os
 import os.path
 import re
 
-from PyQt5.QtCore import (QCoreApplication, QModelIndex, QRect, QSettings,
-                          QSize, Qt, QTranslator, QVariant, qVersion)
+from PyQt5.QtCore import QCoreApplication, QModelIndex, QRect, QSettings, QSize, Qt, QTranslator, QVariant, qVersion
 from PyQt5.QtGui import QColor, QCursor, QIcon, QPixmap
-from PyQt5.QtWidgets import (QAbstractItemView, QAction, QFileDialog,
-                             QHeaderView, QInputDialog, QLineEdit, QMessageBox,
-                             QToolTip)
-from qgis.core import (Qgis, QgsFeature, QgsFeatureRequest, QgsField,
-                       QgsGeometry, QgsMarkerSymbol, QgsPalLayerSettings,
-                       QgsPointXY, QgsProject, QgsPropertyCollection,
-                       QgsVectorFileWriter, QgsVectorLayer,
-                       QgsVectorLayerSimpleLabeling, QgsWkbTypes)
+from PyQt5.QtWidgets import (
+    QAbstractItemView,
+    QAction,
+    QFileDialog,
+    QHeaderView,
+    QInputDialog,
+    QLineEdit,
+    QMessageBox,
+    QToolTip,
+)
+from qgis.core import (
+    Qgis,
+    QgsFeature,
+    QgsFeatureRequest,
+    QgsField,
+    QgsGeometry,
+    QgsLayerTree,
+    QgsLayerTreeLayer,
+    QgsMapLayerType,
+    QgsMarkerSymbol,
+    QgsPalLayerSettings,
+    QgsPointXY,
+    QgsProject,
+    QgsPropertyCollection,
+    QgsVectorFileWriter,
+    QgsVectorLayer,
+    QgsVectorLayerSimpleLabeling,
+    QgsWkbTypes,
+)
 from qgis.gui import QgsRubberBand
 
 # Initialize Qt resources from file resources.py
 from .resources import *  # noqa: F401, F403
 from .tools.canvasMapTool import CanvasMapTool
 from .tools.imports.importTool import ImportTool
+
 # Import custom tools
 from .tools.layerTool import LayerTool
 from .tools.pixelsize.pixelSizeTool import PixelSizeTool
-from .tools.preset.presetPreview import PresetPreview
-from .ui.edit_dialog import EditDialog
+from .tools.preset.presetTool import PresetTool
+
 # Import the code for the DockWidget
 from .ui.wiscsims_tool_dockwidget import WiscSIMSToolDockWidget
 
@@ -100,38 +121,15 @@ class WiscSIMSTool:
         self.rb_line = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
         self.pxsize_line = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
 
-        self.start_point = []
-        self.end_point = []
-        self.line_in_progress = False
         self.prev_tool = None
 
-        self.preset_points = []
-        self.undo_preset = []
-
-        self.scale = 1
-
         self.feature_id = None
-
-        # maximum # of undo
-        self.undo_max = 100
-
-        self.flag_cancel_moving_spot = False
-
-        self.state_shift_key = False
-        self.state_alt_key = False
-        self.mouse_move_counter = 0
-        self.move_throttling_threshold = 3
-
-        # defaut value for aligment parameters
-        self.flag_pixel_size_tool = False
 
         self.cursor_pos = QgsPointXY(0, 0)
 
         self.tools = ["import", "preset", "pixelsize"]
-        self.preset_modes = ["point", "line", "grid"]
 
         self.current_tool = "preset"
-        self.current_preset_mode = "point"
 
     # noinspection PyMethodMayBeStatic
 
@@ -205,10 +203,10 @@ class WiscSIMSTool:
         action.triggered.connect(callback)
         action.setEnabled(enabled_flag)
 
-        if status_tip is not None:
+        if status_tip:
             action.setStatusTip(status_tip)
 
-        if whats_this is not None:
+        if whats_this:
             action.setWhatsThis(whats_this)
 
         if add_to_toolbar:
@@ -263,7 +261,7 @@ class WiscSIMSTool:
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
 
-        self.clear_preview_points()
+        # self.preset.clear_preview_points()
         # self.imp.unload()
 
         for action in self.actions:
@@ -293,23 +291,19 @@ class WiscSIMSTool:
             self.dockwidget = WiscSIMSToolDockWidget()
             # icon_open_folder = os.path.join(plugin_path, 'img', 'icon_open_folder.png')
 
-            self.init_preset_layer_combobox()
-
         # connect to provide cleanup on closing of dockwidget
         self.dockwidget.closingPlugin.connect(self.onClosePlugin)
 
-        # in memory layer while moving the spot
-        self.preview = PresetPreview(self.get_preset_layer())
-
         self.imp = ImportTool(self.dockwidget, self.canvas)
+        self.preset = PresetTool(self.dockwidget, self.canvas)
         self.pst = PixelSizeTool(self.dockwidget, self.canvas)
-
-        # Signal handlers
-        self.pst.setPixelSize.connect(self.handle_set_pixel_size)
-        self.imp.setActiveLayer.connect(self.handle_set_active_layer)
 
         self.create_ui_connections()
         self.create_legend_connections()
+
+        # Signal handlers
+        self.pst.setPixelSize.connect(self.preset.handle_set_pixel_size)
+        self.imp.setActiveLayer.connect(self.handle_set_active_layer)
 
         # show the dockwidget
         # TODO: fix to allow choice of dock location
@@ -318,17 +312,22 @@ class WiscSIMSTool:
         # initiallize tool and preset mode tabs, and cursor
         self.dockwidget.Tab_Tool.setCurrentIndex(self.tools.index(self.current_tool))
         self.handle_tool_changed(self.tools.index(self.current_tool))
-        self.dockwidget.Tab_Preset_Mode.setCurrentIndex(self.preset_modes.index(self.current_preset_mode))
-        self.handle_preset_mode_changed(self.preset_modes.index(self.current_preset_mode))
 
         self.dockwidget.show()
 
         self.init_map_tool()
 
     def handle_legend_layers_changed(self, layers):
-        print("handle legend layer")
+        print("handle legend layer", "oo", layers)
+        ltype = type(layers)
+        if ltype not in [QgsLayerTree, QgsLayerTreeLayer]:
+            return
+
+        if ltype == QgsLayerTreeLayer and layers.layer().type() != QgsMapLayerType.VectorLayer:
+            return
+
         self.imp.update_import_layers()
-        self.init_preset_layer_combobox()
+        self.preset.init_preset_layer_combobox()
 
     def create_legend_connections(self):
         ltr = QgsProject.instance().layerTreeRoot()
@@ -350,48 +349,7 @@ class WiscSIMSTool:
 
     def create_ui_connections(self):
         dock = self.dockwidget
-
         dock.Tab_Tool.currentChanged.connect(self.handle_tool_changed)
-
-        # Preset
-        ## Comment
-        dock.Tbx_Comment.textChanged.connect(self.reset_current_number)
-        dock.Tbx_Comment.textChanged.connect(self.handle_comment_change_preview)
-        dock.Spn_Current_Number.valueChanged.connect(self.handle_comment_change_preview)
-        dock.Btn_Reset_Current_Number.clicked.connect(self.reset_current_number)
-
-        ## Layer
-        dock.Btn_Create_Preset_Layer.clicked.connect(self.create_preset_layer)
-        dock.Cmb_Preset_Layer.currentIndexChanged.connect(self.handle_change_preset_layer)
-
-        ## Scale
-        dock.Spn_Preset_Pixel_Size.valueChanged.connect(self.handle_change_pixel_size)
-        dock.Spn_Preset_Spot_Size.valueChanged.connect(self.handle_change_spot_size)
-
-        ## Mode
-        dock.Tab_Preset_Mode.currentChanged.connect(self.handle_preset_mode_changed)
-
-        ### Point
-        dock.Opt_Point_Preview.stateChanged.connect(self.handle_change_PointPreview)
-
-        ### Line
-        dock.Spn_Line_Step_Size.valueChanged.connect(self.update_line)
-        dock.Spn_Line_N_Spot.valueChanged.connect(self.update_line)
-        dock.Btn_Line_Add_Points.clicked.connect(self.add_preset_points)
-
-        ### Grid
-        dock.Spn_Grid_Step_Size_X.valueChanged.connect(self.update_grid)
-        dock.Spn_Grid_Step_Size_Y.valueChanged.connect(self.update_grid)
-        dock.Spn_Grid_N_Point_X.valueChanged.connect(self.update_grid)
-        dock.Spn_Grid_N_Point_Y.valueChanged.connect(self.update_grid)
-        dock.Cmb_Grid_Move_Order.currentIndexChanged.connect(self.update_grid)
-        dock.Btn_Grid_Add_Points.clicked.connect(self.add_preset_points)
-
-        ## Undo
-        dock.Btn_Undo_Add_Preset_Point.clicked.connect(self.handle_undo)
-
-        # Pixel Size (PST)
-        # connect signal from PST to set pixel size
 
     def remove_ui_connections(self):
         dock = self.dockwidget
@@ -399,17 +357,17 @@ class WiscSIMSTool:
         dock.Tab_Tool.currentChanged.disconnect(self.handle_tool_changed)
 
         # Import/Alignment
-        dock.Grp_Alignment.toggled.disconnect(self.toggle_use_alignment)
-        dock.Tbv_Alignment.clicked.disconnect(self.change_tableview_selection)
-        dock.Tbv_Alignment.doubleClicked.disconnect(self.handle_table_doubleClicked)
-        dock.Gbx_Alignment_Ref_Point_Markers.toggled.disconnect(self.update_ref_point_markers)
-        dock.Cbx_Alignment_Ref_Points.toggled.disconnect(self.update_ref_point_markers)
-        dock.Cbx_Alignment_Ref_Names.toggled.disconnect(self.update_ref_point_markers)
-        dock.Btn_Import_Alignments.clicked.disconnect(self.import_alignments)
-        dock.Btn_Select_Workbook.clicked.disconnect(self.select_workbook)
-        dock.Tbx_Workbook.textChanged.disconnect(self.workbook_udpated)
-        dock.Btn_Create_New_Layer.clicked.disconnect(self.create_new_layer)
-        dock.Btn_Import_From_Excel.clicked.disconnect(self.import_from_excel)
+        # dock.Grp_Alignment.toggled.disconnect(self.toggle_use_alignment)
+        # dock.Tbv_Alignment.clicked.disconnect(self.change_tableview_selection)
+        # dock.Tbv_Alignment.doubleClicked.disconnect(self.handle_table_doubleClicked)
+        # dock.Gbx_Alignment_Ref_Point_Markers.toggled.disconnect(self.update_ref_point_markers)
+        # dock.Cbx_Alignment_Ref_Points.toggled.disconnect(self.update_ref_point_markers)
+        # dock.Cbx_Alignment_Ref_Names.toggled.disconnect(self.update_ref_point_markers)
+        # dock.Btn_Import_Alignments.clicked.disconnect(self.import_alignments)
+        # dock.Btn_Select_Workbook.clicked.disconnect(self.select_workbook)
+        # dock.Tbx_Workbook.textChanged.disconnect(self.workbook_udpated)
+        # dock.Btn_Create_New_Layer.clicked.disconnect(self.create_new_layer)
+        # dock.Btn_Import_From_Excel.clicked.disconnect(self.import_from_excel)
 
         # Preset
         ## Comment
@@ -474,7 +432,9 @@ class WiscSIMSTool:
             self.canvasMapTool.canvasShiftKeyState.connect(self.canvasShiftKeyState)
             self.canvasMapTool.canvasAltKeyState.connect(self.canvasAltKeyState)
             self.canvasMapTool.canvasEscapeKeyState.connect(self.canvasEscapeKeyState)
-            self.canvasMapTool.canvasUndoKey.connect(self.handle_undo)
+            self.canvasMapTool.canvasCtrlKeyState.connect(self.canvasCtrlKeyState)
+
+            self.canvasMapTool.canvasUndoKey.connect(self.preset.handle_undo)
 
             self.canvas.setMapTool(self.canvasMapTool)
         else:
@@ -513,248 +473,6 @@ class WiscSIMSTool:
     #
     #     return fields
     #
-    """
-    Functions for Preset
-    """
-
-    def init_preset_layer_combobox(self):
-        self.is_preset_initializing = True
-        # get current index (selected item) for refresh contents
-
-        current_layer_index = self.dockwidget.Cmb_Preset_Layer.currentIndex()
-        # layer = None
-        # if current_layer_index > -1:
-        #     layer = self.dockwidget.Cmb_Preset_Layer.itemText(current_layer_index)
-
-        # clear current items
-        self.dockwidget.Cmb_Preset_Layer.clear()
-        # Add layers which have Vector, Point geometry and 'Comment' field to combobox for preset
-        layers = self.lt.get_vector_point_layers()
-
-        # filter scratch layer
-        layers = [layer for layer in layers]
-
-        if len(layers) == 0:
-            return
-        # filter layers which has 'Comment' field
-        layers = [layer for layer in layers if "Comment" in self.lt.get_fields(layer)]
-        # add to Cmb_Preset_Layer
-        [self.dockwidget.Cmb_Preset_Layer.addItem(layer.name(), layer) for layer in layers]
-        if current_layer_index > -1:
-            self.dockwidget.Cmb_Preset_Layer.setCurrentIndex(current_layer_index)
-
-        self.is_preset_initializing = False
-
-        self.handle_change_preset_layer(current_layer_index)
-
-    def handle_change_preset_layer(self, idx=-1):
-        if self.is_preset_initializing:
-            return
-
-        if idx < 0:
-            return
-
-        ssps = self.get_ss_ps()
-
-        self.dockwidget.Spn_Preset_Pixel_Size.setValue(ssps["ps"])
-        self.dockwidget.Spn_Preset_Spot_Size.setValue(ssps["ss"])
-
-        self.preview.update_layer(self.get_preset_layer())
-        self.handle_change_pixel_size(ssps["ps"])
-
-    def create_preset_layer(self):
-        # ask layer name
-        project_path = os.path.dirname(QgsProject.instance().fileName())
-        saveFile, _filter = QFileDialog.getSaveFileName(
-            self.window,
-            "Save a Shape file",
-            os.path.join(project_path, "preset.shp"),
-            "ESRI Shapefile (*.shp)",
-        )
-
-        if saveFile == "":
-            return None
-
-        # create layer with given name
-        #  field: [Comment]
-        spot_size = self.dockwidget.Spn_Preset_Spot_Size.value()
-        pixel_size = self.dockwidget.Spn_Preset_Pixel_Size.value()
-        vl = QgsVectorLayer("Point?crs=epsg:4326", "temporary_points", "memory")
-        vl.setProviderEncoding("UTF-8")
-        pr = vl.dataProvider()
-        attrs = [
-            QgsField("Comment", QVariant.String),
-            QgsField(f"ss_{spot_size}", QVariant.Int),
-            QgsField(f"ps_{pixel_size}", QVariant.Double),
-        ]
-
-        pr.addAttributes(attrs)
-        vl.setDisplayExpression("Comment")
-        vl.updateFields()
-
-        error, _error_str = QgsVectorFileWriter.writeAsVectorFormat(vl, saveFile, "UTF-8", vl.crs(), "ESRI Shapefile")
-
-        # Set layer name without duplication
-        layer_names = [layer.name() for layer in self.lt.get_vector_point_layers()]
-        layer_name = "Preset"
-
-        # check layer names to avoid name duplication
-        i = 1
-        while layer_name in layer_names:
-            i += 1
-            layer_name = "Preset_{}".format(i)
-
-        spot_size = self.dockwidget.Spn_Preset_Spot_Size.value()
-        if error != QgsVectorFileWriter.NoError:
-            print(_error_str)
-            return
-
-        newVlayer = QgsVectorLayer(saveFile, layer_name, "ogr")
-
-        props = newVlayer.renderer().symbol().symbolLayer(0).properties()
-        props["name"] = "circle"
-        props["size_unit"] = "MapUnit"
-        props["offset_unit"] = "MapUnit"
-        props["outline_width_unit"] = "MapUnit"
-        props["size"] = f"{1.0 * self.scale * spot_size}"  # spot size
-        mySimpleSymbol = QgsMarkerSymbol.createSimple(props)
-        newVlayer.renderer().setSymbol(mySimpleSymbol)
-        newVlayer.updateExtents()
-
-        # load and register created layer to mapCanvas
-        QgsProject.instance().addMapLayer(newVlayer)
-        self.iface.setActiveLayer(newVlayer)
-        self.iface.activeLayer().renderer().symbol().symbolLayer(0).setSizeUnit(1)
-
-        settings = QgsPalLayerSettings()
-        settings.enabled = True
-        settings.fieldName = "Comment"
-        settings.displayAll = True
-        coll = QgsPropertyCollection("preset")
-        coll.setProperty(settings.ShadowDraw, True)
-        coll.setProperty(settings.BufferDraw, True)
-        settings.setDataDefinedProperties(coll)
-
-        newVlayer.setLabelsEnabled(True)
-        newVlayer.setLabeling(QgsVectorLayerSimpleLabeling(settings))
-        newVlayer.triggerRepaint()
-
-        # show feature count
-        root = QgsProject.instance().layerTreeRoot()
-        myLayerNode = root.findLayer(newVlayer.id())
-        myLayerNode.setCustomProperty("showFeatureCount", True)
-
-        # add created layer to Cmb_Preset_Layer
-        self.init_preset_layer_combobox()
-
-        # select/highlight created layer
-        self.dockwidget.Cmb_Preset_Layer.setCurrentIndex(self.dockwidget.Cmb_Preset_Layer.findText(layer_name))
-
-        self.preview.create()
-
-    def store_ss_ps(self, data):
-        layer = self.get_preset_layer()
-        layer.startEditing()
-        # Rename field
-        flag_rename = False
-        for field in layer.fields():
-            if field.name()[:3] == "ss_":
-                idx = layer.fields().indexFromName(field.name())
-                layer.renameAttribute(idx, f"ss_{data['ss']}")
-                flag_rename = True
-            elif field.name()[:3] == "ps_":
-                idx = layer.fields().indexFromName(field.name())
-                layer.renameAttribute(idx, f"ps_{data['ps']}")
-                flag_rename = True
-
-        if not flag_rename:  # no ss_ or ps_
-            pr = layer.dataProvider()
-            attrs = [
-                QgsField(f"ss_{data['ss']}", QVariant.Int),
-                QgsField(f"ps_{data['ps']}", QVariant.Double),
-            ]
-            pr.addAttributes(attrs)
-
-        # Close editing session and save changes
-        layer.commitChanges()
-
-    def get_ss_ps(self):
-        layer = self.get_preset_layer()
-        fields = self.lt.get_fields(layer)
-        out = {"ss": 12, "ps": 1.0}
-        for f in fields:
-            c = f[:3]
-            if c == "ss_":
-                out["ss"] = int(f.split("_")[1])
-                continue
-            elif c == "ps_":
-                out["ps"] = float(f.split("_")[1])
-        return out
-
-    def handle_change_pixel_size(self, size):
-        self.scale = 1 / size
-        # if not self.flag_pixel_size_tool:
-        #     pass
-        if self.current_preset_mode == "grid":
-            self.update_grid()
-        elif self.current_preset_mode == "line":
-            self.update_line()
-        elif self.current_preset_mode == "point":
-            self.preview.update_symbol_size()
-
-        ss = self.dockwidget.Spn_Preset_Spot_Size.value()
-        self.handle_change_spot_size(ss)
-
-    def handle_set_pixel_size(self, px_size):
-        # call from PST (Set Pixel Size button)
-        # set pixel size and select numbers
-        self.dockwidget.Spn_Preset_Pixel_Size.setValue(px_size)
-        self.dockwidget.Spn_Preset_Pixel_Size.selectAll()
-
-        # activate Preset tab
-        self.dockwidget.Tab_Tool.setCurrentIndex(1)
-
-    def handle_change_spot_size(self, size):
-        preset_layer = self.dockwidget.Cmb_Preset_Layer
-        if preset_layer.currentIndex() < 0:
-            return
-
-        layer = preset_layer.itemData(preset_layer.currentIndex())
-        layer.renderer().symbol().symbolLayer(0).setSize(1.0 * self.scale * size)
-        layer.triggerRepaint()
-
-        ss = self.dockwidget.Spn_Preset_Spot_Size.value()
-        ps = self.dockwidget.Spn_Preset_Pixel_Size.value()
-
-        # save spot and pixel size to the attribute table (shapefile) as field names
-        self.store_ss_ps({"ss": ss, "ps": ps})
-
-        self.update_preview_spots()
-        self.preview.update_symbol_size()
-
-    def update_preview_spots(self):
-        if self.flag_pixel_size_tool:
-            return
-        current_mode = self.get_preset_mode()
-        if current_mode == "grid":
-            self.update_grid()
-        elif current_mode == "line":
-            self.update_line()
-
-    def reset_current_number(self, btn):
-        # hit reset button => btn = bool
-        # comment changed => btn = unicode
-        if isinstance(btn, str) and not self.dockwidget.Cbx_Reset_Increment_Number.isChecked():
-            return
-        self.dockwidget.Spn_Current_Number.setValue(1)
-
-    def get_preset_layer(self):
-        layer = self.dockwidget.Cmb_Preset_Layer.itemData(self.dockwidget.Cmb_Preset_Layer.currentIndex())
-        return layer
-
-    def handle_change_PointPreview(self, state):
-        # state 0: Unchecked, 2: Checked
-        self.update_preview_cursor(0)
 
     def get_current_tool(self, idx=-1):
         if idx < 0:
@@ -763,733 +481,70 @@ class WiscSIMSTool:
 
     def handle_tool_changed(self, idx):
         self.current_tool = self.get_current_tool(idx)
-
-        # resets
-        self.clear_preview_spots()
-        self.update_preview_cursor()
+        self.preset.handle_tool_changed(self.current_tool)
         self.pst.reset()
 
-    def get_preset_mode(self, idx=-1):
-        if idx < 0:
-            idx = self.dockwidget.Tab_Preset_Mode.currentIndex()
-        return self.preset_modes[idx]
+    def toggle_raster_layer_visible_state(self, state):
+        selected_layers = self.iface.layerTreeView().selectedLayers()
 
-    def handle_preset_mode_changed(self, idx):
-        if idx < 0:
-            self.current_preset_mode = self.get_preset_mode()
-        self.clear_preview_spots()
-        self.update_preview_cursor()
-
-    def update_preview_cursor(self, idx=-1):
-        if self.current_tool != "preset":
-            self.canvas.setCursor(Qt.CrossCursor)
-            self.preview.reset()
+        if len(selected_layers) == 0:
             return
 
-        if idx < 0:
-            idx = self.dockwidget.Tab_Preset_Mode.currentIndex()
-        self.preview.reset()
-        # self.clear_preview_points()
+        layer_id = selected_layers[0].id()
+        layer = QgsProject.instance().layerTreeRoot().findLayer(layer_id)
 
-        if self.preset_modes[idx] == "point" and self.dockwidget.Opt_Point_Preview.isChecked():
-            comment = self.get_comment(0)
-            point = [self.cursor_pos, comment]
-            self.preview.add_points([point])
-            self.canvas.setCursor(Qt.BlankCursor)
-        else:
-            self.canvas.setCursor(Qt.CrossCursor)
-
-    def reset_preset_points(self):
-        self.preview.remove_objects()
-        self.feature_id = None
-        self.update_add_points_btn_status(False)
-
-    def add_preset_points(self):
-        self.reset_preset_points()
-
-        if len(self.preset_points) == 0:
+        if layer.layer().type() != QgsMapLayerType.RasterLayer:
             return
 
-        if self.dockwidget.Cmb_Preset_Layer.currentIndex() == -1:
-            return
-
-        layer = self.get_preset_layer()
-        layer.startEditing()
-        fields = layer.fields()
-        features = []
-        for p in self.preset_points:
-            feature = QgsFeature()
-            feature.setFields(fields)
-            geom = QgsGeometry.fromPointXY(QgsPointXY(p[1], p[2]))
-            comment = p[0]
-            feature.setGeometry(geom)
-            feature["Comment"] = comment
-            features.append(feature)
-        dpr = layer.dataProvider()
-        results, newFeatures = dpr.addFeatures(features)
-        layer.commitChanges()
-        points_for_undo = [f.id() for f in newFeatures]
-        self.add_to_undo("addition", points_for_undo)
-
-        # check number of undos
-        if len(self.undo_preset) > self.undo_max:
-            del self.undo_preset[0]
-
-        self.update_undo_btn_state()
-
-        if self.dockwidget.Cbx_Number_Increment.isChecked():
-            self.dockwidget.Spn_Current_Number.setValue(
-                self.dockwidget.Spn_Current_Number.value() + len(self.preset_points)
-            )
-
-        self.init_rb_line()
-        self.clear_preview_spots()
-
-    def add_preset_point(self, pt):
-        comment = self.get_comment(0)
-        if self.dockwidget.Opt_Comment_Popup.isChecked():
-            comment, okPressed = QInputDialog.getText(
-                self.window, "Input Comment", "Comment: ", QLineEdit.Normal, comment
-            )
-            if not okPressed:
-                return
-        self.preset_points = [[comment, pt[0], pt[1]]]
-        self.preview.remove_objects()
-        self.add_preset_points()
-        # get latest comment for next spot
-        comment = self.get_comment(0)
-        if self.dockwidget.Opt_Point_Preview.isChecked():
-            self.preview.add_points([[self.cursor_pos, comment]])
-
-    def add_to_undo(self, undo_type, data):
-        undo_data = {"type": undo_type, "data": data}
-        self.undo_preset.append(undo_data)
-
-    def handle_undo(self):
-        if len(self.undo_preset) == 0:
-            return
-
-        current_layer_index = self.dockwidget.Cmb_Preset_Layer.currentIndex()
-        if current_layer_index == -1:
-            return
-
-        # get and remove last item from self.undo_preset
-        undo_item = self.undo_preset.pop()
-
-        preset_layer = self.dockwidget.Cmb_Preset_Layer.itemData(current_layer_index)
-        preset_layer.startEditing()
-
-        undo_message = ""
-        if undo_item["type"] == "addition":
-            self.undo_add_preset_point(preset_layer, undo_item["data"])
-            undo_message = "Addition of "
-            if len(undo_item["data"]) == 1:
-                undo_message += "a spot"
-            else:
-                undo_message += "spots"
-        elif undo_item["type"] == "movement":
-            undo_message = "Relocating a spot"
-            self.undo_moving_point(preset_layer, undo_item["data"])
-        elif undo_item["type"] == "comment":
-            undo_message = "Editing a comment"
-            self.undo_editing_comment(preset_layer, undo_item["data"])
-        elif undo_item["type"] == "delete":
-            undo_message = "Deleting a spot"
-            self.undo_delete_preset_point(preset_layer, undo_item["data"])
-
-        preset_layer.commitChanges()
-
-        self.iface.messageBar().pushMessage("Undo", undo_message, level=Qgis.Info, duration=1)
-        self.update_undo_btn_state()
-
-    def undo_editing_comment(self, preset_layer, data):
-        fid = data["id"]
-        comment = data["comment"]
-        field_idx = preset_layer.fields().indexOf("Comment")
-        preset_layer.changeAttributeValue(fid, field_idx, comment)
-
-    def undo_moving_point(self, preset_layer, data):
-        fid = data["id"]
-        geom = data["geom"]
-        preset_layer.dataProvider().changeGeometryValues({fid: geom})
-
-    def undo_delete_preset_point(self, preset_layer, data):
-        preset_layer.startEditing()
-        fields = preset_layer.fields()
-        feature = QgsFeature()
-        feature.setFields(fields)
-        geom = data["geometry"]
-        comment = data["comment"]
-        feature.setGeometry(geom)
-        feature["Comment"] = comment
-        dpr = preset_layer.dataProvider()
-        dpr.addFeatures([feature])
-        preset_layer.commitChanges()
-
-    def undo_add_preset_point(self, preset_layer, id_list):
-        preset_layer.deleteFeatures(id_list)
-
-        # update increment number
-        if self.dockwidget.Cbx_Number_Increment.isChecked():
-            spn = self.dockwidget.Spn_Current_Number
-            spn.setValue(spn.value() - len(id_list))
-
-    def update_undo_btn_state(self):
-        if len(self.undo_preset):
-            self.dockwidget.Btn_Undo_Add_Preset_Point.setEnabled(True)
-        else:
-            self.iface.messageBar().pushMessage("Already at oldest change", level=Qgis.Info, duration=3)
-            self.dockwidget.Btn_Undo_Add_Preset_Point.setEnabled(False)
-
-        print("undo btn state", self.dockwidget.Btn_Undo_Add_Preset_Point.isEnabled())
-
-    def clear_preview_points(self):
-        if self.rb_line.size() > 0:
-            self.rb_line.reset()
-            # self.rb2.reset()
-            # self.rb_start.reset()
-            self.init_rb_line()
-            # self.init_annotation()
-
-    def clear_preview_spots(self, init=True):
-        # clear/init all preview related items
-        self.start_point = []
-        self.end_point = []
-        self.feature_id = None
-        self.line_in_progress = False
-        if init:
-            self.preview.reset()
-        else:
-            self.reset_preset_points()
-        self.clear_preview_points()
-
-    def init_rb_line(self):
-        if self.rb_line.size() > 0:
-            self.rb_line.reset()
-        self.rb_line = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
-        # self.rb = QgsRubberBand(self.canvas, True)  # False = not a polygon
-        self.rb_line.setWidth(2)
-        self.rb_line.setColor(QColor(255, 20, 20, 60))
-        self.dockwidget.Txt_Line_Length.setText("0")
-
-    # def init_rb2(self):
-    #     # Points
-    #     if self.rb2.size() > 0:
-    #         self.rb2.reset()
-    #     self.rb2 = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
-    #     self.rb2.setIcon(QgsRubberBand.ICON_CIRCLE)
-    #     self.rb2.setIconSize(10)
-    #     self.rb2.setColor(QColor(255, 20, 20, 90))
-    #     self.preset_points = []
-    #     self.init_annotation()
-
-    # def init_rb_s(self):
-    #     # Starting point of line preset
-    #     if self.rb_start.size() > 0:
-    #         self.rb_start.reset()
-    #     self.rb_start = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
-    #     # self.rb_s = QgsRubberBand(self.canvas, False)  # False = not a polygon
-    #     self.rb_start.setIcon(QgsRubberBand.ICON_CIRCLE)
-    #     self.rb_start.setIconSize(10)
-    #     self.rb_start.setColor(QColor(255, 0, 255, 250))
-
-    # def is_annotation_item(self, item):
-    #     return issubclass(type(item), QgsMapCanvasAnnotationItem)
-    #
-    # def remove_item(self, item):
-    #     self.canvas.scene().removeItem(item)
-
-    # def init_annotation(self):
-    #     [self.remove_item(i) for i in self.canvas.scene().items()
-    #      if self.is_annotation_item(i)]
-
-    # def init_rb(self):
-    #     self.init_rb()
-    #     # self.init_rb2()
-    #     # self.init_rb_s()
-
-    def show_tooltip(self, situ):
-        self.hide_tooltip()
-
-        pos = QCursor.pos()
-
-        if situ == "line-start":
-            txt = "🌱 Click end-point to see preview spots!"
-        elif situ == "line-end":
-            txt = "🌱 If the preview spots look good,\n" '🌱 click the "Add Points" button➡️'
-        else:
-            txt = ""
-        QToolTip.showText(pos, txt, self.canvas, QRect(pos.x(), pos.y(), 200, 200), 30000)
-        # QToolTip.showText(pos, txt, self.window)
-
-    def hide_tooltip(self):
-        QToolTip.hideText()
-
-    def update_add_points_btn_status(self, status):
-        btns = []
-
-        if self.current_preset_mode == "line":
-            btns.append(self.dockwidget.Btn_Line_Add_Points)
-        elif self.current_preset_mode == "grid":
-            btns.append(self.dockwidget.Btn_Grid_Add_Points)
-        else:
-            btns.append(self.dockwidget.Btn_Line_Add_Points)
-            btns.append(self.dockwidget.Btn_Grid_Add_Points)
-
-        if status:  # Activate
-            fg_color = "rgb(255, 255, 255)"
-            bg_color = "rgb(255, 49, 49)"
-        else:  # Deactivate
-            fg_color = "rgb(128, 128, 128)"
-            bg_color = "rgb(192, 192, 192)"
-
-        styles = f"background-color: {bg_color};" f"color: {fg_color};" "font-weight: bold;"
-
-        for btn in btns:
-            btn.setStyleSheet(styles)
-            btn.setEnabled(status)
-
-    def preset_line(self, pt, line_end=False, live_preview=False):
-        if line_end:
-            self.end_point = pt
-            self.draw_line_points(live_preview)  # preview spots
-            if not live_preview:
-                self.line_in_progress = False
-        else:  # start line drawing
-            self.init_rb_line()
-
-            # self.preview.reset()
-            self.start_point = pt
-
-            self.preview.add_points([[pt, ""]])
-            self.line_in_progress = True
-
-            self.rb_line.addPoint(self.start_point, False)
-            self.rb_line.addPoint(self.start_point, True)
-            # self.rb_start.addPoint(self.start_point, True)
-
-    def update_line(self):
-        if len(self.start_point) and len(self.end_point):
-            if self.preview:
-                self.preview.reset()
-                self.preview.update_symbol_size()
-            self.preset_points = []
-            self.draw_line_points()
-
-    def draw_line_points(self, live_preview=False):
-        if len(self.start_point) == 0:
-            return
-        # update line length in the widget
-        length = self.update_line_length(self.end_point)
-
-        if self.dockwidget.Opt_Line_Step_Size.isChecked():
-            # use step size
-            step = self.dockwidget.Spn_Line_Step_Size.value()
-            n_spots = int(length / step) + 1
-            self.set_value_without_signal(self.dockwidget.Spn_Line_N_Spot, n_spots)
-        else:
-            # use number of spots
-            n_spots = self.dockwidget.Spn_Line_N_Spot.value()
-            step = length / (n_spots - 1)
-            self.set_value_without_signal(self.dockwidget.Spn_Line_Step_Size, step)
-
-        angle = self.get_angle(self.start_point, self.end_point)
-        cos = step * math.cos(angle)
-        sin = step * math.sin(angle)
-        x, y = 0, 0
-        pt = QgsPointXY(x, y)
-
-        preview_points = []
-
-        for n in range(n_spots):
-            x = self.start_point[0] + cos * n * self.scale
-            y = self.start_point[1] + sin * n * self.scale
-            comment = self.get_comment(n)
-            pt = QgsPointXY(x, y)
-            preview_points.append([pt, comment])
-            self.preset_points.append([comment, x, y])
-        print("preview points")
-        self.preview.add_points(preview_points)
-
-        if live_preview:
-            self.preset_points = []
-
-        self.update_add_points_btn_status(True)
-        self.canvas.refresh()
-
-    def preset_grid(self, pt):
-        self.start_point = pt
-        self.init_rb_line()
-        self.preview.reset()
-        self.draw_grid_points()
-
-    def update_grid(self):
-        if self.start_point is None:
-            return
-        self.preset_points = []
-        if self.preview:
-            self.preview.reset()
-            self.preview.update_symbol_size()
-        self.init_rb_line()
-        self.draw_grid_points()
-
-    def draw_grid_points(self):
-        order = self.dockwidget.Cmb_Grid_Move_Order.currentIndex()
-        step_x = self.dockwidget.Spn_Grid_Step_Size_X.value()
-        step_y = self.dockwidget.Spn_Grid_Step_Size_Y.value()
-        n_step_x = self.dockwidget.Spn_Grid_N_Point_X.value()
-        n_step_y = self.dockwidget.Spn_Grid_N_Point_Y.value()
-        rotation = self.canvas.rotation()
-        if len(self.start_point) == 0:
-            return
-
-        points = self.calculate_grid_positions(
-            self.start_point,
-            [step_x, step_y],
-            [n_step_x, n_step_y],
-            order,
-            self.scale,
-            rotation,
-        )
-        i = 0
-
-        preview_points = []
-
-        for point in points:
-            pt = QgsPointXY(point[0], point[1])
-            comment = self.get_comment(i)
-            self.rb_line.addPoint(pt, True)
-            self.preset_points.append([comment, point[0], point[1]])
-            preview_points.append([pt, comment])
-            i += 1
-
-        self.preview.add_points(preview_points)
-        self.update_add_points_btn_status(True)
-        self.canvas.refresh()
-
-    def calculate_grid_positions(self, start_xy, step_xy, n_xy, order, scale=1, rotation=0):
-        # start, step, n are lists
-        # order: 0 = Horizontal, then vertical
-        #        1 = Vertical, then horizontal
-        start_xy = list(start_xy)
-        if order == 0:
-            for i in [start_xy, step_xy, n_xy]:
-                i.reverse()
-        p_n, s_n = n_xy
-        p_step, s_step = step_xy
-        p_pt, s_pt = start_xy
-        out = []
-        for p in range(p_n):  #
-            p_val = p_pt + p * p_step * scale
-            for s in range(s_n):
-                s_val = s_pt + s * s_step * scale
-                xy = [s_val, p_val]
-                if order:
-                    xy.reverse()
-                out.append(xy)
-        if rotation:
-            if order == 0:
-                start_xy.reverse()
-            out = self.rotate_coordinates(out, rotation, start_xy)
-        return out
-
-    def rotate_coordinates(self, points, rotation, origin=None):
-        if origin is None:
-            origin = [0, 0]
-        # poinsts: list of point
-        # rotation: rotation in degree (0 to +180, 0 to -180), CW = +, CCW = -
-        # origin: coordiates of origin of rotation. Default is [0, 0]
-        r = math.radians(rotation)
-        cos, sin = math.cos(r), math.sin(r)
-        out = map(
-            lambda p: [
-                (p[0] - origin[0]) * cos - (p[1] - origin[1]) * sin + origin[0],
-                (p[0] - origin[0]) * sin + (p[1] - origin[1]) * cos + origin[1],
-            ],
-            points,
-        )
-        return out
-
-    def get_distance(self, pt1, pt2):
-        return ((pt2[0] - pt1[0]) ** 2 + (pt2[1] - pt1[1]) ** 2) ** 0.5
-
-    def get_angle(self, pt1, pt2):
-        return math.atan2((pt2[1] - pt1[1]), (pt2[0] - pt1[0]))
-
-    def preset_tool_changed(self, tool_index):
-        self.clear_preview_spots()  # scratch layer
-
-    def set_value_without_signal(self, target, value):
-        target.blockSignals(True)
-        target.setValue(value)
-        target.blockSignals(False)
-
-    def handle_comment_change_preview(self):
-        current_mode = self.get_preset_mode()
-        # if self.rb_line.size() == 0:
-        #     return
-        if current_mode == "point":
-            self.preview.update_comment(self.get_comment(0))
-        elif current_mode == "line":
-            self.update_line()
-        elif current_mode == "grid":
-            self.update_grid()
-
-    def get_comment(self, n):
-        comment_base = self.dockwidget.Tbx_Comment.text()
-        flag_comment_format = self.dockwidget.Cbx_Number_Increment.isChecked()
-        current_num = self.dockwidget.Spn_Current_Number.value()
-        if not flag_comment_format:
-            return comment_base
-        return self.format_comment(comment_base, current_num + n)
-
-    def format_comment(self, comment, num):
-        try:
-            out = comment.format(num)
-        except (IndexError, KeyError, ValueError):
-            out = comment
-        return out
-
-    def update_line_length(self, pt=None):
-        if pt is None:
-            length = 0
-        else:
-            length = self.get_distance(self.start_point, pt) / self.scale
-        self.dockwidget.Txt_Line_Length.setText(f"{length:.1f}")
-        return length
+        layer.setItemVisibilityChecked(state)
 
     """
     Canvas related
     """
 
     def mapToolChanged(self, tool, prev_tool):
-        #     r'wiscsims_tool', str(tool)))
         if re.search(r"wiscsims_tool", str(tool)) or re.search(r"WiscSIMSTool", str(tool)):
             self.dockwidget.setEnabled(True)
             return
 
         try:
             self.unsetMapTool()
-            # self.clear_preview_points()
-            self.reset_preset_points()
+            self.preset.reset_preset_points()
             self.wiscsims_tool_action.setChecked(False)
             self.dockwidget.setEnabled(False)
         except Exception:
-            pass
+            print("Error: MapToo Changed")
 
     def unsetMapTool(self):
         self.canvas.mapToolSet.disconnect(self.mapToolChanged)
         self.canvas.unsetMapTool(self.canvasMapTool)
 
-    def get_near_features(self, layer, geom):
-        # radius = spot_size / 2 / pixel_size (10 / 2 / 1 = 5)
-        spot_size = self.dockwidget.Spn_Preset_Spot_Size.value()
-        pixel_size = self.dockwidget.Spn_Preset_Pixel_Size.value()
-        radius = spot_size / 2 / pixel_size
-        features = layer.dataProvider().getFeatures()
-
-        out = [f for f in features if 0 < geom.distance(f.geometry()) < radius]
-        return out
-
     def canvasClickedWShift(self, e):
         # Start moving preset point
-        # self.f_id = None
-        self.preview.reset(moving=True)
-        self.init_rb_line()
-
-        layer = self.get_preset_layer()
-
-        if layer is None:
-            # there is no preset layer
-            QMessageBox.warning(self.window, "No Preset Layer", "Preset layer is not selected.")
-            return
-
-        cursor_geom = QgsGeometry.fromPointXY(self.canvasMapTool.getMapCoordinates(e))
-        self.movement_offst = [0, 0]
-        features = self.get_near_features(layer, cursor_geom)
-
-        if len(features) == 0:
-            # do nothing
-            return
-
-        self.canvas.setCursor(Qt.ClosedHandCursor)
-        feature = features[-1]  # select uppermost feature
-
-        geom = feature.geometry()
-        pt = geom.asPoint()
-        cursor_geom_p = cursor_geom.asPoint()
-        self.movement_offset = [
-            pt.x() - cursor_geom_p.x(),
-            pt.y() - cursor_geom_p.y(),
-        ]
-        self.feature_id = feature.id()
-        layer.selectByIds([self.feature_id], QgsVectorLayer.SetSelection)
-
-        comment = [f["Comment"] for f in layer.getFeatures(QgsFeatureRequest(self.feature_id))][0]
-        point = [pt, comment]
-
-        self.preview.add_points([point])
+        self.preset.handle_move_point_start(e)
 
         return
 
     def canvasReleaseWShift(self, e):
         # End move preset point
-        if self.feature_id is None:
-            return
-
-        layer = self.get_preset_layer()
-        original_geo = [f.geometry() for f in layer.getFeatures() if f.id() == self.feature_id][0]
-        layer.startEditing()
-        pt = self.canvasMapTool.getMapCoordinates(e)
-        pt.set(pt.x() + self.movement_offset[0], pt.y() + self.movement_offset[1])
-        geom = QgsGeometry.fromPointXY(pt)
-        layer.dataProvider().changeGeometryValues({self.feature_id: geom})
-        layer.commitChanges()
-
-        layer.removeSelection()
-        undo_data = {"id": self.feature_id, "geom": original_geo}
-        self.add_to_undo("movement", undo_data)
-
-        self.preview.reset()
-
-        if self.state_shift_key:
-            self.canvas.setCursor(Qt.OpenHandCursor)
-        else:
-            self.canvas.setCursor(Qt.CrossCursor)
-
-        self.update_undo_btn_state()
-        self.flag_cancel_moving_spot = False
+        #
+        self.preset.handle_move_point_end(e)
         return
-
-    def delete_spot_original(self, e):
-        # delete spot
-        layer = self.get_preset_layer()
-        if layer is None:
-            return
-
-        cursor_geom = QgsGeometry.fromPointXY(self.canvasMapTool.getMapCoordinates(e))
-        features = self.get_near_features(layer, cursor_geom)
-
-        if len(features) == 0:
-            return
-
-        f_id = features[-1].id()  # select uppermost feature
-
-        layer.selectByIds([f_id], QgsVectorLayer.SetSelection)
-        f = [f for f in layer.getFeatures(QgsFeatureRequest(f_id))][0]
-        comment = f["Comment"]
-        geom = f.geometry()
-        title = "Delete Spot"
-        label = f'Are you sure you want to delete "{comment}"?'
-
-        self.state_shift_key = False
-        self.state_alt_key = False
-
-        self.canvas.setCursor(Qt.CrossCursor)
-        print("delete spot")
-
-        # show confirmation dailog
-        rep_message = QMessageBox.warning(self.window, title, label, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if rep_message == QMessageBox.No:
-            layer.removeSelection()
-            return
-
-        layer.startEditing()
-        layer.deleteFeature(f_id)
-        layer.commitChanges()
-        undo_data = {
-            "id": f_id,
-            "geometry": geom,
-            "comment": comment,
-        }
-        self.add_to_undo("delete", undo_data)
-
-        self.state_alt_key = False
-        self.state_shift_key = False
-
-        # # reset cursor
-        # self.canvas.setCursor(Qt.CrossCursor)
-
-        self.update_undo_btn_state()
-
-    def delete_spot(self, layer, f_id, comment):
-        title = "Delete Spot"
-        label = f'Are you sure you want to delete "{comment}"?'
-
-        # show confirmation dailog
-        rep_message = QMessageBox.warning(self.window, title, label, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-
-        if rep_message == QMessageBox.No:
-            return False
-
-        layer.startEditing()
-        layer.deleteFeature(f_id)
-        layer.commitChanges()
-
-        return True
 
         # # reset cursor
         # self.canvas.setCursor(Qt.CrossCursor)
 
     def canvasReleaseWAltShift(self, e):
-        self.delete_spot(e)
-
-    def edit_point(self, e):
-        layer = self.get_preset_layer()
-        if layer is None:
-            return
-
-        cursor_geom = QgsGeometry.fromPointXY(self.canvasMapTool.getMapCoordinates(e))
-        features = self.get_near_features(layer, cursor_geom)
-
-        if len(features) == 0:
-            return
-
-        f_id = features[-1].id()  # select uppermost feature
-
-        layer.selectByIds([f_id], QgsVectorLayer.SetSelection)
-        f = [f for f in layer.getFeatures(QgsFeatureRequest(f_id))][0]
-        comment = f["Comment"]
-        geom = f.geometry()
-
-        # show dailog for new comment or delete spot
-        params = {"comment": comment}
-        self.edit_dialog = EditDialog(self.window, params)
-        self.edit_dialog.exec_()
-
-        # exit_state 0: Cancel, 1: OK (new comment), 2: Delete
-        exit_state = self.edit_dialog.get_exit_state()
-
-        if exit_state == 1:  # Modify Comment
-            new_comment = self.edit_dialog.return_new_comment()
-            self.modify_comment(layer, f_id, new_comment)
-            undo_data = {"id": f_id, "comment": comment}
-            self.add_to_undo("comment", undo_data)
-
-        elif exit_state == 2:  # Delete spot
-            res_delete = self.delete_spot(layer, f_id, comment)
-            if res_delete:
-                undo_data = {"id": f_id, "geometry": geom, "comment": comment}
-                self.add_to_undo("delete", undo_data)
-
-        layer.removeSelection()
-        self.update_undo_btn_state()
-        self.update_preview_cursor()
-
-    def modify_comment(self, layer, f_id, new_comment):
-        field_idx = layer.fields().indexOf("Comment")
-        layer.startEditing()
-        layer.changeAttributeValue(f_id, field_idx, new_comment)
-        layer.commitChanges()
+        self.preset.delete_spot(e)
 
     def canvasReleaseWAlt(self, e):
-        self.edit_point(e)
+        self.preset.edit_point(e)
         # reset curosr and mod_key status
         self.state_alt_key = False
 
     def canvasClicked(self, pt):
         if self.current_tool == "preset":
-            pass
+            self.preset.handle_clicked(pt)
 
         elif self.current_tool == "pixelsize":
             self.pst.handle_selecting_point(pt)
@@ -1501,40 +556,40 @@ class WiscSIMSTool:
         if self.current_tool != "preset":
             self.reset_preset_points()
 
-        self.preview.remove_objects()
-
-        if self.get_preset_layer() is None:
-            # preset layer has not been selected yet
-            return
-
-        if self.flag_cancel_moving_spot:
-            self.flag_cancel_moving_spot = False
-            return
-
-        self.update_preview_cursor()
-
-        if self.current_preset_mode == "point":
-            self.add_preset_point(pt)
-
-        elif self.current_preset_mode == "line":
-            if self.line_in_progress:
-                # select end-point
-                self.show_tooltip("line-end")
-                self.preset_line(pt, True)
-            else:
-                # select start-point
-                self.show_tooltip("line-start")
-                self.start_point = []
-                self.end_point = []
-                # elif self.start_point and self.end_point:
-                self.preset_line(pt)
-                # else:
-                pass
-                #
-        elif self.current_preset_mode == "grid":
-            self.preset_points = []
-            self.init_rb_line()
-            self.preset_grid(pt)
+        # self.preview.remove_objects()
+        #
+        # if self.get_preset_layer() is None:
+        #     # preset layer has not been selected yet
+        #     return
+        #
+        # if self.flag_cancel_moving_spot:
+        #     self.flag_cancel_moving_spot = False
+        #     return
+        #
+        # self.update_preview_cursor()
+        #
+        # if self.current_preset_mode == "point":
+        #     self.add_preset_point(pt)
+        #
+        # elif self.current_preset_mode == "line":
+        #     if self.line_in_progress:
+        #         # select end-point
+        #         self.show_tooltip("line-end")
+        #         self.preset_line(pt, True)
+        #     else:
+        #         # select start-point
+        #         self.show_tooltip("line-start")
+        #         self.start_point = []
+        #         self.end_point = []
+        #         # elif self.start_point and self.end_point:
+        #         self.preset_line(pt)
+        #         # else:
+        #         pass
+        #         #
+        # elif self.current_preset_mode == "grid":
+        #     self.preset_points = []
+        #     self.init_rb_line()
+        #     self.preset_grid(pt)
 
     def canvasClickedRight(self, pt):
         self.canvasClicked(pt)
@@ -1547,39 +602,8 @@ class WiscSIMSTool:
         if self.current_tool == "import":
             return
 
-        # Throttling of preview repainting
-        # no throttling for rubberband line of the Line mode
-        #
-
-        if self.line_in_progress:
-            # drawing a tie line between start-point and cursor
-            self.rb_line.removeLastPoint()  # remove temp end-point (cursor)
-            self.rb_line.addPoint(pt, True)  # add new temp end-point
-            self.update_line_length(pt)
-
-        self.mouse_move_counter += 1
-        if self.mouse_move_counter < self.move_throttling_threshold:
-            return
-
-        self.mouse_move_counter = 0
-
-        self.cursor_pos = pt
-
-        if self.line_in_progress:
-            # update Line length
-            self.preview.reset()
-            self.preset_line(pt, True, True)
-            return
-
-        if self.current_preset_mode != "point":
-            return
-
-        # moving preset point
-        if self.feature_id is not None or self.dockwidget.Opt_Point_Preview.isChecked():
-            # self.preview.add_points([[self.cursor_pos, ""]])
-            if self.feature_id:
-                pt.set(pt.x() + self.movement_offset[0], pt.y() + self.movement_offset[1])
-            self.preview.update_position(pt)
+        # tool = Preset
+        self.preset.handle_cursor_moved(pt)
 
     def canvasShiftKeyState(self, state):
         #
@@ -1589,21 +613,16 @@ class WiscSIMSTool:
         #
 
         self.state_shift_key = state
-        if state:
-            self.preview.remove_objects()
-            self.canvas.setCursor(Qt.OpenHandCursor)
-            self.flag_cancel_moving_spot = False
-        else:
-            # shift key released
-            if self.feature_id:
-                # cancel moving
-                self.reset_preset_points()
-                self.flag_cancel_moving_spot = True
-            else:
-                # after spot movement
-                self.flag_cancel_moving_spot = False
-            self.update_preview_cursor()
-            # self.canvas.setCursor(Qt.CrossCursor)
+
+        self.preset.handle_shiftKey_state_changed(state)
+
+    def canvasCtrlKeyState(self, state):
+        #
+        # Toggle vibility of the selected raster layer
+        #
+        # Windows/Linux: Ctrl, MacOS: Command
+
+        self.toggle_raster_layer_visible_state(state)
 
     def canvasAltKeyState(self, state):
         #
@@ -1613,13 +632,7 @@ class WiscSIMSTool:
         #
 
         self.state_alt_key = state
-        if state:
-            # alt
-            self.canvas.setCursor(Qt.PointingHandCursor)
-            self.preview.remove_objects()
-        else:
-            self.update_preview_cursor()
-            # self.canvas.setCursor(Qt.CrossCursor)
+        self.preset.handle_altKey_state_changed(state)
 
     def canvasEscapeKeyState(self):
-        self.clear_preview_spots(init=False)
+        self.preset.clear_preview_spots(init=False)

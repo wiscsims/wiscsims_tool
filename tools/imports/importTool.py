@@ -476,7 +476,8 @@ class ImportTool(QObject):
         return pt[0] == self.default_val and pt[1] == self.default_val
 
     def is_identical_field_names(self, layer, xl_fields, field_max_len=5):
-        my_fields = self.lt.get_fields(layer)
+        pattern = re.compile(r"^[ps]s_[\d\.]+")
+        my_fields = [f for f in self.lt.get_fields(layer) if not pattern.search(f)]
         my_fields_names = [f[:field_max_len] for f in my_fields]
         xl_fields_len = len(self.intersect(my_fields_names, xl_fields))
         print("identical:", layer.name(), xl_fields_len, len(my_fields), xl_fields_len == len(my_fields))

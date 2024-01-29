@@ -29,22 +29,20 @@ from qgis.core import (QgsDataProvider, QgsDrawSourceEffect,
                        QgsPalLayerSettings, QgsProject, QgsPropertyCollection,
                        QgsVectorLayer, QgsVectorLayerSimpleLabeling)
 
-# from PyQt5.QtWidgets import ()
-
-
-# from qgis.gui import ()
-
 
 class PresetPreview:
-
     """Docstring for PreviewLayer."""
 
     def __init__(self, preset_layer):
-        """TODO: to be defined."""
         self.preview_layer: QgsVectorLayer = None
         self.sc_dp: QgsDataProvider = None
-        self.preset_layer: QVariant = preset_layer
+        self.preset_layer: QgsVectorLayer = preset_layer
+        self.cleanup_old_layers()
 
+        self.scale = 1
+        self.spot_size = 10
+
+        # if self.preset_layer:
         self.create()
 
     def __del__(self):
@@ -53,20 +51,38 @@ class PresetPreview:
     def create(self):
         self.cleanup_old_layers()
         self.preview_layer = QgsVectorLayer("Point", "tmp", "memory")
+
+        self.preview_layer.startEditing()
         self.preview_layer.setFlags(QgsMapLayer.Private)
         self.preview_layer.setCustomProperty("skipMemoryLayersCheck", 1)
-        self.preview_layer.startEditing()
-
-        # Copy and paste symbol sytle from preset layer
-        symbol = self.preset_layer.renderer().symbol()
-        props = symbol.symbolLayer(0).properties()
 
         renderer = self.preview_layer.renderer()
-        renderer.setSymbol(QgsMarkerSymbol.createSimple(props))
 
-        # stroke: black
+        if self.preset_layer:
+            # Copy and paste symbol sytle from preset layer
+            symbol = self.preset_layer.renderer().symbol()
+            props = symbol.symbolLayer(0).properties()
+        else:
+            # spotSize = 1.0 * self.dock.Spn_Spot_Size.value()
+            # if self.model.isAvailable():
+            #     scale = self.get_average(self.model.getScales())
+            # else:
+            #     scale = 1.0
+            # scale = self.ct[self.getNavAlign()].scale / 1.0
+            # props["size"] = str(spotSize / scale)
+            props = renderer.symbol().symbolLayer(0).properties()
+
+        props["size"] = f"{1.0 * self.scale * self.spot_size}"
+        props["name"] = "circle"
+        props["size_unit"] = "MapUnit"
+        props["offset_unit"] = "MapUnit"
+        props["outline_width_unit"] = "MapUnit"
+        mySimpleSymbol = QgsMarkerSymbol.createSimple(props)
+        renderer.setSymbol(mySimpleSymbol)
+
+        # black
         renderer.symbol().symbolLayer(0).setStrokeColor(QColor(255, 255, 255))
-
+        # light blue
         renderer.symbol().setColor(QColor(64, 143, 176, 102))
 
         self.sc_dp = self.preview_layer.dataProvider()
@@ -86,7 +102,7 @@ class PresetPreview:
         settings.fieldName = "Comment"
         settings.displayAll = True
         coll = QgsPropertyCollection("preview")
-        coll.setProperty(settings.Size, 25)
+        coll.setProperty(settings.Size, 20)
         coll.setProperty(settings.ShadowDraw, True)
         coll.setProperty(settings.BufferDraw, True)
         coll.setProperty(settings.Color, QColor(255, 255, 255))
@@ -94,6 +110,7 @@ class PresetPreview:
         settings.setDataDefinedProperties(coll)
         self.preview_layer.setLabelsEnabled(True)
         self.preview_layer.setLabeling(QgsVectorLayerSimpleLabeling(settings))
+        self.preview_layer.updateExtents()
         self.preview_layer.commitChanges()
 
         # add drop shadow and color to the spot preview
@@ -113,11 +130,12 @@ class PresetPreview:
     def reset(self, moving=False):
         self.remove_objects()
         if self.preview_layer is None:
+            self.create()
             return
 
         symbol = self.preview_layer.renderer().symbol()
         symbol.symbolLayer(0).setStrokeColor(QColor(255, 255, 255))  # stroke: black
-        symbol.setColor(QColor(64, 143, 176, 102))
+        symbol.setColor(QColor(64, 143, 176, 102))  # fill: light blue
 
     def update_layer(self, new_layer):
         self.preset_layer = new_layer
@@ -160,6 +178,7 @@ class PresetPreview:
         feature_ids = [f.id() for f in self.sc_dp.getFeatures()]
         if len(feature_ids) == 0:
             return
+        self.preview_layer.startEditing()
         self.sc_dp.deleteFeatures(feature_ids)
         self.preview_layer.commitChanges()
         self.preview_layer.triggerRepaint()
@@ -176,14 +195,21 @@ class PresetPreview:
         self.preview_layer.commitChanges()
         self.preview_layer.triggerRepaint()
 
-    def update_symbol_size(self):
+    def update_symbol_size(self, scale, spot_size):
         # get symbol information from preset layer
-        symbol = self.preset_layer.renderer().symbol()
-        props = symbol.symbolLayer(0).properties()
-        size = props["size"]
-
         if self.preview_layer is None:
             return
+
+        # size = 10
+        #
+        # if self.preset_layer:
+        #     symbol = self.preset_layer.renderer().symbol()
+        #     props = symbol.symbolLayer(0).properties()
+        #     size = props["size"]
+
+        self.scale = scale
+        self.spot_size = spot_size
+        size = 1.0 * self.scale * self.spot_size
 
         sc_props = self.preview_layer.renderer().symbol().symbolLayer(0).properties()
         sc_props["size"] = size

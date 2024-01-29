@@ -43,6 +43,34 @@ class CoordinateTool:
         self.rotation = self.getRotation(seg1, seg2)
         self.aligned = True
 
+    @staticmethod
+    def rotate_coordinates(points, rotation, origin=None):
+        if origin is None:
+            origin = [0, 0]
+        # poinsts: list of point
+        # rotation: rotation in degree (0 to +180, 0 to -180), CW = +, CCW = -
+        # origin: coordiates of origin of rotation. Default is [0, 0]
+        r = math.radians(rotation)
+        cos, sin = math.cos(r), math.sin(r)
+        out = map(
+            lambda p: [
+                (p[0] - origin[0]) * cos - (p[1] - origin[1]) * sin + origin[0],
+                (p[0] - origin[0]) * sin + (p[1] - origin[1]) * cos + origin[1],
+            ],
+            points,
+        )
+        return out
+
+    @staticmethod
+    def get_distance(pt1, pt2):
+        a = math.pow(pt2[0] - pt1[0], 2)
+        b = math.pow(pt2[1] - pt1[1], 2)
+        return math.sqrt(a + b)
+
+    @staticmethod
+    def get_angle(pt1, pt2):
+        return math.atan2((pt2[1] - pt1[1]), (pt2[0] - pt1[0]))
+
     def getOffset(self, pt1, pt2, scale=1):
         # pt1 = [x1, y1]
         # pt2 = [x2, y2]
