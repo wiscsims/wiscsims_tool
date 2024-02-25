@@ -26,7 +26,6 @@ import math
 import os
 import os.path
 import re
-
 from PyQt5.QtCore import QCoreApplication, QModelIndex, QRect, QSettings, QSize, Qt, QTranslator, QVariant, qVersion
 from PyQt5.QtGui import QColor, QCursor, QIcon, QPixmap
 from PyQt5.QtWidgets import (

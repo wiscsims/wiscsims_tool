@@ -3,7 +3,7 @@ from PyQt5.QtCore import QPointF, QSizeF
 from PyQt5.QtGui import QColor, QTextDocument
 from qgis.core import (QgsFillSymbol, QgsMargins, QgsMarkerSymbol,
                        QgsTextAnnotation)
-from qgis.gui import QgsMapCanvasAnnotationItem, QgsRubberBand
+from qgis.gui import QgsMapCanvasAnnotationItem, QgsRubberBand, Qgis
 
 """""" """""" """""" """""" """""" """""" """
 *** Alignment Marker Class
@@ -21,7 +21,7 @@ class AlignmentMarker:
         self.cursor_ann = None
 
     def add_ref_marker(self, pt, name, current=False):
-        rb = QgsRubberBand(self.canvas, False)
+        rb = QgsRubberBand(self.canvas, Qgis.GeometryType.Point)
         rb.setIconSize(15)
         rb.setIcon(QgsRubberBand.ICON_CROSS)
         color = QColor(255, 40, 0) if current else QColor(0, 40, 255)
