@@ -62,6 +62,8 @@ class PixelSizeTool(QObject):
         self.pxsize_start_point = QgsPointXY()
         self.pxsize_end_point = QgsPointXY()
 
+        self.line_color = QColor(255, 127, 0, 160)
+
         self.reset_emphasize_step()
 
         self.reset()
@@ -72,7 +74,7 @@ class PixelSizeTool(QObject):
             self.pxsize_line.reset()
         self.pxsize_line = QgsRubberBand(self._canvas, QgsWkbTypes.LineGeometry)
         self.pxsize_line.setWidth(4)
-        self.pxsize_line.setColor(QColor(127, 255, 0, 60))
+        self.pxsize_line.setColor(self.line_color)
 
         self.pxsize_start_point = QgsPointXY()
         self.pxsize_end_point = QgsPointXY()
@@ -162,20 +164,12 @@ class PixelSizeTool(QObject):
     def emphasize_step(self, step):
         if step == 1:
             # set emphasized color for the Step 1
-            self._dock.Grp_Step1.setStyleSheet(
-                f"QGroupBox::title {{ color: #{self.emphasize_color} }};"
-            )
-            self._dock.Grp_Step2.setStyleSheet(
-                f"QGroupBox::title {{ color: #{self.original_text_color} }};"
-            )
+            self._dock.Grp_Step1.setStyleSheet(f"QGroupBox::title {{ color: #{self.emphasize_color} }};")
+            self._dock.Grp_Step2.setStyleSheet(f"QGroupBox::title {{ color: #{self.original_text_color} }};")
         elif step == 2:
             # set emphasized color for the Step 2
-            self._dock.Grp_Step1.setStyleSheet(
-                f"QGroupBox::title {{color: #{self.original_text_color}}};"
-            )
-            self._dock.Grp_Step2.setStyleSheet(
-                f"QGroupBox::title {{ color: #{self.emphasize_color} }};"
-            )
+            self._dock.Grp_Step1.setStyleSheet(f"QGroupBox::title {{color: #{self.original_text_color}}};")
+            self._dock.Grp_Step2.setStyleSheet(f"QGroupBox::title {{ color: #{self.emphasize_color} }};")
             # set focus to the scale length input
             self._dock.SPN_PST_ScaleBar_Len_um.setFocus()
             self._dock.SPN_PST_ScaleBar_Len_um.selectAll()
@@ -183,12 +177,8 @@ class PixelSizeTool(QObject):
             self.reset_emphasize_step()
 
     def reset_emphasize_step(self):
-        self._dock.Grp_Step1.setStyleSheet(
-            f"QGroupBox::title {{color: #{self.original_text_color}}};"
-        )
-        self._dock.Grp_Step2.setStyleSheet(
-            f"QGroupBox::title {{ color: #{self.original_text_color} }};"
-        )
+        self._dock.Grp_Step1.setStyleSheet(f"QGroupBox::title {{color: #{self.original_text_color}}};")
+        self._dock.Grp_Step2.setStyleSheet(f"QGroupBox::title {{ color: #{self.original_text_color} }};")
 
     def show_tooltip(self):
         self.hide_tooltip()
@@ -201,9 +191,7 @@ class PixelSizeTool(QObject):
             txt = "🌱 Click End point of known scale"
         else:
             txt = ""
-        QToolTip.showText(
-            pos, txt, self._canvas, QRect(pos.x(), pos.y(), 200, 200), 30000
-        )
+        QToolTip.showText(pos, txt, self._canvas, QRect(pos.x(), pos.y(), 200, 200), 30000)
         # QToolTip.showText(pos, txt, self.window)
         #
 
