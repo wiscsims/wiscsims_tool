@@ -1,8 +1,7 @@
 # -*- coding: utf-8 -*-
 from PyQt5.QtCore import QPointF, QSizeF
 from PyQt5.QtGui import QColor, QTextDocument
-from qgis.core import (QgsFillSymbol, QgsMargins, QgsMarkerSymbol,
-                       QgsTextAnnotation)
+from qgis.core import QgsFillSymbol, QgsMargins, QgsMarkerSymbol, QgsTextAnnotation
 from qgis.gui import QgsMapCanvasAnnotationItem, QgsRubberBand, Qgis
 
 """""" """""" """""" """""" """""" """""" """
@@ -30,21 +29,26 @@ class AlignmentMarker:
         self.ref_markers.append(rb)
 
     def add_ref_marker_annotation(self, pt, name, current):
+        shrink = 0.7
         symbol = QgsMarkerSymbol()
         symbol.setSize(0)
         frm = QgsFillSymbol()
-        html = '<body style="color: #ffffff; background-color: {};"><b>{}</b></body>'
         if current:
-            frm.setColor(QColor(255, 0, 0))
-            bg_color = "#FF0000"
+            bg_color = "#AAAAAA"
+            fg_color = "#000000"
         else:
-            frm.setColor(QColor(0, 0, 0))
             bg_color = "#000000"
-        a = QgsTextAnnotation()
+            fg_color = "#ffffff"
+        frm.setColor(QColor(bg_color))  # <- color of triangler part of annotation
+        html = f'<body style="color: {fg_color}; background: {bg_color}"><b>{name.strip()}</b></body>'
+
         c = QTextDocument()
-        c.setHtml(html.format(bg_color, name))
+        c.setHtml(html)
+        s = QSizeF(c.size().width() * shrink, c.size().height() * shrink)
+        a = QgsTextAnnotation()
+
         a.setDocument(c)
-        a.setFrameSize(QSizeF(c.size().width(), c.size().height()))
+        a.setFrameSize(s)
         a.setMarkerSymbol(symbol)
         a.setFrameOffsetFromReferencePoint(QPointF(20, -70))
         a.setMapPosition(pt)
@@ -52,30 +56,11 @@ class AlignmentMarker:
         a.setContentsMargin(QgsMargins(0, 0, 0, 0))
         QgsMapCanvasAnnotationItem(a, self.canvas)
 
-    def init_cursor_annotation(self, name=None):
-        symbol = QgsMarkerSymbol()
-        symbol.setSize(0)
-        frm = QgsFillSymbol()
-        # frm.createSimple({'color': 'black'})
-        frm.setColor(QColor("#f00"))
-        # frm.setOpacity(0.5)
-        html = '<body><div style="backround-color: #f00;' ' color: #fff; font-weight: bold">{}</div></body>'
-        a = QgsTextAnnotation()
-        c = QTextDocument()
-        c.setHtml(html.format(name))
-        a.setDocument(c)
-        a.setFrameSize(QSizeF(c.size().width(), c.size().height()))
-        a.setMarkerSymbol(symbol)
-        a.setFrameOffsetFromReferencePoint(QPointF(20, -70))
-        a.setFillSymbol(frm)
-        a.setContentsMargin(QgsMargins(0, 0, 0, 0))
-        self.cursor_ann = a
-        QgsMapCanvasAnnotationItem(self.cursor_ann, self.canvas)
-
     def init_ref_point_markers(self):
         # print('init markers')
         [marker.reset() for marker in self.ref_markers]
         self.ref_markers = []
+
         self.init_annotation()
         return True
 
