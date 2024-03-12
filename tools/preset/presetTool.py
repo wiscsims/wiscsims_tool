@@ -21,24 +21,53 @@
  *                                                                         *
  ***************************************************************************/
 """
+
 import json
 import math
 import os
 import os.path
 import re
 
-from PyQt5.QtCore import (QCoreApplication, QModelIndex, QObject, QRect,
-                          QSettings, QSize, Qt, QTranslator, QVariant,
-                          pyqtSignal, qVersion)
+from PyQt5.QtCore import (
+    QCoreApplication,
+    QModelIndex,
+    QObject,
+    QRect,
+    QSettings,
+    QSize,
+    Qt,
+    QTranslator,
+    QVariant,
+    pyqtSignal,
+    qVersion,
+)
 from PyQt5.QtGui import QColor, QCursor, QIcon, QPixmap
-from PyQt5.QtWidgets import (QAbstractItemView, QAction, QFileDialog,
-                             QHeaderView, QInputDialog, QLineEdit, QMessageBox,
-                             QToolTip)
-from qgis.core import (Qgis, QgsFeature, QgsFeatureRequest, QgsField,
-                       QgsGeometry, QgsMarkerSymbol, QgsPalLayerSettings,
-                       QgsPointXY, QgsProject, QgsPropertyCollection,
-                       QgsVectorFileWriter, QgsVectorLayer,
-                       QgsVectorLayerSimpleLabeling, QgsWkbTypes)
+from PyQt5.QtWidgets import (
+    QAbstractItemView,
+    QAction,
+    QFileDialog,
+    QHeaderView,
+    QInputDialog,
+    QLineEdit,
+    QMessageBox,
+    QToolTip,
+)
+from qgis.core import (
+    Qgis,
+    QgsFeature,
+    QgsFeatureRequest,
+    QgsField,
+    QgsGeometry,
+    QgsMarkerSymbol,
+    QgsPalLayerSettings,
+    QgsPointXY,
+    QgsProject,
+    QgsPropertyCollection,
+    QgsVectorFileWriter,
+    QgsVectorLayer,
+    QgsVectorLayerSimpleLabeling,
+    QgsWkbTypes,
+)
 from qgis.gui import QgsRubberBand
 
 from ..imports.coordinateTool import CoordinateTool
@@ -527,6 +556,7 @@ class PresetTool(QObject):
         self.clear_preview_spots()
 
     def add_preset_point(self, pt):
+        print("al;skdjf;alskdjf;alskdf;alsdf;alskf;aslk;alsdf;alskdfa;lskdf;alskdf;alskf;aslk")
         comment = self.get_comment(0)
         if self.dock.Opt_Comment_Popup.isChecked():
             comment, okPressed = QInputDialog.getText(None, "Input Comment", "Comment: ", QLineEdit.Normal, comment)
@@ -1096,8 +1126,6 @@ class PresetTool(QObject):
             # self.canvas.setCursor(Qt.CrossCursor)
 
     def handle_clicked(self, pt):
-        print("click", pt, f"preset: {self.preset_layer}")
-        print("preview: ", self.preview)
         self.preview.remove_objects()
 
         if self.preset_layer is None:
@@ -1106,6 +1134,7 @@ class PresetTool(QObject):
 
         if self.flag_cancel_moving_spot:
             self.flag_cancel_moving_spot = False
+            self.update_preview_cursor()
             return
 
         self.update_preview_cursor()
@@ -1133,7 +1162,6 @@ class PresetTool(QObject):
 
     def handle_move_point_start(self, e):
         if not self.preset_layer:
-            print("handle_move_point: no preset")
             return
 
         self.preview.reset(moving=True)
@@ -1194,10 +1222,12 @@ class PresetTool(QObject):
 
         self.preview.reset()
 
+        # Update cursor
+        cursor = Qt.CrossCursor
         if self.state_shift_key:
-            self.canvas.setCursor(Qt.OpenHandCursor)
-        else:
-            self.canvas.setCursor(Qt.CrossCursor)
+            cursor = Qt.OpenHandCursor
+        self.canvas.setCursor(cursor)
 
         self.update_undo_btn_state()
         self.flag_cancel_moving_spot = False
+        self.feature_id = None

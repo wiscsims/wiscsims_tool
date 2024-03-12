@@ -21,6 +21,7 @@
  *                                                                         *
  ***************************************************************************/
 """
+
 import json
 import math
 import os
@@ -295,13 +296,13 @@ class WiscSIMSTool:
 
         self.imp = ImportTool(self.dockwidget, self.canvas)
         self.preset = PresetTool(self.dockwidget, self.canvas)
-        self.pst = PixelSizeTool(self.dockwidget, self.canvas)
+        self.pxsizetool = PixelSizeTool(self.dockwidget, self.canvas)
 
         self.create_ui_connections()
         self.create_legend_connections()
 
         # Signal handlers
-        self.pst.setPixelSize.connect(self.preset.handle_set_pixel_size)
+        self.pxsizetool.setPixelSize.connect(self.preset.handle_set_pixel_size)
         self.imp.setActiveLayer.connect(self.handle_set_active_layer)
 
         # show the dockwidget
@@ -481,7 +482,7 @@ class WiscSIMSTool:
     def handle_tool_changed(self, idx):
         self.current_tool = self.get_current_tool(idx)
         self.preset.handle_tool_changed(self.current_tool)
-        self.pst.reset()
+        self.pxsizetool.reset()
 
     def toggle_raster_layer_visible_state(self, state):
         selected_layers = self.iface.layerTreeView().selectedLayers()
@@ -546,7 +547,7 @@ class WiscSIMSTool:
             self.preset.handle_clicked(pt)
 
         elif self.current_tool == "pixelsize":
-            self.pst.handle_selecting_point(pt)
+            self.pxsizetool.handle_selecting_point(pt)
             return
 
         elif self.current_tool == "import":
@@ -555,47 +556,12 @@ class WiscSIMSTool:
         if self.current_tool != "preset":
             self.reset_preset_points()
 
-        # self.preview.remove_objects()
-        #
-        # if self.get_preset_layer() is None:
-        #     # preset layer has not been selected yet
-        #     return
-        #
-        # if self.flag_cancel_moving_spot:
-        #     self.flag_cancel_moving_spot = False
-        #     return
-        #
-        # self.update_preview_cursor()
-        #
-        # if self.current_preset_mode == "point":
-        #     self.add_preset_point(pt)
-        #
-        # elif self.current_preset_mode == "line":
-        #     if self.line_in_progress:
-        #         # select end-point
-        #         self.show_tooltip("line-end")
-        #         self.preset_line(pt, True)
-        #     else:
-        #         # select start-point
-        #         self.show_tooltip("line-start")
-        #         self.start_point = []
-        #         self.end_point = []
-        #         # elif self.start_point and self.end_point:
-        #         self.preset_line(pt)
-        #         # else:
-        #         pass
-        #         #
-        # elif self.current_preset_mode == "grid":
-        #     self.preset_points = []
-        #     self.init_rb_line()
-        #     self.preset_grid(pt)
-
     def canvasClickedRight(self, pt):
         self.canvasClicked(pt)
 
     def canvasMoved(self, pt):
         if self.current_tool == "pixelsize":
-            self.pst.handle_cursor_moved(pt)
+            self.pxsizetool.handle_cursor_moved(pt)
             return
 
         if self.current_tool == "import":
