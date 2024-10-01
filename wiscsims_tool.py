@@ -61,7 +61,7 @@ from qgis.core import (
 from qgis.gui import QgsRubberBand
 
 # Initialize Qt resources from file resources.py
-from .resources import *  # noqa: F401, F403
+from .resources import *
 from .tools.canvasMapTool import CanvasMapTool
 from .tools.imports.importTool import ImportTool
 
@@ -110,9 +110,9 @@ class WiscSIMSTool:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr("&WiscSIMS")
+        self.menu = self.tr("&WiscSIMS - menu")
         # TODO: We are going to let the user set this up in a future iteration
-        self.toolbar = self.iface.addToolBar("WiscSIMS")
+        self.toolbar = self.iface.addToolBar("WiscSIMS - toolbar")
         self.toolbar.setObjectName("WiscSIMS Tool")
 
         self.pluginIsActive = False
@@ -131,6 +131,9 @@ class WiscSIMSTool:
 
         self.current_tool = "preset"
 
+        self.state_shift_key = False
+        self.state_alt_key = False
+
     # noinspection PyMethodMayBeStatic
 
     def tr(self, message):
@@ -145,16 +148,16 @@ class WiscSIMSTool:
         :rtype: QString
         """
         # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
-        return QCoreApplication.translate("WiscSIMS Tool", message)
+        return QCoreApplication.translate("WiscSIMS Tool (tr)", message)
 
     def add_action(
         self,
-        icon_path,
-        text,
+        icon_path: str,
+        text: str,
         callback,
-        enabled_flag=True,
-        add_to_menu=True,
-        add_to_toolbar=True,
+        enabled_flag: bool = True,
+        add_to_menu: bool = True,
+        add_to_toolbar: bool = True,
         status_tip=None,
         whats_this=None,
         parent=None,
@@ -226,7 +229,8 @@ class WiscSIMSTool:
 
         self.wiscsims_tool_action = self.add_action(
             icon_path,
-            text=self.tr("WiscSIMS Tool"),
+            # text=self.tr("WiscSIMS Tool (initGui)"),
+            text="WiscSIMS Tool (initGui)",
             callback=self.run,
             parent=self.iface.mainWindow(),
         )
@@ -412,10 +416,13 @@ class WiscSIMSTool:
             # when the user activate the WiscSIMS Tool
             self.prev_tool = self.canvas.mapTool()
             self.wiscsims_tool_action.setChecked(True)
-            self.canvasMapTool = CanvasMapTool(self.canvas, self.wiscsims_tool_action)
+            self.canvasMapTool = CanvasMapTool(self.canvas)
 
             self.canvas.mapToolSet.connect(self.mapToolChanged)
             self.canvasMapTool.canvasClicked.connect(self.canvasClicked)  # released
+
+            self.canvasMapTool.canvasPressed.connect(self.handle_canvas_pressed)  # pressed
+            self.canvasMapTool.canvasReleased.connect(self.handle_canvas_released)  # released
 
             # start moving spot
             self.canvasMapTool.canvasClickedWShift.connect(self.canvasClickedWShift)
@@ -543,10 +550,10 @@ class WiscSIMSTool:
         self.state_alt_key = False
 
     def canvasClicked(self, pt):
-        if self.current_tool == "preset":
-            self.preset.handle_clicked(pt)
+        # if self.current_tool == "preset":
+        # self.preset.handle_clicked(pt)
 
-        elif self.current_tool == "pixelsize":
+        if self.current_tool == "pixelsize":
             self.pxsizetool.handle_selecting_point(pt)
             return
 
@@ -564,11 +571,12 @@ class WiscSIMSTool:
             self.pxsizetool.handle_cursor_moved(pt)
             return
 
-        if self.current_tool == "import":
+        elif self.current_tool == "import":
             return
 
-        # tool = Preset
-        self.preset.handle_cursor_moved(pt)
+        elif self.current_tool == "preset":
+            self.preset.handle_mouse_moved(pt)
+            # self.preset.handle_cursor_moved(pt)
 
     def canvasShiftKeyState(self, state):
         #
@@ -579,7 +587,8 @@ class WiscSIMSTool:
 
         self.state_shift_key = state
 
-        self.preset.handle_shiftKey_state_changed(state)
+        # self.preset.handle_shiftKey_state_changed(state)
+        self.preset.handle_shift_key_state_changed(state)
 
     def canvasCtrlKeyState(self, state):
         #
@@ -601,3 +610,13 @@ class WiscSIMSTool:
 
     def canvasEscapeKeyState(self):
         self.preset.clear_preview_spots(init=False)
+
+    def handle_canvas_released(self, pt: QgsPointXY):
+        print("released")
+        if self.current_tool == "preset":
+            self.preset.handle_mouse_released(pt)
+
+    def handle_canvas_pressed(self, pt: QgsPointXY):
+        print("pressed", self.current_tool)
+        if self.current_tool == "preset":
+            self.preset.handle_mouse_pressed(pt)

@@ -21,13 +21,26 @@
  *                                                                         *
  ***************************************************************************/
 """
+
 from PyQt5.QtCore import QVariant
 from PyQt5.QtGui import QColor
-from qgis.core import (QgsDataProvider, QgsDrawSourceEffect,
-                       QgsDropShadowEffect, QgsEffectStack, QgsFeature,
-                       QgsField, QgsGeometry, QgsMapLayer, QgsMarkerSymbol,
-                       QgsPalLayerSettings, QgsProject, QgsPropertyCollection,
-                       QgsVectorLayer, QgsVectorLayerSimpleLabeling)
+from qgis.core import (
+    QgsDataProvider,
+    QgsDrawSourceEffect,
+    QgsDropShadowEffect,
+    QgsEffectStack,
+    QgsFeature,
+    QgsField,
+    QgsGeometry,
+    QgsMapLayer,
+    QgsMarkerSymbol,
+    QgsPalLayerSettings,
+    QgsProject,
+    QgsPropertyCollection,
+    QgsVectorLayer,
+    QgsVectorLayerSimpleLabeling,
+    Qgis,
+)
 
 
 class PresetPreview:
@@ -44,6 +57,14 @@ class PresetPreview:
 
         # if self.preset_layer:
         self.create()
+
+        self.colors = {
+            "spot_fill_normal": QColor(64, 143, 176, 102),  # light blue
+            "spot_stroke": QColor(255, 255, 255),  # white
+            "spot_fill_move": QColor(96, 180, 84, 102),  # vegas gold
+            "comment_stroke": QColor(255, 255, 255),  # white
+            "comment_fill": QColor(255, 0, 0),  # white
+        }
 
     def __del__(self):
         self.cleanup_old_layers()
@@ -103,12 +124,26 @@ class PresetPreview:
         settings.displayAll = True
         coll = QgsPropertyCollection("preview")
         coll.setProperty(settings.Size, 20)
-        coll.setProperty(settings.ShadowDraw, True)
+        # coll.setProperty(settings.ShadowDraw, True)
+        # coll.setProperty(settings.Color, QColor(255, 255, 255)) # <- whilte
+        coll.setProperty(settings.Color, QColor(255, 0, 0))
+
         coll.setProperty(settings.BufferDraw, True)
-        coll.setProperty(settings.Color, QColor(255, 255, 255))
-        coll.setProperty(settings.BufferColor, QColor(0, 0, 0))
+        # coll.setProperty(settings.BufferColor, QColor(0, 0, 0))
+        coll.setProperty(settings.BufferColor, QColor(255, 255, 255))
+
+        # rendering: overlap
+        plmt = settings.placementSettings()
+        plmt.setOverlapHandling(Qgis.LabelOverlapHandling.AllowOverlapAtNoCost)
+        settings.setPlacementSettings(plmt)
+
+        # placement: obstacle
+        obs = settings.obstacleSettings()
+        obs.setIsObstacle(False)
+        settings.setObstacleSettings(obs)
+
         settings.setDataDefinedProperties(coll)
-        self.preview_layer.setLabelsEnabled(True)
+        self.preview_layer.setLabelsEnabled(True)  # TODO
         self.preview_layer.setLabeling(QgsVectorLayerSimpleLabeling(settings))
         self.preview_layer.updateExtents()
         self.preview_layer.commitChanges()
@@ -134,8 +169,11 @@ class PresetPreview:
             return
 
         symbol = self.preview_layer.renderer().symbol()
-        symbol.symbolLayer(0).setStrokeColor(QColor(255, 255, 255))  # stroke: black
-        symbol.setColor(QColor(64, 143, 176, 102))  # fill: light blue
+        symbol.symbolLayer(0).setStrokeColor(QColor(255, 255, 255))  # stroke: while
+        if moving:
+            symbol.setColor(QColor(96, 180, 84, 102))  # fill: vegas yellow?
+        else:
+            symbol.setColor(QColor(64, 143, 176, 102))  # fill: light blue
 
     def update_layer(self, new_layer):
         self.preset_layer = new_layer
@@ -225,3 +263,10 @@ class PresetPreview:
 
         self.sc_dp.changeGeometryValues({feature_id[0]: geom})
         self.preview_layer.triggerRepaint()
+
+    def toggle_comment_preview(self):
+        current_status = self.preview_layer.labelsEnabled()
+        print("xxxxxxxxxxxxxx", current_status)
+        self.preview_layer.setLabelsEnabled(not current_status)  # TODO
+        self.preview_layer.updateExtents()
+        self.preview_layer.commitChanges()

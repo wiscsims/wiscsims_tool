@@ -79,8 +79,19 @@ Manual installation is also available.
 Activate **`WiscSIMS Tool`** from toolbar or menu `plugins` > `WiscSIMS` > `WiscSIMS Tool`.
 
 ### Import Data
+After SIMS session at the WiscSIMS, you can import SIMS data from Excel file which is provided by WiscSIMS to the QGIS maps you used in the SIMS session. 
 
-_To be updated_
+#### Alignment file
+
+#### Excel file
+
+#### Data range
+
+- Regular expression to extract data
+- xxx
+- XXXX
+
+
 
 ### Preset (pre-select SIMS spots on QGIS maps)
 
@@ -118,6 +129,12 @@ There are three types of preset mode, Point, Line and Grid in WiscSIMS Tool. You
 #### Undo
 
 Undo for added point(s) is avaiable when `Undo` button is active. Currently, a maximum of 100 undo is possible.
+
+#### Modify spot locations
+
+Use _built-in_ <a href="https://sites.google.com/a/wisc.edu/wiscsims-micro-qgis/learn-to-use-qgis/editing/selecting-objects" target="_blank">`Select and Move Features`</a>.
+
+### <span style="color: red;">⬇️ ONLY FOR INSTALLED BY .zip VERSION</span>
 
 #### Modify spot locations
 

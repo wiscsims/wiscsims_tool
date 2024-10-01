@@ -28,18 +28,46 @@ import os
 import os.path
 import re
 
-from PyQt5.QtCore import (QCoreApplication, QModelIndex, QObject, QRect,
-                          QSettings, QSize, Qt, QTranslator, QVariant,
-                          pyqtSignal, qVersion)
+from PyQt5.QtCore import (
+    QCoreApplication,
+    QModelIndex,
+    QObject,
+    QRect,
+    QSettings,
+    QSize,
+    Qt,
+    QTranslator,
+    QVariant,
+    pyqtSignal,
+    qVersion,
+)
 from PyQt5.QtGui import QColor, QCursor, QIcon, QPixmap
-from PyQt5.QtWidgets import (QAbstractItemView, QAction, QFileDialog,
-                             QHeaderView, QInputDialog, QLineEdit, QMessageBox,
-                             QToolTip)
-from qgis.core import (Qgis, QgsFeature, QgsFeatureRequest, QgsField,
-                       QgsGeometry, QgsMarkerSymbol, QgsPalLayerSettings,
-                       QgsPointXY, QgsProject, QgsPropertyCollection,
-                       QgsVectorFileWriter, QgsVectorLayer,
-                       QgsVectorLayerSimpleLabeling, QgsWkbTypes)
+from PyQt5.QtWidgets import (
+    QAbstractItemView,
+    QAction,
+    QFileDialog,
+    QHeaderView,
+    QInputDialog,
+    QLineEdit,
+    QMessageBox,
+    QToolTip,
+)
+from qgis.core import (
+    Qgis,
+    QgsFeature,
+    QgsFeatureRequest,
+    QgsField,
+    QgsGeometry,
+    QgsMarkerSymbol,
+    QgsPalLayerSettings,
+    QgsPointXY,
+    QgsProject,
+    QgsPropertyCollection,
+    QgsVectorFileWriter,
+    QgsVectorLayer,
+    QgsVectorLayerSimpleLabeling,
+    QgsWkbTypes,
+)
 from qgis.gui import QgsRubberBand
 
 from ..layerTool import LayerTool

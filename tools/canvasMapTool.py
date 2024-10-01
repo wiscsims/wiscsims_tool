@@ -10,6 +10,9 @@ from qgis.gui import QgsMapTool, QgsRubberBand
 
 class CanvasMapTool(QgsMapTool):
     # Mouse Event
+    canvasPressed = pyqtSignal("QgsPointXY")
+    canvasReleased = pyqtSignal("QgsPointXY")
+
     canvasClicked = pyqtSignal("QgsPointXY")
     canvasClickedWShift = pyqtSignal("QgsMapMouseEvent")
     canvasReleaseWShift = pyqtSignal("QgsMapMouseEvent")
@@ -29,33 +32,9 @@ class CanvasMapTool(QgsMapTool):
     state_alt = False
     state_shift = False
 
-    fov_size = [1392, 1040]  # pixel size of BadgerScope's field of view
-
-    def __init__(self, canvas, toolbarBtn):
+    def __init__(self, canvas):
         QgsMapTool.__init__(self, canvas)
         self.canvas = canvas
-
-        self.refPoints = {
-            "main": {
-                "xy": {"ref1": [], "ref2": []},
-                "obj": {"ref1": None, "ref2": None},
-            },
-            "sub": {
-                "xy": {"ref1": [], "ref2": []},
-                "obj": {"ref1": None, "ref2": None},
-            },
-        }
-
-        self.fov = None
-        self.fovColor = QColor(255, 255, 255, 255)
-
-        self.currentPoint = None
-
-        self.lip = None
-        self.sweetspot = None
-        self.spot = None
-        self.spotColor = QColor(0, 255, 255, 200)
-        self.refpoint2 = [None, None]
 
     def keyPressEvent(self, e):
         # if e.key() == 16777248:  # Shift
@@ -70,10 +49,7 @@ class CanvasMapTool(QgsMapTool):
             # display spot preview
             self.canvasCtrlKeyState.emit(True)
             self.state_ctrl = True
-        elif (
-            QtWidgets.QApplication.keyboardModifiers() == Qt.ControlModifier
-            and e.key() == Qt.Key_Z
-        ):
+        elif QtWidgets.QApplication.keyboardModifiers() == Qt.ControlModifier and e.key() == Qt.Key_Z:
             # Undo
             self.canvasUndoKey.emit()
         return
@@ -96,6 +72,8 @@ class CanvasMapTool(QgsMapTool):
             self.canvasEscapeKeyState.emit()
 
     def canvasPressEvent(self, event):
+        pt = self.getMapCoordinates(event)
+        self.canvasPressed.emit(pt)
         if QtWidgets.QApplication.keyboardModifiers() == Qt.ShiftModifier:
             self.canvasClickedWShift.emit(event)
             return
@@ -108,12 +86,12 @@ class CanvasMapTool(QgsMapTool):
     def canvasReleaseEvent(self, event):
         pt = self.getMapCoordinates(event)
 
+        self.canvasReleased.emit(pt)
+
         if event.button() == Qt.RightButton:
             self.canvasClickedRight.emit(pt)
         else:
-            if QtWidgets.QApplication.keyboardModifiers() == (
-                Qt.ShiftModifier | Qt.AltModifier
-            ):
+            if QtWidgets.QApplication.keyboardModifiers() == (Qt.ShiftModifier | Qt.AltModifier):
                 self.canvasReleaseWAltShift.emit(event)
             elif QtWidgets.QApplication.keyboardModifiers() == Qt.ShiftModifier:
                 self.canvasReleaseWShift.emit(event)

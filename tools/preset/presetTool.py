@@ -117,6 +117,16 @@ class PresetTool(QObject):
 
         self.state_shift_key = False
         self.state_alt_key = False
+
+        self.shift_key = False
+        self.alt_key = False
+
+        self.mouse_left = False
+        self.mouse_right = False
+
+        self.relocating_spot = False
+        self.line_end_selecting = False
+
         self.mouse_move_counter = 0
         self.move_throttling_threshold = 3
 
@@ -154,6 +164,7 @@ class PresetTool(QObject):
 
         ### Point
         self.dock.Opt_Point_Preview.stateChanged.connect(self.handle_change_PointPreview)
+        self.dock.Opt_Comment_Preview.stateChanged.connect(self.handle_change_CommentPreview)
 
         ### Line
         self.dock.Spn_Line_Step_Size.valueChanged.connect(self.update_line)
@@ -481,6 +492,9 @@ class PresetTool(QObject):
         # state 0: Unchecked, 2: Checked
         self.update_preview_cursor(0)
 
+    def handle_change_CommentPreview(self):
+        self.preview.toggle_comment_preview()
+
     def get_preset_mode(self, idx=-1):
         if idx < 0:
             idx = self.dock.Tab_Preset_Mode.currentIndex()
@@ -556,7 +570,6 @@ class PresetTool(QObject):
         self.clear_preview_spots()
 
     def add_preset_point(self, pt):
-        print("al;skdjf;alskdjf;alskdf;alsdf;alskf;aslk;alsdf;alskdfa;lskdf;alskdf;alskf;aslk")
         comment = self.get_comment(0)
         if self.dock.Opt_Comment_Popup.isChecked():
             comment, okPressed = QInputDialog.getText(None, "Input Comment", "Comment: ", QLineEdit.Normal, comment)
@@ -565,7 +578,8 @@ class PresetTool(QObject):
         self.preset_points = [[comment, pt[0], pt[1]]]
         self.preview.remove_objects()
         self.add_preset_points()
-        # get latest comment for next spot
+
+        """ comment for next spot """
         comment = self.get_comment(0)
         if self.dock.Opt_Point_Preview.isChecked():
             self.preview.add_points([[self.cursor_pos, comment]])
@@ -1033,7 +1047,34 @@ class PresetTool(QObject):
         layer.changeAttributeValue(f_id, field_idx, new_comment)
         layer.commitChanges()
 
+    def update_cursor(self):
+        self.preview.reset()
+
+        if not self.active or self.preset_layer is None:
+            self.canvas.setCursor(Qt.CrossCursor)
+            return
+
+        if self.shift_key:
+            if self.mouse_left:
+                """ during relocation """
+                self.canvas.setCursor(Qt.ClosedHandCursor)
+                # spot preview with comment
+            else:
+                """ before relocation """
+                self.canvas.setCursor(Qt.OpenHandCursor)
+                # no spot preview
+        else:
+            """ Cancel relocation """
+            self.reset_preset_points()
+            self.canvas.setCursor(Qt.CrossCursor)
+        # - normal preview
+        #
+        # -
+        pass
+
     def handle_cursor_moved(self, pt):
+        return
+
         if self.preset_layer is None:
             return
 
@@ -1075,8 +1116,24 @@ class PresetTool(QObject):
 
         self.clear_preview_spots(init=False)
 
+    def handle_shift_key_state_changed(self, state):
+        self.shift_key = state
+
+        print("shift changed", self.shift_key, self.mouse_left)
+
+        self.update_cursor()
+        if self.current_preset_mode == "point":
+            if self.shift_key:
+                pass
+
+            elif self.mouse_left:
+                # shift released during the dragging to relocate spot
+                print("Cancel moving spot")
+                # Cancel moving spot
+        else:
+            pass
+
     def handle_shiftKey_state_changed(self, state):
-        #
         # Move spot (drag and drop)
         #
         # Widnows/Linux/MacOS: Shift key
@@ -1105,6 +1162,7 @@ class PresetTool(QObject):
             # self.canvas.setCursor(Qt.CrossCursor)
 
     def handle_altKey_state_changed(self, state):
+        self.alt_key = state
         #
         # Edit spot (modify comment, delete post)
         #
@@ -1125,7 +1183,81 @@ class PresetTool(QObject):
             self.update_preview_cursor()
             # self.canvas.setCursor(Qt.CrossCursor)
 
+    def handle_mouse_moved(self, pt: QgsPointXY):
+        if not self.preset_layer:
+            return
+
+        # print(".", end="", flush=True)
+
+        if self.mouse_move_counter < 5:
+            self.mouse_move_counter += 1
+            return
+        self.mouse_move_counter = 0
+
+        # print("*", end="", flush=True)
+
+        if self.line_end_selecting:
+            # update RB segment and preview spots
+            print("line end selecting")
+            return
+        else:
+            # cursor with preview spot
+            # moving preset point
+            if (self.relocating_spot and self.feature_id) or self.dock.Opt_Point_Preview.isChecked():
+                if self.feature_id:
+                    pt.set(pt.x() + self.movement_offset[0], pt.y() + self.movement_offset[1])
+                self.preview.update_position(pt)
+
+        # flags
+        # - point
+        #   - relocating spot
+        # - line
+        #   - selecting end point
+
+    def handle_mouse_pressed(self, pt):
+        self.mouse_left = True
+        mode = self.get_preset_mode()
+        print("mode", mode)
+        # print(f"pressed at: {pt}, mode: {mode}, shift: {self.shift_key}, alt: {self.alt_key}, mouse: {self.mouse_left}")
+        if mode == "point":
+            if self.shift_key:
+                # start moving spot
+                print("start relocating spot")
+                self.relocating_spot = True
+                self.initiate_relocation(pt)
+            else:
+                self.add_preset_point(pt)
+                pass
+
+    def handle_mouse_released(self, pt):
+        self.mouse_left = False
+
+        if self.preset_layer is None:
+            return
+
+        mode = self.get_preset_mode()
+
+        # print(
+        #     f"released at: {pt}, mode: {mode}, shift: {self.shift_key}, alt: {self.alt_key}, mouse: {self.mouse_left}"
+        # )
+        if mode == "point":
+            if self.shift_key:
+                # end moving point
+                print("end relocating spot")
+                self.relocating_spot = False
+            elif self.alt_key:
+                print("Edit spot")
+                # edit spot
+            else:
+                # add spot
+                print("Add spot")
+
+        else:
+            pass
+            # print(self.current_tool)
+
     def handle_clicked(self, pt):
+        return
         self.preview.remove_objects()
 
         if self.preset_layer is None:
@@ -1160,7 +1292,89 @@ class PresetTool(QObject):
             self.init_rb_line()
             self.preset_grid(pt)
 
+    def initiate_relocation(self, pt):
+        print("relocating...", pt)
+        if not self.preset_layer:
+            return
+
+        self.preview.reset(moving=True)
+        self.init_rb_line()
+
+        """
+        finding features near cursor
+        """
+        cursor_geom = QgsGeometry.fromPointXY(pt)
+        # print("cursor geom:", cursor_geom)
+        self.movement_offst = [0, 0]
+        features = self.get_near_features(self.preset_layer, cursor_geom)
+
+        if len(features) == 0:
+            # do nothing
+            print("no features")
+            return
+
+        self.canvas.setCursor(Qt.ClosedHandCursor)
+
+        """
+        get closet feature
+        """
+        feature = features[-1]  # select uppermost feature
+        geom = feature.geometry()
+        pt = geom.asPoint()
+        cursor_geom_p = cursor_geom.asPoint()
+        self.movement_offset = [
+            pt.x() - cursor_geom_p.x(),
+            pt.y() - cursor_geom_p.y(),
+        ]
+        self.feature_id = feature.id()
+        # Select target spot
+        self.preset_layer.selectByIds([self.feature_id], QgsVectorLayer.SetSelection)
+
+        comment = [f["Comment"] for f in self.preset_layer.getFeatures(QgsFeatureRequest(self.feature_id))][0]
+        point = [pt, comment]
+
+        """
+        add the point to preview layer
+        """
+        self.preview.add_points([point])
+
+    def handle_finish_relocation(self, pt: QgsPointXY):
+        if self.feature_id is None:
+            return
+
+        # Get coordinate of feature for undo
+        original_geo = [f.geometry() for f in self.preset_layer.getFeatures() if f.id() == self.feature_id][0]
+
+        # movement_offset = offset between the center of the feature and cursor
+        # Cursor doesn't always grab the center of the feature
+        pt.set(pt.x() + self.movement_offset[0], pt.y() + self.movement_offset[1])
+        geom = QgsGeometry.fromPointXY(pt)
+
+        self.preset_layer.startEditing()
+        self.preset_layer.dataProvider().changeGeometryValues({self.feature_id: geom})
+        self.preset_layer.commitChanges()
+
+        self.preset_layer.removeSelection()
+
+        """ Add ot undo list """
+        undo_data = {"id": self.feature_id, "geom": original_geo}
+        self.add_to_undo("movement", undo_data)
+
+        self.preview.reset()
+
+        # Update cursor
+        cursor = Qt.CrossCursor
+        if self.state_shift_key:
+            cursor = Qt.OpenHandCursor
+        self.canvas.setCursor(cursor)
+
+        self.update_undo_btn_state()
+        self.flag_cancel_moving_spot = False
+        self.feature_id = None
+
     def handle_move_point_start(self, e):
+        return
+        print("handle move point start", e)
         if not self.preset_layer:
             return
 

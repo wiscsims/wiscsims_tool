@@ -7,7 +7,7 @@
 # This file should be included when you package your plugin.# Mandatory items:
 
 [general]
-name=WiscSIMS Tool
+name=WiscSIMS Tool2
 qgisMinimumVersion=3.4
 description=Useful QGIS tools for WiscSIMS sessions
 version=3.2.x
