@@ -8,20 +8,19 @@ import math
 
 
 class CanvasMapTool(QgsMapTool):
-
     # Mouse Event
-    canvasClicked = pyqtSignal('QgsPointXY')
-    canvasClickedWShift = pyqtSignal('QgsMapMouseEvent')
-    canvasReleaseWShift = pyqtSignal('QgsMapMouseEvent')
-    canvasReleaseWAlt = pyqtSignal('QgsMapMouseEvent')
-    canvasReleaseWAltShift = pyqtSignal('QgsMapMouseEvent')
-    canvasClickedRight = pyqtSignal('QgsPointXY')
-    canvasMoved = pyqtSignal('QgsPointXY')
+    canvasClicked = pyqtSignal("QgsPointXY")
+    canvasClickedWShift = pyqtSignal("QgsMapMouseEvent")
+    canvasReleaseWShift = pyqtSignal("QgsMapMouseEvent")
+    canvasReleaseWAlt = pyqtSignal("QgsMapMouseEvent")
+    canvasReleaseWAltShift = pyqtSignal("QgsMapMouseEvent")
+    canvasClickedRight = pyqtSignal("QgsPointXY")
+    canvasMoved = pyqtSignal("QgsPointXY")
 
     # Key Event
-    canvasCtrlKeyState = pyqtSignal('bool')
-    canvasShiftKeyState = pyqtSignal('bool')
-    canvasAltKeyState = pyqtSignal('bool')
+    canvasCtrlKeyState = pyqtSignal("bool")
+    canvasShiftKeyState = pyqtSignal("bool")
+    canvasAltKeyState = pyqtSignal("bool")
     canvasEscapeKeyState = pyqtSignal()
     canvasUndoKey = pyqtSignal()  # Ctrl/Cmd-Z
 
@@ -33,9 +32,7 @@ class CanvasMapTool(QgsMapTool):
         QgsMapTool.__init__(self, canvas)
         self.canvas = canvas
 
-        self.plColor = [QColor(255, 20, 20, 250),
-                        QColor(20, 20, 255, 250),
-                        QColor(20, 255, 20, 250)]
+        self.plColor = [QColor(255, 20, 20, 250), QColor(20, 20, 255, 250), QColor(20, 255, 20, 250)]
         self.refPoints = {
             "main": {
                 "xy": {"ref1": [], "ref2": []},
@@ -44,7 +41,7 @@ class CanvasMapTool(QgsMapTool):
             "sub": {
                 "xy": {"ref1": [], "ref2": []},
                 "obj": {"ref1": None, "ref2": None},
-            }
+            },
         }
 
         self.fov = None
@@ -174,9 +171,8 @@ class CanvasMapTool(QgsMapTool):
             else:
                 tl.setIcon(QgsRubberBand.ICON_X)
             tl.setColor(col[i])
-            tl.addPoint(QgsPoint(self.refPoints[aln]["xy"][i][0],
-                                 self.refPoints[aln]["xy"][i][1]), True)
-            self.refPoints[aln]['obj'][i] = tl
+            tl.addPoint(QgsPoint(self.refPoints[aln]["xy"][i][0], self.refPoints[aln]["xy"][i][1]), True)
+            self.refPoints[aln]["obj"][i] = tl
 
     def displayReferencePoint(self, onoff):
         pass
@@ -185,8 +181,7 @@ class CanvasMapTool(QgsMapTool):
         r = math.radians(-th)
         cos = math.cos(r)
         sin = math.sin(r)
-        return [pt[0] * cos - pt[1] * sin + offset[0],
-                pt[0] * sin + pt[1] * cos + offset[1]]
+        return [pt[0] * cos - pt[1] * sin + offset[0], pt[0] * sin + pt[1] * cos + offset[1]]
 
     def setFOVColor(self, colorName):
         self.fovColor = QColor(colorName)
@@ -198,11 +193,10 @@ class CanvasMapTool(QgsMapTool):
         return self.fovColor
 
     def calcFOV(self, center, scale=1, rotation=0, offset=[696, 520]):
-
         fovPx = [1392, 1040]  # pixel size of BadgerScope's field of view
 
         # size of field of view
-        baseSize = 494   # micron
+        baseSize = 494  # micron
         hFactor = 0.803212851  # height 396.8
         width = baseSize / scale
         height = baseSize * hFactor / scale
@@ -222,7 +216,6 @@ class CanvasMapTool(QgsMapTool):
         return (pt1, pt2, pt3, pt4)  # (TL, TR, BR, BL)
 
     def drawFieldOfView(self, center, scale=1, rotation=0, offset=[696, 520]):
-
         pt1, pt2, pt3, pt4 = self.calcFOV(center, scale, rotation, offset)
 
         self.removeFieldOfView()
@@ -261,8 +254,7 @@ class CanvasMapTool(QgsMapTool):
             x = a * math.cos(math.radians(t))
             y = b * math.sin(math.radians(t))
             tmp = self.rotateCoordinates([x, y], -rotation)
-            self.spot.addPoint(QgsPoint(tmp[0] + center[0],
-                                        tmp[1] + center[1]))
+            self.spot.addPoint(QgsPoint(tmp[0] + center[0], tmp[1] + center[1]))
         self.spot.setBorderColor(self.spotColor)
         self.spot.setFillColor(QColor(255, 0, 0, 0))
         self.spot.setWidth(linewidth)
@@ -271,8 +263,7 @@ class CanvasMapTool(QgsMapTool):
         if self.spot:
             self.spot.reset()
 
-    def drawCircle(self, center, radius, color=QColor(255, 255, 0, 255),
-                   linewidth=1):
+    def drawCircle(self, center, radius, color=QColor(255, 255, 0, 255), linewidth=1):
         rb = QgsRubberBand(self.canvas, Qgis.Polygon)
         for t in range(0, 362, 2):
             x = radius * math.cos(math.radians(t)) + center[0]
@@ -289,24 +280,21 @@ class CanvasMapTool(QgsMapTool):
             rb.reset()
             rb = None
 
-    def showLip(self, center, radius, color=QColor(255, 255, 0, 255),
-                linewidth=1):
+    def showLip(self, center, radius, color=QColor(255, 255, 0, 255), linewidth=1):
         self.lip = self.drawCircle(center, radius, color, linewidth)
         return self.lip
 
     def hideLip(self):
         self.removeRB(self.lip)
 
-    def showSweetSpot(self, center, radius, color=QColor(255, 0, 255, 255),
-                      linewidth=2):
+    def showSweetSpot(self, center, radius, color=QColor(255, 0, 255, 255), linewidth=2):
         self.sweetspot = self.drawCircle(center, radius, color, linewidth)
         return self.sweetspot
 
     def hideSweetSpot(self):
         self.removeRB(self.sweetspot)
 
-    def drawLip(self, center, radius, color=QColor(255, 255, 0, 255),
-                linewidth=1):
+    def drawLip(self, center, radius, color=QColor(255, 255, 0, 255), linewidth=1):
         return self.drawCircle(self.lip, center, radius, color, linewidth)
 
     def drawCurrentPoint(self, pt):

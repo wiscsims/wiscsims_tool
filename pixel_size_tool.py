@@ -8,14 +8,11 @@ from PyQt5.QtCore import Qt, pyqtSignal
 
 import os
 
-FORM_CLASS, _ = uic.loadUiType(
-    os.path.join(os.path.dirname(__file__), "pixel_size_tool.ui")
-)
+FORM_CLASS, _ = uic.loadUiType(os.path.join(os.path.dirname(__file__), "pixel_size_tool.ui"))
 
 
 class PixelSizeTool(QtWidgets.QDialog, FORM_CLASS):
-
-    setPxSize = pyqtSignal('float')
+    setPxSize = pyqtSignal("float")
     canceled = pyqtSignal()
 
     # closingPlugin = pyqtSignal()
@@ -42,14 +39,14 @@ class PixelSizeTool(QtWidgets.QDialog, FORM_CLASS):
         # get default text color by hex
         self.original_text_color = self.Grp_Step1.palette().text().color().name(0)
         # self.emphasize_color = 'F7A400'  # orange
-        self.emphasize_color = 'C43C39'  # red
+        self.emphasize_color = "C43C39"  # red
 
         self.btn_original_color = self.palette().text().color().name(0)
         self.btn_emphasize_color = self.emphasize_color
 
-        print(self.palette().window().color().name(0) == '#323232')
-        if self.palette().window().color().name(0) == '#323232':
-            self.btn_emphasize_color = 'ffffff'
+        print(self.palette().window().color().name(0) == "#323232")
+        if self.palette().window().color().name(0) == "#323232":
+            self.btn_emphasize_color = "ffffff"
 
         self.return_to_normal_step()
 
@@ -100,12 +97,10 @@ class PixelSizeTool(QtWidgets.QDialog, FORM_CLASS):
         if step == 1:
             # set emphasized color for the Step 1
             self.Grp_Step1.setStyleSheet(f"QGroupBox::title {{ color: #{self.emphasize_color} }};")
-            self.Grp_Step2.setStyleSheet(
-                f"QGroupBox::title {{ color: #{self.original_text_color} }};")
+            self.Grp_Step2.setStyleSheet(f"QGroupBox::title {{ color: #{self.original_text_color} }};")
         elif step == 2:
             # set emphasized color for the Step 2
-            self.Grp_Step1.setStyleSheet(
-                f"QGroupBox::title {{color: #{self.original_text_color}}};")
+            self.Grp_Step1.setStyleSheet(f"QGroupBox::title {{color: #{self.original_text_color}}};")
             self.Grp_Step2.setStyleSheet(f"QGroupBox::title {{ color: #{self.emphasize_color} }};")
             # set focus to the scale length input
             self.SPN_ScaleBar_Len_um.setFocus()
@@ -114,7 +109,5 @@ class PixelSizeTool(QtWidgets.QDialog, FORM_CLASS):
             self.return_to_normal_step()
 
     def return_to_normal_step(self):
-        self.Grp_Step1.setStyleSheet(
-            f"QGroupBox::title {{color: #{self.original_text_color}}};")
-        self.Grp_Step2.setStyleSheet(
-            f"QGroupBox::title {{ color: #{self.original_text_color} }};")
+        self.Grp_Step1.setStyleSheet(f"QGroupBox::title {{color: #{self.original_text_color}}};")
+        self.Grp_Step2.setStyleSheet(f"QGroupBox::title {{ color: #{self.original_text_color} }};")

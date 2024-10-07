@@ -2,7 +2,7 @@
 import math
 
 
-class CoordinateTool():
+class CoordinateTool:
     """docstring for CoordinateTool"""
 
     def __init__(self):
@@ -14,8 +14,8 @@ class CoordinateTool():
 
         self.ref1canvas = []  # reference point #1 on canvas [x1, y1]
         self.ref2canvas = []  # reference point #2 on canvas [x2, y2]
-        self.ref1stage = []   # reference point #1 on stage  [x1, y1]
-        self.ref2stage = []   # reference point #2 on stage  [x2, y2]
+        self.ref1stage = []  # reference point #1 on stage  [x1, y1]
+        self.ref2stage = []  # reference point #2 on stage  [x2, y2]
 
         self.scale = 1
         self.rotation = 0
@@ -31,7 +31,7 @@ class CoordinateTool():
         self.ref2stage = ref2stage
 
         seg1 = [self.ref2canvas, self.ref1canvas]  # canvas
-        seg2 = [self.ref2stage, self.ref1stage]    # stage
+        seg2 = [self.ref2stage, self.ref1stage]  # stage
 
         self.scale = self.getScale(seg1, seg2)
         self.rotation = self.getRotation(seg1, seg2)
@@ -116,8 +116,8 @@ class CoordinateTool():
         print(conv_param)
 
         for cp in conv_param:
-            params = [cp['scale'], cp['offset'], cp['rotation']]
-            w = cp['weight']
+            params = [cp["scale"], cp["offset"], cp["rotation"]]
+            w = cp["weight"]
             tmp2 = []  # for debug
             if toStage:
                 np = self.toStageCoordinates2(pt, params)
@@ -143,14 +143,14 @@ class CoordinateTool():
         weights, wpt_x, wpt_y = [], [], []
         tmp = []  # for debug
         for m in model:
-            if m['used'] == 0:
+            if m["used"] == 0:
                 continue
-            params = [m['scale'], m['offset'], m['rotation']]
+            params = [m["scale"], m["offset"], m["rotation"]]
             tmp2 = []  # for debug
             for i in [1, 2]:
-                d = self.getDistance(pt, m['point_' + str(i)][position_index])
+                d = self.getDistance(pt, m["point_" + str(i)][position_index])
                 if d == 0:
-                    d = 1E-10
+                    d = 1e-10
                 w = 1 / (d**2)
                 if i == 1:
                     if toStage:

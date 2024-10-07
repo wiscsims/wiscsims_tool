@@ -2,7 +2,7 @@
 from PyQt5.QtCore import QPointF, QSizeF, Qt, pyqtSignal
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QColor, QTextDocument
 
-from qgis.core import QgsMarkerSymbol, QgsTextAnnotation, QgsMargins, QgsFillSymbol, QgsPointXY
+from qgis.core import QgsMarkerSymbol, QgsTextAnnotation, QgsMargins, QgsFillSymbol, QgsPointXY, QgsWkbTypes
 
 from qgis.gui import QgsRubberBand, QgsMapCanvasAnnotationItem
 
@@ -19,29 +19,29 @@ class AlignmentModelNew(QStandardItemModel):
     def __init__(self):
         super(AlignmentModelNew, self).__init__()
         self.c = {
-            'used': 0,
-            'refname': 1,
-            'stage': 2,
-            'canvas': 3,
-            'beam': 4,
+            "used": 0,
+            "refname": 1,
+            "stage": 2,
+            "canvas": 3,
+            "beam": 4,
         }
         self.n = len(self.c)
         _ = [self.insertColumn(i) for i in range(self.n)]
         # self.setHorizontalHeaderLabels(['', 'Name', '', '', '', '', '', 'Ref. 1', 'Ref. 2'])
-        self.setHorizontalHeaderLabels(['', 'Name'])
-        print('Initialized Table View Model')
+        self.setHorizontalHeaderLabels(["", "Name"])
+        print("Initialized Table View Model")
 
         self.scales = []
         self.rotations = []
         self.offsets = []
 
-    """""""""""""""""""""""""""""""""""""""
+    """""" """""" """""" """""" """""" """""" """
     * Methods
-    """""""""""""""""""""""""""""""""""""""
+    """ """""" """""" """""" """""" """""" """"""
 
     def isNewFormat(self, json_obj):
-        print('checking file formats')
-        return len(json_obj) and 'beam' in json_obj[0].keys()
+        print("checking file formats")
+        return len(json_obj) and "beam" in json_obj[0].keys()
 
     def isAvailable(self):
         n = self.rowCount()
@@ -60,12 +60,12 @@ class AlignmentModelNew(QStandardItemModel):
     def addRefPoints(self, used, refname, stage, canvas, beam, import_from_json=True):
         newRow = [QStandardItem() for _ in range(self.n)]
 
-        newRow[self.c['used']].setCheckable(True)
-        newRow[self.c['used']].setCheckState(used)
-        newRow[self.c['refname']].setText(refname)
-        newRow[self.c['stage']].setData(stage, 0)
-        newRow[self.c['canvas']].setData(canvas, 0)
-        newRow[self.c['beam']].setData(beam, 0)
+        newRow[self.c["used"]].setCheckable(True)
+        newRow[self.c["used"]].setCheckState(used)
+        newRow[self.c["refname"]].setText(refname)
+        newRow[self.c["stage"]].setData(stage, 0)
+        newRow[self.c["canvas"]].setData(canvas, 0)
+        newRow[self.c["beam"]].setData(beam, 0)
 
         self.appendRow(newRow)
 
@@ -82,10 +82,10 @@ class AlignmentModelNew(QStandardItemModel):
 
     def setRefPoint(self, row, stage_pt, canvas_pt, beam):
         self.isRefPointUpdating = True
-        self.item(row, self.c['used']).setCheckState(2)
-        self.item(row, self.c['stage']).setData(stage_pt, Qt.DisplayRole)
-        self.item(row, self.c['canvas']).setData(canvas_pt, Qt.DisplayRole)
-        self.item(row, self.c['beam']).setData(beam, Qt.DisplayRole)
+        self.item(row, self.c["used"]).setCheckState(2)
+        self.item(row, self.c["stage"]).setData(stage_pt, Qt.DisplayRole)
+        self.item(row, self.c["canvas"]).setData(canvas_pt, Qt.DisplayRole)
+        self.item(row, self.c["beam"]).setData(beam, Qt.DisplayRole)
         self.isRefPointUpdating = False
         self.refPtUpdated.emit()
         self.update_tooltips()
@@ -96,15 +96,15 @@ class AlignmentModelNew(QStandardItemModel):
 
     def updateRefPoint(self, refname, pt1, pt2, scale, offset, rotation, row):
         try:
-            self.item(row, self.c['used']).setCheckState(2)
-            self.item(row, self.c['refname']).setText(refname)
-            self.item(row, self.c['point_1']).setData(pt1, 0)
-            self.item(row, self.c['point_2']).setData(pt2, 0)
-            self.item(row, self.c['scale']).setData(scale, 0)
-            self.item(row, self.c['offset']).setData(offset, 0)
-            self.item(row, self.c['rotation']).setData(rotation, 0)
-            self.item(row, self.c['ref1']).setData('EDIT', 0)
-            self.item(row, self.c['ref2']).setData('EDIT', 0)
+            self.item(row, self.c["used"]).setCheckState(2)
+            self.item(row, self.c["refname"]).setText(refname)
+            self.item(row, self.c["point_1"]).setData(pt1, 0)
+            self.item(row, self.c["point_2"]).setData(pt2, 0)
+            self.item(row, self.c["scale"]).setData(scale, 0)
+            self.item(row, self.c["offset"]).setData(offset, 0)
+            self.item(row, self.c["rotation"]).setData(rotation, 0)
+            self.item(row, self.c["ref1"]).setData("EDIT", 0)
+            self.item(row, self.c["ref2"]).setData("EDIT", 0)
 
             return True
         except Exception:
@@ -115,12 +115,12 @@ class AlignmentModelNew(QStandardItemModel):
         alns = []
         for r in range(0, rowN):
             aln = {}
-            aln['r'] = r
-            aln['used'] = self.getCheckStatus(r)
-            aln['refname'] = self.getRefName(r)
-            aln['stage'] = self.getStagePosition(r)
-            aln['canvas'] = self.getCanvasPosition(r)
-            aln['beam'] = self.getBeam(r)
+            aln["r"] = r
+            aln["used"] = self.getCheckStatus(r)
+            aln["refname"] = self.getRefName(r)
+            aln["stage"] = self.getStagePosition(r)
+            aln["canvas"] = self.getCanvasPosition(r)
+            aln["beam"] = self.getBeam(r)
             alns.append(aln)
         return alns
 
@@ -128,23 +128,16 @@ class AlignmentModelNew(QStandardItemModel):
         json = self.format_json_to_alignment(json)
         try:
             for o in json:
-                self.addRefPoints(
-                    o['used'],
-                    o['refname'],
-                    o['stage'],
-                    o['canvas'],
-                    o['beam'],
-                    True
-                )
+                self.addRefPoints(o["used"], o["refname"], o["stage"], o["canvas"], o["beam"], True)
             self.update_tooltips()
             return True
         except Exception:
-            print('Error on importing JSON')
+            print("Error on importing JSON")
             return False
 
-    """""""""""""""""""""""""""""""""""""""
+    """""" """""" """""" """""" """""" """""" """
     * Utility
-    """""""""""""""""""""""""""""""""""""""
+    """ """""" """""" """""" """""" """""" """"""
 
     def update_tooltips(self):
         n = self.rowCount()
@@ -167,25 +160,25 @@ class AlignmentModelNew(QStandardItemModel):
 
     def format_alignment_to_json(self, aln):
         for a in aln:
-            a["stage"] = [a["stage"][0], a["stage"][1]],
-            a["canvas"] = [a["canvas"][0], a["canvas"][1]],
+            a["stage"] = ([a["stage"][0], a["stage"][1]],)
+            a["canvas"] = ([a["canvas"][0], a["canvas"][1]],)
         return aln
 
     def format_json_to_alignment(self, aln):
         for a in aln:
-            a['stage'] = QgsPointXY(a['stage'][0][0], a['stage'][0][1])
-            a['canvas'] = QgsPointXY(a['canvas'][0][0], a['canvas'][0][1])
+            a["stage"] = QgsPointXY(a["stage"][0][0], a["stage"][0][1])
+            a["canvas"] = QgsPointXY(a["canvas"][0][0], a["canvas"][0][1])
         return aln
 
-    """""""""""""""""""""""""""""""""""""""
+    """""" """""" """""" """""" """""" """""" """
     * GETTERS
-    """""""""""""""""""""""""""""""""""""""
+    """ """""" """""" """""" """""" """""" """"""
 
     def getCheckStatus(self, row):
-        return self.item(row, self.c['used']).checkState()
+        return self.item(row, self.c["used"]).checkState()
 
     def getRefName(self, row):
-        return self.item(row, self.c['refname']).data(0)
+        return self.item(row, self.c["refname"]).data(0)
 
     def getRefNames(self):
         # rowN = self.rowCount()
@@ -200,25 +193,25 @@ class AlignmentModelNew(QStandardItemModel):
         rows = [r for r in range(self.rowCount()) if self.getCheckStatus(r)]
 
         for i in rows:
-            i_stage = self.item(i, self.c['stage']).data(0)
-            i_canvas = self.item(i, self.c['canvas']).data(0)
+            i_stage = self.item(i, self.c["stage"]).data(0)
+            i_canvas = self.item(i, self.c["canvas"]).data(0)
 
             for j in rows:
                 if i >= j:
                     continue
-                j_stage = self.item(j, self.c['stage']).data(0)
-                j_canvas = self.item(j, self.c['canvas']).data(0)
-                stage_l = ((i_stage[0] - j_stage[0])**2 + (i_stage[1] - j_stage[1])**2)**0.5
-                canvas_l = ((i_canvas[0] - j_canvas[0])**2 + (i_canvas[1] - j_canvas[1])**2)**0.5
+                j_stage = self.item(j, self.c["stage"]).data(0)
+                j_canvas = self.item(j, self.c["canvas"]).data(0)
+                stage_l = ((i_stage[0] - j_stage[0]) ** 2 + (i_stage[1] - j_stage[1]) ** 2) ** 0.5
+                canvas_l = ((i_canvas[0] - j_canvas[0]) ** 2 + (i_canvas[1] - j_canvas[1]) ** 2) ** 0.5
                 if i_stage[0] == j_stage[0]:
                     stage_r = 0
                 else:
-                    stage_r = (i_stage[1] - j_stage[1])/(i_stage[0] - j_stage[0])
+                    stage_r = (i_stage[1] - j_stage[1]) / (i_stage[0] - j_stage[0])
 
                 if i_canvas[0] == j_canvas[0]:
                     canvas_r = 0
                 else:
-                    canvas_r = (i_canvas[1] - j_canvas[1])/(i_canvas[0] - j_canvas[0])
+                    canvas_r = (i_canvas[1] - j_canvas[1]) / (i_canvas[0] - j_canvas[0])
 
                 rotation = math.atan((stage_r - canvas_r) / (1 + stage_r * canvas_r))
                 scale = stage_l / canvas_l
@@ -241,32 +234,32 @@ class AlignmentModelNew(QStandardItemModel):
         return self.offsets
 
     def getStagePosition(self, row):
-        return self.item(row, self.c['stage']).data(0)
+        return self.item(row, self.c["stage"]).data(0)
 
     def getStagePositions(self):
         rows = self.getAvailableRows()
-        return {row: self.item(row, self.c['stage']).data(0) for row in rows}
+        return {row: self.item(row, self.c["stage"]).data(0) for row in rows}
 
     def getCanvasPosition(self, row):
-        return self.item(row, self.c['canvas']).data(0)
+        return self.item(row, self.c["canvas"]).data(0)
 
     def getCanvasPositions(self):
         rows = self.getAvailableRows()
-        return {row: self.item(row, self.c['canvas']).data(0) for row in rows}
+        return {row: self.item(row, self.c["canvas"]).data(0) for row in rows}
 
     def getBeam(self, row):
-        return self.item(row, self.c['beam']).data(0)
+        return self.item(row, self.c["beam"]).data(0)
 
     def getRefPoint(self, row):
-        stage = self.item(row, self.c['stage']).data(0)
-        canvas = self.item(row, self.c['canvas']).data(0)
-        beam = self.item(row, self.c['beam']).data(0)
+        stage = self.item(row, self.c["stage"]).data(0)
+        canvas = self.item(row, self.c["canvas"]).data(0)
+        beam = self.item(row, self.c["beam"]).data(0)
         return [stage, canvas, beam]
 
     def getAlignmentParams(self, row):
-        scale = self.item(row, self.c['scale']).data(0)
-        offset = self.item(row, self.c['offset']).data(0)
-        rotation = self.item(row, self.c['rotation']).data(0)
+        scale = self.item(row, self.c["scale"]).data(0)
+        offset = self.item(row, self.c["offset"]).data(0)
+        rotation = self.item(row, self.c["rotation"]).data(0)
         return (scale, offset, rotation)
 
     def getAverage(self, arr):
@@ -279,26 +272,23 @@ class AlignmentModelNew(QStandardItemModel):
         if not self.isAvailable():
             return {}
         self.calcParams()
-        return {
-            'scale': self.getAverage(self.scales),
-            'rotation': self.getAverage(self.rotations)
-        }
+        return {"scale": self.getAverage(self.scales), "rotation": self.getAverage(self.rotations)}
 
     def getRefPointStatus(self, row):
         return {
-            'ref1': self.item(row, self.getColumnIndex('ref1')).data(0) == 'EDIT',
-            'ref2': self.item(row, self.getColumnIndex('ref2')).data(0) == 'EDIT'
+            "ref1": self.item(row, self.getColumnIndex("ref1")).data(0) == "EDIT",
+            "ref2": self.item(row, self.getColumnIndex("ref2")).data(0) == "EDIT",
         }
 
     def getIndexes(self, col):
         return [self.index(r, col) for r in range(self.rowCount())]
 
-    """""""""""""""""""""""""""""""""""""""
+    """""" """""" """""" """""" """""" """""" """
     * SETTERS
-    """""""""""""""""""""""""""""""""""""""
+    """ """""" """""" """""" """""" """""" """"""
 
     def setCheckState(self, row, state):
-        self.item(row, self.c['used']).setCheckState(state)
+        self.item(row, self.c["used"]).setCheckState(state)
 
 
 class AlignmentModel(QStandardItemModel):
@@ -309,24 +299,24 @@ class AlignmentModel(QStandardItemModel):
     def __init__(self):
         super(AlignmentModel, self).__init__()
         self.c = {
-            'used': 0,
-            'refname': 1,
-            'point_1': 2,  # [[stage_x, stage_y], [canvas_x, canvas_y]]
-            'point_2': 3,  # [[stage_x, stage_y], [canvas_x, canvas_y]]
-            'scale': 4,    #
-            'offset': 5,   # [x, y]
-            'rotation': 6,
-            'ref1': 7,
-            'ref2': 8,
+            "used": 0,
+            "refname": 1,
+            "point_1": 2,  # [[stage_x, stage_y], [canvas_x, canvas_y]]
+            "point_2": 3,  # [[stage_x, stage_y], [canvas_x, canvas_y]]
+            "scale": 4,  #
+            "offset": 5,  # [x, y]
+            "rotation": 6,
+            "ref1": 7,
+            "ref2": 8,
         }
         self.n = len(self.c)
         _ = [self.insertColumn(i) for i in range(self.n)]
-        self.setHorizontalHeaderLabels(['', 'Name', '', '', '', '', '', 'Ref. 1', 'Ref. 2'])
-        print('Initialized Table View Model')
+        self.setHorizontalHeaderLabels(["", "Name", "", "", "", "", "", "Ref. 1", "Ref. 2"])
+        print("Initialized Table View Model")
 
-    """""""""""""""""""""""""""""""""""""""
+    """""" """""" """""" """""" """""" """""" """
     * Methods
-    """""""""""""""""""""""""""""""""""""""
+    """ """""" """""" """""" """""" """""" """"""
 
     def isAvailable(self):
         n = self.rowCount()
@@ -335,30 +325,29 @@ class AlignmentModel(QStandardItemModel):
         return sum([self.getCheckStatus(r) for r in range(n)])
 
     def addNewRefPoints(self, used, refname, pt1, pt2, scale, offset, rotation):
-        return self.addRefPoints(
-            used, refname, pt1, pt2, scale, offset, rotation, import_from_json=False)
+        return self.addRefPoints(used, refname, pt1, pt2, scale, offset, rotation, import_from_json=False)
 
     def addRefPoints(self, used, refname, pt1, pt2, scale, offset, rotation, import_from_json=True):
         newRow = [QStandardItem() for _ in range(self.n)]
 
         # scale, offset, rotation = [1, [0, 0], 0]
 
-        newRow[self.c['used']].setCheckable(True)
-        newRow[self.c['used']].setCheckState(used)
-        newRow[self.c['refname']].setText(refname)
-        newRow[self.c['point_1']].setData(pt1, 0)
-        newRow[self.c['point_2']].setData(pt2, 0)
-        newRow[self.c['scale']].setData(scale, 0)
-        newRow[self.c['offset']].setData(offset, 0)
-        newRow[self.c['rotation']].setData(rotation, 0)
+        newRow[self.c["used"]].setCheckable(True)
+        newRow[self.c["used"]].setCheckState(used)
+        newRow[self.c["refname"]].setText(refname)
+        newRow[self.c["point_1"]].setData(pt1, 0)
+        newRow[self.c["point_2"]].setData(pt2, 0)
+        newRow[self.c["scale"]].setData(scale, 0)
+        newRow[self.c["offset"]].setData(offset, 0)
+        newRow[self.c["rotation"]].setData(rotation, 0)
         if import_from_json:
-            newRow[self.c['ref1']].setText('EDIT')
-            newRow[self.c['ref2']].setText('EDIT')
+            newRow[self.c["ref1"]].setText("EDIT")
+            newRow[self.c["ref2"]].setText("EDIT")
         else:
-            newRow[self.c['ref1']].setText('')
-            newRow[self.c['ref2']].setText('')
-        newRow[self.c['ref1']].setEditable(False)
-        newRow[self.c['ref2']].setEditable(False)
+            newRow[self.c["ref1"]].setText("")
+            newRow[self.c["ref2"]].setText("")
+        newRow[self.c["ref1"]].setEditable(False)
+        newRow[self.c["ref2"]].setEditable(False)
 
         self.appendRow(newRow)
 
@@ -374,7 +363,7 @@ class AlignmentModel(QStandardItemModel):
         return self.item(row, col)
 
     def setRefPoint(self, row, ref, pt):
-        col = self.c['point_1'] if ref == 1 else self.c['point_2']
+        col = self.c["point_1"] if ref == 1 else self.c["point_2"]
         print(ref, row, col, pt)
         self.item(row, col).setData(pt, 0)
         return True
@@ -384,15 +373,15 @@ class AlignmentModel(QStandardItemModel):
 
     def updateRefPoint(self, refname, pt1, pt2, scale, offset, rotation, row):
         try:
-            self.item(row, self.c['used']).setCheckState(2)
-            self.item(row, self.c['refname']).setText(refname)
-            self.item(row, self.c['point_1']).setData(pt1, 0)
-            self.item(row, self.c['point_2']).setData(pt2, 0)
-            self.item(row, self.c['scale']).setData(scale, 0)
-            self.item(row, self.c['offset']).setData(offset, 0)
-            self.item(row, self.c['rotation']).setData(rotation, 0)
-            self.item(row, self.c['ref1']).setData('EDIT', 0)
-            self.item(row, self.c['ref2']).setData('EDIT', 0)
+            self.item(row, self.c["used"]).setCheckState(2)
+            self.item(row, self.c["refname"]).setText(refname)
+            self.item(row, self.c["point_1"]).setData(pt1, 0)
+            self.item(row, self.c["point_2"]).setData(pt2, 0)
+            self.item(row, self.c["scale"]).setData(scale, 0)
+            self.item(row, self.c["offset"]).setData(offset, 0)
+            self.item(row, self.c["rotation"]).setData(rotation, 0)
+            self.item(row, self.c["ref1"]).setData("EDIT", 0)
+            self.item(row, self.c["ref2"]).setData("EDIT", 0)
 
             return True
         except Exception:
@@ -403,12 +392,12 @@ class AlignmentModel(QStandardItemModel):
         alns = []
         for r in range(0, rowN):
             aln = {}
-            aln['r'] = r
-            aln['used'] = self.getCheckStatus(r)
-            aln['refname'] = self.getRefName(r)
-            aln['point_1'] = self.getRefPoint(r, 1)
-            aln['point_2'] = self.getRefPoint(r, 2)
-            aln['scale'], aln['offset'], aln['rotation'] = self.getAlignmentParams(r)
+            aln["r"] = r
+            aln["used"] = self.getCheckStatus(r)
+            aln["refname"] = self.getRefName(r)
+            aln["point_1"] = self.getRefPoint(r, 1)
+            aln["point_2"] = self.getRefPoint(r, 2)
+            aln["scale"], aln["offset"], aln["rotation"] = self.getAlignmentParams(r)
             alns.append(aln)
         return alns
 
@@ -417,48 +406,42 @@ class AlignmentModel(QStandardItemModel):
         try:
             for o in json:
                 self.addRefPoints(
-                    o['used'],
-                    o['refname'],
-                    o['point_1'],
-                    o['point_2'],
-                    o['scale'],
-                    o['offset'],
-                    o['rotation'],
+                    o["used"],
+                    o["refname"],
+                    o["point_1"],
+                    o["point_2"],
+                    o["scale"],
+                    o["offset"],
+                    o["rotation"],
                 )
             return True
         except Exception:
-            print('Error on importing JSON')
+            print("Error on importing JSON")
             return False
 
     def format_alignment_to_json(self, aln):
         for a in aln:
-            a['point_1'] = [
-                [a['point_1'][0][0], a['point_1'][0][1]],
-                [a['point_1'][1][0], a['point_1'][1][1]]
-            ]
-            a['point_2'] = [
-                [a['point_2'][0][0], a['point_2'][0][1]],
-                [a['point_2'][1][0], a['point_2'][1][1]]
-            ]
-            a['offset'] = a['point_1'][::-1]
+            a["point_1"] = [[a["point_1"][0][0], a["point_1"][0][1]], [a["point_1"][1][0], a["point_1"][1][1]]]
+            a["point_2"] = [[a["point_2"][0][0], a["point_2"][0][1]], [a["point_2"][1][0], a["point_2"][1][1]]]
+            a["offset"] = a["point_1"][::-1]
         return aln
 
     def format_json_to_alignment(self, aln):
         for a in aln:
-            for pt in ['point_1', 'point_2']:
+            for pt in ["point_1", "point_2"]:
                 a[pt] = [QgsPointXY(p[0], p[1]) for p in a[pt]]
-            a['offset'] = a['point_1'][::-1]
+            a["offset"] = a["point_1"][::-1]
         return aln
 
-    """""""""""""""""""""""""""""""""""""""
+    """""" """""" """""" """""" """""" """""" """
     * GETTERS
-    """""""""""""""""""""""""""""""""""""""
+    """ """""" """""" """""" """""" """""" """"""
 
     def getCheckStatus(self, row):
-        return self.item(row, self.c['used']).checkState()
+        return self.item(row, self.c["used"]).checkState()
 
     def getRefName(self, row):
-        return self.item(row, self.c['refname']).data(0)
+        return self.item(row, self.c["refname"]).data(0)
 
     def getRefNames(self):
         # rowN = self.rowCount()
@@ -469,28 +452,28 @@ class AlignmentModel(QStandardItemModel):
         # return names
 
     def getScale(self, row):
-        return self.item(row, self.c['scale']).data(0)
+        return self.item(row, self.c["scale"]).data(0)
 
     def getScales(self):
         return [self.getScale(r) for r in range(self.rowCount()) if self.getCheckStatus(r)]
 
     def getRotation(self, row):
-        return self.item(row, self.c['rotation']).data(0)
+        return self.item(row, self.c["rotation"]).data(0)
 
     def getRotations(self):
         return [self.getRotation(r) for r in range(self.rowCount()) if self.getCheckStatus(r)]
 
     def getRefPoint(self, row, pointNum):
-        stage, canvas = self.item(row, self.c['point_{}'.format(pointNum)]).data(0)
+        stage, canvas = self.item(row, self.c["point_{}".format(pointNum)]).data(0)
         # i(stage, canvas)
         return [stage, canvas]
         # [stage, canvas] = self.item(row, self.c['point_{}'.format(pointNum)]).data(0)
         # return (stage[0], stage[1], canvas[0], canvas[1])
 
     def getAlignmentParams(self, row):
-        scale = self.item(row, self.c['scale']).data(0)
-        offset = self.item(row, self.c['offset']).data(0)
-        rotation = self.item(row, self.c['rotation']).data(0)
+        scale = self.item(row, self.c["scale"]).data(0)
+        offset = self.item(row, self.c["offset"]).data(0)
+        rotation = self.item(row, self.c["rotation"]).data(0)
         return (scale, offset, rotation)
 
     def getAverage(self, arr):
@@ -504,34 +487,31 @@ class AlignmentModel(QStandardItemModel):
             return {}
         scales = self.getScales()
         rotations = self.getRotations()
-        return {
-            'scale': self.getAverage(scales),
-            'rotation': self.getAverage(rotations)
-        }
+        return {"scale": self.getAverage(scales), "rotation": self.getAverage(rotations)}
 
     def getRefPointStatus(self, row):
         return {
-            'ref1': self.item(row, self.getColumnIndex('ref1')).data(0) == 'EDIT',
-            'ref2': self.item(row, self.getColumnIndex('ref2')).data(0) == 'EDIT'
+            "ref1": self.item(row, self.getColumnIndex("ref1")).data(0) == "EDIT",
+            "ref2": self.item(row, self.getColumnIndex("ref2")).data(0) == "EDIT",
         }
 
     def getIndexes(self, col):
         return [self.index(r, col) for r in range(self.rowCount())]
 
-    """""""""""""""""""""""""""""""""""""""
+    """""" """""" """""" """""" """""" """""" """
     * SETTERS
-    """""""""""""""""""""""""""""""""""""""
+    """ """""" """""" """""" """""" """""" """"""
 
     def setCheckState(self, row, state):
-        self.item(row, self.c['used']).setCheckState(state)
+        self.item(row, self.c["used"]).setCheckState(state)
 
 
-"""""""""""""""""""""""""""""""""""""""
+"""""" """""" """""" """""" """""" """""" """
 *** Alignment Marker Class
-"""""""""""""""""""""""""""""""""""""""
+""" """""" """""" """""" """""" """""" """"""
 
 
-class AlignmentMarker():
+class AlignmentMarker:
     """docstring for AlignmentMarker"""
 
     def __init__(self, canvas, model):
@@ -542,7 +522,7 @@ class AlignmentMarker():
         self.cursor_ann = None
 
     def add_ref_marker(self, pt, name, current=False):
-        rb = QgsRubberBand(self.canvas, False)
+        rb = QgsRubberBand(self.canvas, QgsWkbTypes.PointGeometry)
         rb.setIconSize(15)
         rb.setIcon(QgsRubberBand.ICON_CROSS)
         color = QColor(255, 40, 0) if current else QColor(0, 40, 255)
@@ -580,8 +560,7 @@ class AlignmentMarker():
         # frm.createSimple({'color': 'black'})
         frm.setColor(QColor("#f00"))
         # frm.setOpacity(0.5)
-        html = ('<body><div style="backround-color: #f00;'
-                ' color: #fff; font-weight: bold">{}</div></body>')
+        html = '<body><div style="backround-color: #f00;' ' color: #fff; font-weight: bold">{}</div></body>'
         a = QgsTextAnnotation()
         c = QTextDocument()
         c.setHtml(html.format(name))

@@ -2,7 +2,7 @@
 import math
 
 
-class CoordinateTool():
+class CoordinateTool:
     """docstring for CoordinateTool"""
 
     def __init__(self):
@@ -20,9 +20,7 @@ class CoordinateTool():
         self.scale = 1
         self.rotation = 0
 
-    def setReferencePoints(self,
-                           ref1canvas, ref1stage,
-                           ref2canvas, ref2stage):
+    def setReferencePoints(self, ref1canvas, ref1stage, ref2canvas, ref2stage):
         # ref1c: reference point #1 on canvas [x1, y1]
         # ref1s: reference point #1 on stage  [x1, y1]
         # ref2c: reference point #2 on canvas [x2, y2]
@@ -122,22 +120,20 @@ class CoordinateTool():
         return self.toStageCoordinates2(pt, params)
 
     def toStageCoordinates(self, pt):
-        if (len(self.ref1c) < 2):
+        if len(self.ref1c) < 2:
             tmp = pt
             offset = [0, 0]
         else:
-            tmp = [(pt[0] - self.ref1c[0]) * self.scale,
-                   (pt[1] - self.ref1c[1]) * self.scale]
+            tmp = [(pt[0] - self.ref1c[0]) * self.scale, (pt[1] - self.ref1c[1]) * self.scale]
             offset = self.ref1s
         return self.rotateCoordinates(tmp, self.rotation, offset)
 
     def toCanvasCoordinates(self, pt):
-        tmp = [(pt[0] - self.ref1s[0]) / self.scale,
-               (pt[1] - self.ref1s[1]) / self.scale]
+        tmp = [(pt[0] - self.ref1s[0]) / self.scale, (pt[1] - self.ref1s[1]) / self.scale]
         return self.rotateCoordinates(tmp, -1 * self.rotation, self.ref1c)
 
 
-class CoordinateToolNew():
+class CoordinateToolNew:
     """docstring for CoordinateTool"""
 
     def __init__(self):
@@ -149,8 +145,8 @@ class CoordinateToolNew():
 
         self.ref1canvas = []  # reference point #1 on canvas [x1, y1]
         self.ref2canvas = []  # reference point #2 on canvas [x2, y2]
-        self.ref1stage = []   # reference point #1 on stage  [x1, y1]
-        self.ref2stage = []   # reference point #2 on stage  [x2, y2]
+        self.ref1stage = []  # reference point #1 on stage  [x1, y1]
+        self.ref2stage = []  # reference point #2 on stage  [x2, y2]
 
         self.scale = 1
         self.rotation = 0
@@ -166,7 +162,7 @@ class CoordinateToolNew():
         self.ref2stage = ref2stage
 
         seg1 = [self.ref2canvas, self.ref1canvas]  # canvas
-        seg2 = [self.ref2stage, self.ref1stage]    # stage
+        seg2 = [self.ref2stage, self.ref1stage]  # stage
 
         self.scale = self.getScale(seg1, seg2)
         self.rotation = self.getRotation(seg1, seg2)
@@ -251,8 +247,8 @@ class CoordinateToolNew():
         # print(conv_param)
 
         for cp in conv_param:
-            params = [cp['scale'], cp['offset'], cp['rotation']]
-            w = cp['weight']
+            params = [cp["scale"], cp["offset"], cp["rotation"]]
+            w = cp["weight"]
             tmp2 = []  # for debug
             if toStage:
                 np = self.toStageCoordinates2(pt, params)
@@ -278,14 +274,14 @@ class CoordinateToolNew():
         weights, wpt_x, wpt_y = [], [], []
         tmp = []  # for debug
         for m in model:
-            if m['used'] == 0:
+            if m["used"] == 0:
                 continue
-            params = [m['scale'], m['offset'], m['rotation']]
+            params = [m["scale"], m["offset"], m["rotation"]]
             tmp2 = []  # for debug
             for i in [1, 2]:
-                d = self.getDistance(pt, m['point_' + str(i)][position_index])
+                d = self.getDistance(pt, m["point_" + str(i)][position_index])
                 if d == 0:
-                    d = 1E-10
+                    d = 1e-10
                 w = 1 / (d**2)
                 if i == 1:
                     if toStage:
