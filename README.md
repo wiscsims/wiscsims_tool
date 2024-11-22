@@ -1,4 +1,3 @@
-
 # WiscSIMS Tool
 
 A QGIS3 plugin for external/internal WiscSIMS users.
@@ -37,12 +36,15 @@ WiscSIMS Tool has two features.
 ## Requirements
 
 ### [QGIS3](https://www.qgis.org/)
+
 QGIS3 (>3.10) is recommended.
-  - [MacOS](https://qgis.org/downloads/macos/qgis-macos-ltr.dmg)
-  - [Windows](https://qgis.org/downloads/QGIS-OSGeo4W-3.10.8-1-Setup-x86_64.exe) (64 bit)
-  - [Windows](https://qgis.org/downloads/QGIS-OSGeo4W-3.10.8-1-Setup-x86.exe) (32 bit)
+
+- [MacOS](https://qgis.org/downloads/macos/qgis-macos-ltr.dmg)
+- [Windows](https://qgis.org/downloads/QGIS-OSGeo4W-3.10.8-1-Setup-x86_64.exe) (64 bit)
+- [Windows](https://qgis.org/downloads/QGIS-OSGeo4W-3.10.8-1-Setup-x86.exe) (32 bit)
 
 ## Installation
+
 There are two ways to install `WiscSIMS Tool`.
 
 ### Install from QGIS Plugin Repository (Recommended)
@@ -50,29 +52,29 @@ There are two ways to install `WiscSIMS Tool`.
 1. Open QGIS.
 
 2. From the QGIS menu, select `Plugins` > `Manege and Install Plugins`.
-<a href="img/readme/plugin_install_menu.png" target="_blank"><img src="img/readme/plugin_install_menu.png" width="500" alt=""></a>
+   <a href="img/readme/plugin_install_menu.png" target="_blank"><img src="img/readme/plugin_install_menu.png" width="500" alt=""></a>
 
 3. Search/find `WiscSIMS Tool` from the plugin list and click `Install Plugin` button on the right bottom of `Manege and Install Plugins` window.
-<a href="img/readme/search_and_install_WiscSIMSTool.png" target="_blank"><img src="img/readme/search_and_install_WiscSIMSTool.png" width="600" alt="Install WiscSIMS Tool from the list"></a>
+   <a href="img/readme/search_and_install_WiscSIMSTool.png" target="_blank"><img src="img/readme/search_and_install_WiscSIMSTool.png" width="600" alt="Install WiscSIMS Tool from the list"></a>
 
-4. Select `Installed Plugins` to make sure `WiscSIMS Tool` was correctlly installed. If it is not checked, click the checkbox (on the left of green puzzle piece icon) to activate the plugin. You also see `WiscSIMS Tool` icon in the QGIS toolbar.
-
+4. Select `Installed Plugins` to make sure `WiscSIMS Tool` was correctly installed. If it is not checked, click the checkbox (on the left of green puzzle piece icon) to activate the plugin. You also see `WiscSIMS Tool` icon in the QGIS toolbar.
 
 ### Install from ZIP file
+
 Manual installation is also available.
-1. Download `WiscSIMS Tool`  (**wiscsims_tool.zip**) from [WiscSIMS GitHub repository](https://github.com/wiscsims/wiscsims_tool/releases/latest/download/wiscsims_tool.zip).
+
+1. Download `WiscSIMS Tool` (**wiscsims_tool.zip**) from [WiscSIMS GitHub repository](https://github.com/wiscsims/wiscsims_tool/releases/latest/download/wiscsims_tool.zip).
 
 2. Open QGIS.
 
-3.  From the QGIS menu, select `Plugins` > `Manege and Install Plugins`.
-<a href="img/readme/plugin_install_menu.png" target="_blank"><img src="img/readme/plugin_install_menu.png" width="500" alt=""></a>
+3. From the QGIS menu, select `Plugins` > `Manege and Install Plugins`.
+   <a href="img/readme/plugin_install_menu.png" target="_blank"><img src="img/readme/plugin_install_menu.png" width="500" alt=""></a>
 
-1. Select `Intall from ZIP` and hit `...` button to select downloaded `wiscsims_tool.zip` file.
-<a href="img/readme/plugin_install_zip.png" target="_blank"><img src="img/readme/plugin_install_zip.png" width="600" alt="Install WiscSIMS Tool from zip file"></a>
+4. Select `Intall from ZIP` and hit `...` button to select downloaded `wiscsims_tool.zip` file.
+   <a href="img/readme/plugin_install_zip.png" target="_blank"><img src="img/readme/plugin_install_zip.png" width="600" alt="Install WiscSIMS Tool from zip file"></a>
 
-
-1. Hit `Install Plugin` to install `WiscSIMS Tool`.
-2. Select `Installed Plugins` to make sure `WiscSIMS Tool` was correctlly installed. You also see `WiscSIMS Tool` icon in the QGIS toolbar.
+5. Hit `Install Plugin` to install `WiscSIMS Tool`.
+6. Select `Installed Plugins` to make sure `WiscSIMS Tool` was correctly installed. You also see `WiscSIMS Tool` icon in the QGIS toolbar.
 
 ## Usage
 
@@ -109,27 +111,24 @@ There are three types of preset mode, Point, Line and Grid in WiscSIMS Tool. You
 
 - **Line**
 
-  In Line Mode, you can add spots along the line defined by two spots. At first, you can select a start-point of line by **`left click`**, then select a end-point by **`right click`**. You will see previews of red spots and comments in gray square ballon. Note that red circles only show positions of the spots to be added, circle size is not to scale. Secondly, you can modify step size or number of spots as you want. Preview will be updated automatically with your modification. Finally, hit `Add Points` button at the bottom of `Preset Mode` section to addf points to the selected layer.
+  In Line Mode, you can add spots along the line defined by two spots. At first, you can select a start-point of line by **`left click`**, then select a end-point by **`right click`**. You will see previews of red spots and comments in gray square balloon. Note that red circles only show positions of the spots to be added, circle size is not to scale. Secondly, you can modify step size or number of spots as you want. Preview will be updated automatically with your modification. Finally, hit `Add Points` button at the bottom of `Preset Mode` section to add points to the selected layer.
 
 - **Grid**
 
-  In Grid Mode, you can add spots as a grid (m x n). Left click defines the first spot of the grid. Preview will show up as well as `Line Mode`. You can modify step sizes and number of spots for vertical and horizontal. You can also choose analysis order in the grid from two options (`Vertical, then Horizontal` or `Horizontal, then Vertical`). Thin red line in the preview indicates chosen analysis order. After hit `Add Points`, poins are stored in the selected layer.
+  In Grid Mode, you can add spots as a grid (m x n). Left click defines the first spot of the grid. Preview will show up as well as `Line Mode`. You can modify step sizes and number of spots for vertical and horizontal. You can also choose analysis order in the grid from two options (`Vertical, then Horizontal` or `Horizontal, then Vertical`). Thin red line in the preview indicates chosen analysis order. After hit `Add Points`, points are stored in the selected layer.
 
 #### Undo
 
-Undo for added point(s) is avaiable when `Undo` button is active. Currently, a maximum of 100 undo is possible.
+Undo for added point(s) is available when `Undo` button is active. Currently, a maximum of 100 undo is possible.
 
 #### Modify spot locations
 
-Locations of preset spots can be modified by clicking the feature (spot) with `Shift` key, then drag & drop. If you want to move multiple spots, use _built-in_ <a href="https://sites.google.com/a/wisc.edu/wiscsims-micro-qgis/learn-to-use-qgis/editing/selecting-objects" target="_blank">`Select and Move Features`</a>.
+Locations of preset spots can be modified by clicking the feature (spot) with `Shift key`, then drag & drop. If you want to move multiple spots, use _built-in_ `Select and Move Features`.
 
 TODO: [movie]
 
 #### Modify comment
 
-Comments for each spot can be modified later. Click the spot with pressing `Alt(Windows)/Option(MacOS)`, then small popup window shows for editing original comment.
+Comments for each spot can be modified later. Click the spot with pressing `Alt(Windows)/Option(MacOS)`, then small pop-up window shows for editing original comment.
 
 TODO: [movie]
-
-
-

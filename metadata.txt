@@ -8,7 +8,7 @@
 
 [general]
 name=WiscSIMS Tool
-qgisMinimumVersion=3.4
+qgisMinimumVersion=3.3.4
 description=Useful QGIS tools for WiscSIMS sessions
 version=3.2.x
 author=WiscSIMS (Kouki Kitajima)

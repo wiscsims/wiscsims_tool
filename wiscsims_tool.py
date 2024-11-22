@@ -308,7 +308,7 @@ class WiscSIMSTool:
         icon_path = ":/plugins/wiscsims_tool/img/icon.png"
 
         self.wiscsims_tool_action = self.add_action(
-            icon_path, text=self.tr("WiscSIMS Tool"), callback=self.run, parent=self.iface.mainWindow()
+            icon_path, text=self.tr("WiscSIMS Tool [action]"), callback=self.run, parent=self.iface.mainWindow()
         )
 
         self.wiscsims_tool_action.setCheckable(True)
@@ -974,8 +974,9 @@ class WiscSIMSTool:
     def get_vector_point_layers(self):
         # Filter by layer type 0: vector
         layers = self.get_layer_list(layertype=0)
-        # filter only point geometry layer 0: point
-        return [l for l in layers if l.geometryType() == 0]
+        [print(l.dataProvider().name()) for l in layers]
+        # filter only point geometry layer 0: point and not memory layers
+        return [l for l in layers if l.geometryType() == 0 and l.dataProvider().name() != "memory"]
 
     def get_true_shapefile_headers(self, headers):
         # create tmporal shapefile with provided headers
@@ -1168,15 +1169,15 @@ class WiscSIMSTool:
         # load and register created layer to mapCanvas
         QgsProject.instance().addMapLayer(newVlayer)
         self.iface.setActiveLayer(newVlayer)
-        self.iface.activeLayer().renderer().symbol().symbolLayer(0).setSizeUnit(1)
+        # self.iface.activeLayer().renderer().symbol().symbolLayer(0).setSizeUnit(1)
 
         settings = QgsPalLayerSettings()
         settings.enabled = True
         settings.fieldName = "Comment"
         settings.displayAll = True
         coll = QgsPropertyCollection("preset")
-        coll.setProperty(settings.ShadowDraw, True)
-        coll.setProperty(settings.BufferDraw, True)
+        # coll.setProperty(settings.ShadowDraw, True)
+        # coll.setProperty(settings.BufferDraw, True)
         settings.setDataDefinedProperties(coll)
 
         newVlayer.setLabelsEnabled(True)
@@ -1188,8 +1189,8 @@ class WiscSIMSTool:
         myLayerNode = root.findLayer(newVlayer.id())
         myLayerNode.setCustomProperty("showFeatureCount", True)
 
-        # add created layer to Cmb_Preset_Layer
-        self.init_preset_layer_combobox()
+        # # add created layer to Cmb_Preset_Layer
+        # self.init_preset_layer_combobox()
 
         # select/highlight created layer
         self.dockwidget.Cmb_Preset_Layer.setCurrentIndex(self.dockwidget.Cmb_Preset_Layer.findText(layer_name))
@@ -1567,7 +1568,14 @@ class WiscSIMSTool:
             return
         symbol = layer.renderer().symbol()
         props = symbol.symbolLayer(0).properties()
-        self.scratchLayer.renderer().setSymbol(QgsMarkerSymbol.createSimple(props))
+
+        renderer = self.scratchLayer.renderer()
+        renderer.setSymbol(QgsMarkerSymbol.createSimple(props))
+
+        # black
+        renderer.symbol().symbolLayer(0).setStrokeColor(QColor(255, 255, 255))
+        # light blue
+        renderer.symbol().setColor(QColor(64, 143, 176, 102))
 
         self.sc_dp = self.scratchLayer.dataProvider()
         # add "Comment" field to the attribute table
@@ -1579,21 +1587,32 @@ class WiscSIMSTool:
         settings.fieldName = "Comment"
         settings.displayAll = True
         coll = QgsPropertyCollection("preset")
-        coll.setProperty(settings.ShadowDraw, True)
-        coll.setProperty(settings.BufferDraw, True)
-        coll.setProperty(settings.Color, QColor(255, 255, 255))
-        coll.setProperty(settings.BufferColor, QColor(0, 0, 0))
+        # coll.setProperty(settings.ShadowDraw, True)
+        # coll.setProperty(settings.BufferDraw, True)
+        # coll.setProperty(settings.BufferColor, QColor(0, 0, 0))
+        coll.setProperty(settings.Color, QColor(20, 20, 20))
+
+        # rendering: overlap
+        plmt = settings.placementSettings()
+        plmt.setOverlapHandling(Qgis.LabelOverlapHandling.AllowOverlapAtNoCost)
+        settings.setPlacementSettings(plmt)
+
+        # placement: obstacle
+        obs = settings.obstacleSettings()
+        obs.setIsObstacle(False)
+        settings.setObstacleSettings(obs)
+
         settings.setDataDefinedProperties(coll)
         self.scratchLayer.setLabelsEnabled(True)
         self.scratchLayer.setLabeling(QgsVectorLayerSimpleLabeling(settings))
         self.scratchLayer.commitChanges()
 
         # add drop shadow and color to the spot preview
-        pe_stack = QgsEffectStack()
-        pe_stack.appendEffect(QgsDropShadowEffect())
-        pe_stack.appendEffect(QgsDrawSourceEffect())
-
-        self.scratchLayer.renderer().setPaintEffect(pe_stack)
+        # pe_stack = QgsEffectStack()
+        # pe_stack.appendEffect(QgsDropShadowEffect())
+        # pe_stack.appendEffect(QgsDrawSourceEffect())
+        #
+        # self.scratchLayer.renderer().setPaintEffect(pe_stack)
 
         self.fields = self.scratchLayer.fields()
 
