@@ -87,7 +87,9 @@ from .resources import *  # noqa: F401, F403
 # Import custom tools
 from .tools.alignmentTool import AlignmentModel, AlignmentModelNew, AlignmentMarker
 from .tools.canvasMapTool import CanvasMapTool
-from .tools.sumTableTool import SumTableTool
+
+# from .tools.sumTableTool import SumTableTool
+from .tools.sumTableToolNew import SumTableTool
 from .tools.coordinateTool import CoordinateTool, CoordinateToolNew
 
 # Import the code for the DockWidget
@@ -820,8 +822,11 @@ class WiscSIMSTool:
             end_asc = self.dockwidget.Cmb_Excel_To.itemData(end_idx)
             importing_data = self.xl.filter_by_asc(start=start_asc, end=end_asc)
 
+        # print(importing_data)
+
         importing_layer = self.dockwidget.Cmb_Target_Layer.itemData(self.dockwidget.Cmb_Target_Layer.currentIndex())
         X, Y = self.xl.find_columns(["X", "Y"], False)
+        # print(f"X: {X}, Y: {Y}")
 
         features = []
 
@@ -832,20 +837,27 @@ class WiscSIMSTool:
         i = 0
         is_direct_import = not self.dockwidget.Grp_Alignment.isChecked()
 
-        for d in importing_data:
-            if d[X] == "" or d[Y] == "":
+        _r, _c = importing_data.shape
+
+        # print(f"_r: {_r}, _c: {_c}")
+
+        for r in range(_r):
+            d = dict(importing_data.iloc[r])
+            # for d in importing_data:
+            #     print(">>>>>", d)
+            if d["X"] == "" or d["Y"] == "":
                 continue
             i += 1
             if is_direct_import:
-                canvasX, canvasY = [d[X], d[Y]]
+                canvasX, canvasY = [d["X"], d["Y"]]
             else:
                 conv_model = self.get_conversion_models(
-                    [d[X], d[Y]], self.model.getStagePositions(), self.conv_params, 2
+                    [d["X"], d["Y"]], self.model.getStagePositions(), self.conv_params, 2
                 )
-                canvasX, canvasY = self.cot.getWtAveragedStageToCanvas([d[X], d[Y]], conv_model)
+                canvasX, canvasY = self.cot.getWtAveragedStageToCanvas([d["X"], d["Y"]], conv_model)
             feature = QgsFeature()
             feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(canvasX, canvasY)))
-            feature.setAttributes(d)
+            feature.setAttributes(list(d.values()))
             features.append(feature)
 
         dpr = importing_layer.dataProvider()

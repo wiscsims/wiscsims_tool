@@ -1,6 +1,6 @@
 import os
 import re
-import xlrd as xl
+import pandas as pd
 
 # if os.name == 'nt':
 #     import win32com.client
@@ -22,20 +22,23 @@ class SumTableTool:
         self.prev = []
         self.values = []
 
-        self.ws = None
-
         self.asc_pattern = re.compile(r"^\d{8}@\d+\.asc$")
 
         self.asc_filter = {"from": None, "to": None}
         self.comment_filter = ""
+        self.ws: pd.DataFrame
 
         self.load_workbook()
 
     def load_workbook(self):
+        print("NEW Loading")
         try:
-            self.excel = xl.open_workbook(filename=self.path)
-        except Exception:
-            print("error on open_workbook // path: {}".format(self.path))
+            self.excel = pd.read_excel(self.path, sheet_name=None, engine="xlrd")
+            # self.excel = xl.open_workbook(filename=self.path)
+            print("pandas!", self.excel.keys())
+        except Exception as e:
+            print(f"error on open_workbook // path: {self.path}")
+            print(e)
             return None
 
         try:
@@ -44,12 +47,19 @@ class SumTableTool:
             return None
 
         try:
-            if "Sum_table" in self.wb.sheet_names():
-                self.ws = self.wb.sheet_by_name("Sum_table")
-            elif "Data" in self.wb.sheet_names():
-                self.ws = self.wb.sheet_by_name("Data")
+            sheet_list = list(self.wb.keys())
+            if "Sum_table" in sheet_list:
+                self.ws = self.wb["Sum_table"]
+            elif "Data" in sheet_list:
+                self.ws = self.wb["Data"]
             else:
                 raise ValueError("No appropriate worksheet.")
+
+            self.ws = self.ws[~self.ws["File"].isna()]
+
+            pat = re.compile(r"@([0-9]+)\.asc$")
+            self.ws["n"] = [int(pat.search(f).groups()[0]) for f in self.ws["File"]]
+
         except ValueError as err:
             print(err)
             return None
@@ -87,19 +97,24 @@ class SumTableTool:
             return None
 
     def find_last_row(self):
-        return len(self.ws.col_values(0)) - 1
+        last_r, _ = self.ws.shape
+        return last_r - 1
 
     def find_last_column(self):
-        return len(self.get_headers()) - 1
+        _, last_c = self.ws.shape
+        # return len(self.get_headers()) - 1
+        return last_c - 1
 
     def get_headers(self):
-        return self.ws.row_values(0, 0)
+        return self.ws.columns.tolist()
+        # return self.ws.row_values(0, 0)
 
     def get_values(self):
         last_row = self.find_last_row()
         # last_col = self.find_last_column() + 1  # needs '+1' because source code uses _cell_values[rowx][start_colx:end_colx]
-        self.values = [list(r) for r in self.ws._cell_values if r[0] is not None and self.asc_pattern.match(r[0])]
+        # self.values = [list(r) for r in self.ws._cell_values if r[0] is not None and self.asc_pattern.match(r[0])]
         if self.asc_filter["from"] is not None or self.asc_filter["to"] is not None:
+            print(self.asc_filter["from"])
             self.values = self.filter_by_asc(self.asc_filter["from"], self.asc_filter["to"])
         elif self.comment_filter != "":
             print("comfil: ", self.comment_filter)
@@ -108,49 +123,18 @@ class SumTableTool:
         return self.values
 
     def get_asc_list(self):
-        if self.values == []:
-            self.get_values()
-        return [r[0] for r in self.values]
+        return self.ws["File"].tolist()
 
     def filter_by_comment(self, pattern):
-        comm_col = self.find_columns(["Comment"])[0]
-        pat = re.compile(pattern, re.I)
-        if self.values == []:
-            self.values = self.get_values()
-
-        return [r for r in self.values if pat.search(r[comm_col])]
+        return self.ws[self.ws["Comment"].str.match(pattern)]
 
     def filter_by_asc(self, start=None, end=None):
-        # start=None, end=None: All (from smallest to largest)
-        # start=None, end=xxx: from smallest to xxx
-        # start=xxx, end=None: from xxx to largest
-        # start=xxx, end=yyy: from xxx to yyy
-        if self.values == []:
-            self.values = self.get_values()
-        asc = [r[0] for r in self.values]
-        rNum = len(self.values)
-        if start is None:
-            if end is None:
-                return self.values
-            else:
-                smallest = asc[0]
-                largest = end
-        elif end is None:
-            smallest = start
-            largest = asc[rNum - 1]
-        else:
-            smallest = start
-            largest = end
+        pat = re.compile(r"@(\d+)\.asc$")
 
-        try:
-            s_idx = asc.index(smallest)
-            e_idx = asc.index(largest)
-            if s_idx < 0 or e_idx < 0:
-                return self.values
-        except ValueError:
-            return self.values
+        start_n = int(pat.search(start).groups()[0])
+        end_n = int(pat.search(end).groups()[0])
 
-        return self.values[s_idx : e_idx + 1]
+        return self.ws[self.ws["n"].between(start_n, end_n)]
 
     def is_modified(self, val=None):
         if val is None:
