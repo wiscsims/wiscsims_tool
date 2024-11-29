@@ -113,7 +113,7 @@ class CoordinateTool:
         weights, wpt_x, wpt_y = [], [], []
         tmp = []  # for debug
 
-        print(conv_param)
+        # print(conv_param)
 
         for cp in conv_param:
             params = [cp["scale"], cp["offset"], cp["rotation"]]

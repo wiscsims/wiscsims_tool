@@ -31,11 +31,9 @@ class SumTableTool:
         self.load_workbook()
 
     def load_workbook(self):
-        print("NEW Loading")
         try:
             self.excel = pd.read_excel(self.path, sheet_name=None, engine="xlrd")
             # self.excel = xl.open_workbook(filename=self.path)
-            print("pandas!", self.excel.keys())
         except Exception as e:
             print(f"error on open_workbook // path: {self.path}")
             print(e)
@@ -114,12 +112,9 @@ class SumTableTool:
         # last_col = self.find_last_column() + 1  # needs '+1' because source code uses _cell_values[rowx][start_colx:end_colx]
         # self.values = [list(r) for r in self.ws._cell_values if r[0] is not None and self.asc_pattern.match(r[0])]
         if self.asc_filter["from"] is not None or self.asc_filter["to"] is not None:
-            print(self.asc_filter["from"])
             self.values = self.filter_by_asc(self.asc_filter["from"], self.asc_filter["to"])
         elif self.comment_filter != "":
-            print("comfil: ", self.comment_filter)
             self.values = self.filter_by_comment(self.comment_filter)
-            print("value: ", self.values)
         return self.values
 
     def get_asc_list(self):
