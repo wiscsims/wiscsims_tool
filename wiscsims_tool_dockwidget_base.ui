@@ -85,7 +85,7 @@ QTabWidget::pane {
        <enum>QTabWidget::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="iconSize">
        <size>
@@ -593,6 +593,22 @@ QTabWidget::pane {
                </widget>
               </item>
              </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLabel" name="Txt_N_Importing_Data">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+             <property name="margin">
+              <number>25</number>
+             </property>
+             <property name="indent">
+              <number>5</number>
+             </property>
             </widget>
            </item>
           </layout>

@@ -102,6 +102,8 @@ import re
 import json
 import math
 
+from pandas import DataFrame
+
 
 class AlignmentInfo(QDialog):
     def __init__(self, parent=None, info=None):
@@ -435,6 +437,11 @@ class WiscSIMSTool:
         dock.Btn_Create_New_Layer.clicked.connect(self.create_new_layer)
         dock.Btn_Import_From_Excel.clicked.connect(self.import_from_excel)
         dock.Btn_Refresh_Import_Layers.clicked.connect(self.update_import_layers)
+
+        dock.Cmb_Excel_From.currentIndexChanged.connect(self.update_n_importing_data)
+        dock.Cmb_Excel_To.currentIndexChanged.connect(self.update_n_importing_data)
+        dock.Tbx_Comment_Match.textChanged.connect(self.update_n_importing_data)
+        dock.Opt_Range.toggled.connect(self.update_n_importing_data)
 
         dock.Tab_Preset_Mode.currentChanged.connect(self.preset_tool_changed)
 
@@ -804,16 +811,29 @@ class WiscSIMSTool:
         # print([round(100 * a/wt_sum, 1) for a in out.values() if a > 0.0])
         return new_conv_params
 
-    def import_from_excel(self):
-        if not self.is_ok_to_import():
+    def update_n_importing_data(self):
+        d = self.get_importing_data()
+        if not isinstance(d, DataFrame):
+            self.dockwidget.Txt_N_Importing_Data.setText("")
             return
 
+        _r, _c = d.shape
+        if _r <= 1:
+            s = ""
+        else:
+            s = "s"
+        self.dockwidget.Txt_N_Importing_Data.setText(f"{_r} spot{s} will be imported")
+
+    def get_importing_data(self):
+        importing_data = DataFrame()
         # import date from Excel file
         if self.dockwidget.Opt_Comment.isChecked():
             importing_data = self.xl.filter_by_comment(self.dockwidget.Tbx_Comment_Match.text())
         else:
             start_idx = self.dockwidget.Cmb_Excel_From.currentIndex()
             end_idx = self.dockwidget.Cmb_Excel_To.currentIndex()
+            if start_idx < 0 or end_idx < 0:
+                return importing_data
             if start_idx > end_idx:
                 start_idx, end_idx = end_idx, start_idx
                 self.dockwidget.Cmb_Excel_From.setCurrentIndex(start_idx)
@@ -822,16 +842,18 @@ class WiscSIMSTool:
             end_asc = self.dockwidget.Cmb_Excel_To.itemData(end_idx)
             importing_data = self.xl.filter_by_asc(start=start_asc, end=end_asc)
 
-        # print(importing_data)
+        return importing_data
 
-        importing_layer = self.dockwidget.Cmb_Target_Layer.itemData(self.dockwidget.Cmb_Target_Layer.currentIndex())
-        X, Y = self.xl.find_columns(["X", "Y"], False)
-        # print(f"X: {X}, Y: {Y}")
+    def import_from_excel(self):
+        if not self.is_ok_to_import():
+            return
+
+        # import date from Excel file
+        importing_data: DataFrame = self.get_importing_data()
 
         features = []
 
         # get conversion model
-        #
         self.update_conv_params()
 
         i = 0
@@ -839,12 +861,8 @@ class WiscSIMSTool:
 
         _r, _c = importing_data.shape
 
-        # print(f"_r: {_r}, _c: {_c}")
-
         for r in range(_r):
             d = dict(importing_data.iloc[r])
-            # for d in importing_data:
-            #     print(">>>>>", d)
             if d["X"] == "" or d["Y"] == "":
                 continue
             i += 1
@@ -859,6 +877,8 @@ class WiscSIMSTool:
             feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(canvasX, canvasY)))
             feature.setAttributes(list(d.values()))
             features.append(feature)
+
+        importing_layer = self.dockwidget.Cmb_Target_Layer.itemData(self.dockwidget.Cmb_Target_Layer.currentIndex())
 
         dpr = importing_layer.dataProvider()
         dpr.addFeatures(features)
@@ -883,6 +903,9 @@ class WiscSIMSTool:
         self.dockwidget.Opt_Range.setChecked(True)
         # add appropriate layers to combobox
         self.update_import_layers()
+
+        # update number of importing data
+        self.update_n_importing_data()
 
     def update_import_layers(self):
         current_layer_index = self.dockwidget.Cmb_Target_Layer.currentIndex()
@@ -986,7 +1009,7 @@ class WiscSIMSTool:
     def get_vector_point_layers(self):
         # Filter by layer type 0: vector
         layers = self.get_layer_list(layertype=0)
-        [print(l.dataProvider().name()) for l in layers]
+        # [print(l.dataProvider().name()) for l in layers]
         # filter only point geometry layer 0: point and not memory layers
         return [l for l in layers if l.geometryType() == 0 and l.dataProvider().name() != "memory"]
 
