@@ -1,5 +1,6 @@
 import os
 import re
+from importlib.metadata import version
 import pandas as pd
 
 # if os.name == 'nt':
@@ -31,8 +32,14 @@ class SumTableTool:
         self.load_workbook()
 
     def load_workbook(self):
+        engine = "xlrd"
+
+        if int(version("xlrd").split(".")[0]) > 1:
+            engine = "openpyxl"
+
         try:
-            self.excel = pd.read_excel(self.path, sheet_name=None, engine="xlrd")
+            # self.excel = pd.read_excel(self.path, sheet_name=None, engine="xlrd")
+            self.excel = pd.read_excel(self.path, sheet_name=None, engine=engine)
             # self.excel = xl.open_workbook(filename=self.path)
         except Exception as e:
             print(f"error on open_workbook // path: {self.path}")
