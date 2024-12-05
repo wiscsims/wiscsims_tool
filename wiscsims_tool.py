@@ -684,7 +684,7 @@ class WiscSIMSTool:
             arows = self.model.getAvailableRows()
             spot_sizes = [self.model.getBeam(r)["size"] for r in arows]
             mean_spot_size = self.model.getAverage(spot_sizes)
-            self.dockwidget.Spn_Spot_Size.setValue(mean_spot_size)
+            self.dockwidget.Spn_Spot_Size.setValue(round(mean_spot_size))
 
             #
             # set average scale to preset scales

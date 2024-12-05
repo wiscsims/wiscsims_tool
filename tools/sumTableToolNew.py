@@ -128,7 +128,15 @@ class SumTableTool:
         return self.ws["File"].tolist()
 
     def filter_by_comment(self, pattern):
-        return self.ws[self.ws["Comment"].str.match(pattern)]
+        pattern = pattern.replace("*", "\\*")
+        out = None
+        try:
+            out = self.ws[self.ws["Comment"].str.contains(pattern)]
+            print(out)
+        except Exception as e:
+            print("ERROR")
+            print(e)
+        return out
 
     def filter_by_asc(self, start=None, end=None):
         pat = re.compile(r"@(\d+)\.asc$")
