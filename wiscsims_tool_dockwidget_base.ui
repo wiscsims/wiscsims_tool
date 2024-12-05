@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>405</width>
-    <height>671</height>
+    <height>784</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -19,7 +19,7 @@
   <property name="minimumSize">
    <size>
     <width>405</width>
-    <height>671</height>
+    <height>784</height>
    </size>
   </property>
   <property name="maximumSize">
@@ -131,7 +131,7 @@ QTabWidget::pane {
            <bool>false</bool>
           </property>
           <property name="checkable">
-           <bool>true</bool>
+           <bool>false</bool>
           </property>
           <layout class="QVBoxLayout" name="verticalLayout">
            <item>
@@ -142,10 +142,16 @@ QTabWidget::pane {
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>120</height>
+              </size>
+             </property>
              <property name="maximumSize">
               <size>
                <width>16777215</width>
-               <height>16777215</height>
+               <height>120</height>
               </size>
              </property>
              <property name="styleSheet">
@@ -231,15 +237,50 @@ QTabWidget::pane {
             </widget>
            </item>
            <item>
-            <widget class="QPushButton" name="Btn_Import_Alignments">
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>16777215</height>
-              </size>
+            <widget class="QFrame" name="frame">
+             <property name="frameShape">
+              <enum>QFrame::NoFrame</enum>
              </property>
+             <property name="frameShadow">
+              <enum>QFrame::Plain</enum>
+             </property>
+             <layout class="QHBoxLayout" name="horizontalLayout_10">
+              <property name="topMargin">
+               <number>12</number>
+              </property>
+              <property name="bottomMargin">
+               <number>12</number>
+              </property>
+              <item>
+               <widget class="QLabel" name="label_10">
+                <property name="text">
+                 <string>Spot Size:   </string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                </property>
+                <property name="margin">
+                 <number>0</number>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QSpinBox" name="Spn_Spot_Size">
+                <property name="suffix">
+                 <string> um</string>
+                </property>
+                <property name="value">
+                 <number>10</number>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="Btn_Import_Alignments">
              <property name="text">
-              <string>Open New Alignment File...</string>
+              <string>Open Alignment File...</string>
              </property>
             </widget>
            </item>
@@ -266,15 +307,18 @@ QTabWidget::pane {
           <property name="maximumSize">
            <size>
             <width>16777215</width>
-            <height>177</height>
+            <height>16777215</height>
            </size>
           </property>
           <property name="title">
            <string>2. Select Excel Workbook</string>
           </property>
+          <property name="alignment">
+           <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+          </property>
           <layout class="QVBoxLayout" name="verticalLayout_2">
            <property name="spacing">
-            <number>6</number>
+            <number>12</number>
            </property>
            <item>
             <widget class="QFrame" name="Frame_for_Excel_file">
@@ -286,8 +330,8 @@ QTabWidget::pane {
              </property>
              <property name="minimumSize">
               <size>
-               <width>30</width>
-               <height>0</height>
+               <width>0</width>
+               <height>30</height>
               </size>
              </property>
              <property name="maximumSize">
@@ -322,7 +366,7 @@ QTabWidget::pane {
               <item>
                <widget class="QLineEdit" name="Tbx_Workbook">
                 <property name="enabled">
-                 <bool>true</bool>
+                 <bool>false</bool>
                 </property>
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
@@ -345,34 +389,25 @@ QTabWidget::pane {
                 <property name="toolTip">
                  <string notr="true" extracomment="this is tooltip">test test test</string>
                 </property>
+                <property name="alignment">
+                 <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                </property>
                 <property name="readOnly">
                  <bool>true</bool>
                 </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="Btn_Select_Workbook">
-                <property name="maximumSize">
-                 <size>
-                  <width>30</width>
-                  <height>20</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="iconSize">
-                 <size>
-                  <width>30</width>
-                  <height>30</height>
-                 </size>
-                </property>
-                <property name="flat">
-                 <bool>true</bool>
+                <property name="placeholderText">
+                 <string>Not Selected</string>
                 </property>
                </widget>
               </item>
              </layout>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="Btn_Select_Workbook">
+             <property name="text">
+              <string>Select Workbook...</string>
+             </property>
             </widget>
            </item>
            <item>
@@ -386,6 +421,12 @@ QTabWidget::pane {
                <verstretch>0</verstretch>
               </sizepolicy>
              </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>30</height>
+              </size>
+             </property>
              <property name="maximumSize">
               <size>
                <width>16777215</width>
@@ -393,7 +434,7 @@ QTabWidget::pane {
               </size>
              </property>
              <property name="text">
-              <string>Data Range</string>
+              <string>Data Range (File Name: @xxx.asc)</string>
              </property>
              <property name="checked">
               <bool>false</bool>
@@ -408,13 +449,13 @@ QTabWidget::pane {
              <property name="minimumSize">
               <size>
                <width>0</width>
-               <height>26</height>
+               <height>30</height>
               </size>
              </property>
              <property name="maximumSize">
               <size>
                <width>200000</width>
-               <height>25</height>
+               <height>30</height>
               </size>
              </property>
              <property name="frameShape">
@@ -532,14 +573,20 @@ QTabWidget::pane {
              <property name="enabled">
               <bool>true</bool>
              </property>
+             <property name="minimumSize">
+              <size>
+               <width>0</width>
+               <height>30</height>
+              </size>
+             </property>
              <property name="maximumSize">
               <size>
                <width>16777215</width>
-               <height>25</height>
+               <height>30</height>
               </size>
              </property>
              <property name="text">
-              <string>Comment Match (reglar exression is available)</string>
+              <string>Keyword Match (Comment)</string>
              </property>
              <property name="checked">
               <bool>false</bool>
@@ -554,7 +601,13 @@ QTabWidget::pane {
              <property name="minimumSize">
               <size>
                <width>0</width>
-               <height>18</height>
+               <height>30</height>
+              </size>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>30</height>
               </size>
              </property>
              <property name="frameShape">
@@ -582,13 +635,16 @@ QTabWidget::pane {
               <item>
                <widget class="QLineEdit" name="Tbx_Comment_Match">
                 <property name="enabled">
-                 <bool>false</bool>
+                 <bool>true</bool>
                 </property>
                 <property name="minimumSize">
                  <size>
                   <width>13</width>
                   <height>0</height>
                  </size>
+                </property>
+                <property name="placeholderText">
+                 <string>regular expression is available (e.g. Mount-1)</string>
                 </property>
                </widget>
               </item>
@@ -603,192 +659,37 @@ QTabWidget::pane {
              <property name="alignment">
               <set>Qt::AlignCenter</set>
              </property>
-             <property name="margin">
-              <number>25</number>
-             </property>
-             <property name="indent">
-              <number>5</number>
-             </property>
             </widget>
            </item>
           </layout>
          </widget>
         </item>
         <item>
-         <widget class="QGroupBox" name="Grp_Layer">
+         <widget class="QGroupBox" name="Grp_Import_Excel_Data">
           <property name="enabled">
            <bool>true</bool>
           </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>70</height>
-           </size>
-          </property>
           <property name="title">
-           <string>3. Select Layer to Import SIMS Data</string>
+           <string>3. Import Excel Data</string>
           </property>
-          <layout class="QGridLayout" name="gridLayout_9" columnstretch="0,0,0">
-           <property name="topMargin">
-            <number>6</number>
-           </property>
-           <property name="bottomMargin">
-            <number>6</number>
-           </property>
-           <property name="horizontalSpacing">
-            <number>10</number>
-           </property>
-           <property name="verticalSpacing">
-            <number>0</number>
-           </property>
-           <item row="0" column="0">
-            <widget class="QComboBox" name="Cmb_Target_Layer">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>16777215</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="2">
-            <widget class="QPushButton" name="Btn_Create_New_Layer">
-             <property name="maximumSize">
-              <size>
-               <width>65</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>New</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="Btn_Refresh_Import_Layers">
-             <property name="maximumSize">
-              <size>
-               <width>75</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Update</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="groupBox_3">
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>70</height>
-           </size>
-          </property>
-          <property name="title">
-           <string>4. Set Spot Size for the Session</string>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout_4">
-           <property name="spacing">
-            <number>0</number>
-           </property>
-           <property name="topMargin">
-            <number>6</number>
-           </property>
-           <property name="bottomMargin">
-            <number>6</number>
-           </property>
-           <item>
-            <widget class="QSpinBox" name="Spn_Spot_Size">
-             <property name="suffix">
-              <string> um</string>
-             </property>
-             <property name="value">
-              <number>10</number>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QWidget" name="widget_3" native="true">
           <layout class="QHBoxLayout" name="horizontalLayout_9">
-           <item>
-            <spacer name="horizontalSpacer_5">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
            <item>
             <widget class="QPushButton" name="Btn_Import_From_Excel">
              <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>170</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>16777215</height>
-              </size>
+              <bool>true</bool>
              </property>
              <property name="font">
               <font>
                <pointsize>-1</pointsize>
-               <weight>75</weight>
-               <bold>true</bold>
               </font>
              </property>
-             <property name="autoFillBackground">
-              <bool>false</bool>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">background-color: rgb(255, 49, 49);
-color: #ffffff;
-font-weight: bold;
-</string>
-             </property>
              <property name="text">
-              <string>Import Excel Data</string>
+              <string>Import Excel Data...</string>
              </property>
              <property name="flat">
               <bool>false</bool>
              </property>
             </widget>
-           </item>
-           <item>
-            <spacer name="horizontalSpacer_4">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>24</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
            </item>
           </layout>
          </widget>
@@ -2156,54 +2057,6 @@ font-weight: bold;
  <resources/>
  <connections>
   <connection>
-   <sender>Opt_Range</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>Cmb_Excel_From</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>210</x>
-     <y>382</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>159</x>
-     <y>409</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>Opt_Range</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>Cmb_Excel_To</receiver>
-   <slot>setEnabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>210</x>
-     <y>382</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>318</x>
-     <y>409</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>Opt_Range</sender>
-   <signal>toggled(bool)</signal>
-   <receiver>Tbx_Comment_Match</receiver>
-   <slot>setDisabled(bool)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>210</x>
-     <y>382</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>221</x>
-     <y>463</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
    <sender>Opt_Line_Step_Size</sender>
    <signal>toggled(bool)</signal>
    <receiver>Spn_Line_Step_Size</receiver>
@@ -2232,6 +2085,54 @@ font-weight: bold;
     <hint type="destinationlabel">
      <x>68</x>
      <y>454</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>Opt_Range</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>Tbx_Comment_Match</receiver>
+   <slot>setDisabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>210</x>
+     <y>382</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>221</x>
+     <y>463</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>Opt_Range</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>Cmb_Excel_From</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>210</x>
+     <y>382</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>159</x>
+     <y>409</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>Opt_Range</sender>
+   <signal>toggled(bool)</signal>
+   <receiver>Cmb_Excel_To</receiver>
+   <slot>setEnabled(bool)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>210</x>
+     <y>382</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>318</x>
+     <y>409</y>
     </hint>
    </hints>
   </connection>

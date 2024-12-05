@@ -95,6 +95,7 @@ from .tools.coordinateTool import CoordinateTool, CoordinateToolNew
 # Import the code for the DockWidget
 from .wiscsims_tool_dockwidget import WiscSIMSToolDockWidget
 from .pixel_size_tool import PixelSizeTool
+from .import_layer_option import ImportLayerOption
 
 import os.path
 import os
@@ -380,8 +381,12 @@ class WiscSIMSTool:
             self.dockwidget.Btn_Select_Workbook.setIconSize(QSize(16, 16))
 
             self.init_alignmentTableNew()
-            self.dockwidget.Grp_Workbook.setEnabled(False)
-            self.dockwidget.Grp_Layer.setEnabled(False)
+
+            self.deactivate_Workbook_Section()
+            self.deactivate_Import_Section()
+
+            self.activate_button(self.dockwidget.Btn_Import_Alignments)
+
             self.prev_workbook_path = ""
             self.workbook_path = ""
 
@@ -404,8 +409,8 @@ class WiscSIMSTool:
         self.create_scratch_layer()
 
     def handle_layers_changed(self, layers):
-        if self.dockwidget.Cmb_Target_Layer.isEnabled():
-            self.update_import_layers()
+        # if self.dockwidget.Cmb_Target_Layer.isEnabled():
+        #     self.update_import_layers()
         self.init_preset_layer_combobox()
 
     def create_legend_connections(self):
@@ -425,7 +430,7 @@ class WiscSIMSTool:
     def create_ui_connections(self):
         dock = self.dockwidget
 
-        dock.Grp_Alignment.toggled.connect(self.toggle_use_alignment)
+        # dock.Grp_Alignment.toggled.connect(self.toggle_use_alignment)
         dock.Tbv_Alignment.clicked.connect(self.change_tableview_selection)
         dock.Tbv_Alignment.doubleClicked.connect(self.handle_table_doubleClicked)
         dock.Gbx_Alignment_Ref_Point_Markers.toggled.connect(self.update_ref_point_markers)
@@ -433,10 +438,11 @@ class WiscSIMSTool:
         dock.Cbx_Alignment_Ref_Names.toggled.connect(self.update_ref_point_markers)
         dock.Btn_Import_Alignments.clicked.connect(self.import_alignments)
         dock.Btn_Select_Workbook.clicked.connect(self.select_workbook)
-        dock.Tbx_Workbook.textChanged.connect(self.workbook_udpated)
-        dock.Btn_Create_New_Layer.clicked.connect(self.create_new_layer)
-        dock.Btn_Import_From_Excel.clicked.connect(self.import_from_excel)
-        dock.Btn_Refresh_Import_Layers.clicked.connect(self.update_import_layers)
+        dock.Tbx_Workbook.textChanged.connect(self.workbook_updated)
+        # dock.Btn_Create_New_Layer.clicked.connect(self.create_new_layer)
+        # dock.Btn_Create_New_Layer.clicked.connect(self.test_import_dialog)
+        # dock.Btn_Refresh_Import_Layers.clicked.connect(self.update_import_layers)
+        dock.Btn_Import_From_Excel.clicked.connect(self.test_import_dialog)
 
         dock.Cmb_Excel_From.currentIndexChanged.connect(self.update_n_importing_data)
         dock.Cmb_Excel_To.currentIndexChanged.connect(self.update_n_importing_data)
@@ -476,17 +482,17 @@ class WiscSIMSTool:
     def remove_ui_connections(self):
         dock = self.dockwidget
 
-        dock.Grp_Alignment.toggled.disconnect(self.toggle_use_alignment)
+        # dock.Grp_Alignment.toggled.disconnect(self.toggle_use_alignment)
         dock.Tbv_Alignment.clicked.disconnect(self.change_tableview_selection)
         dock.Gbx_Alignment_Ref_Point_Markers.toggled.disconnect(self.update_ref_point_markers)
         dock.Cbx_Alignment_Ref_Points.toggled.disconnect(self.update_ref_point_markers)
         dock.Cbx_Alignment_Ref_Names.toggled.disconnect(self.update_ref_point_markers)
         dock.Btn_Import_Alignments.clicked.disconnect(self.import_alignments)
         dock.Btn_Select_Workbook.clicked.disconnect(self.select_workbook)
-        dock.Tbx_Workbook.textChanged.disconnect(self.workbook_udpated)
+        dock.Tbx_Workbook.textChanged.disconnect(self.workbook_updated)
         dock.Btn_Create_New_Layer.clicked.disconnect(self.create_new_layer)
         dock.Btn_Import_From_Excel.clicked.disconnect(self.import_from_excel)
-        dock.Btn_Refresh_Import_Layers.clicked.disconnect(self.update_import_layers)
+        # dock.Btn_Refresh_Import_Layers.clicked.disconnect(self.update_import_layers)
 
         dock.Tab_Preset_Mode.currentChanged.disconnect(self.preset_tool_changed)
 
@@ -642,6 +648,9 @@ class WiscSIMSTool:
         if alnFile == "":
             return
 
+        self.deactivate_button(self.dockwidget.Btn_Select_Workbook)
+        self.deactivate_button(self.dockwidget.Btn_Import_From_Excel)
+
         with open(alnFile) as data_file:
             obj = json.load(data_file)
 
@@ -670,10 +679,21 @@ class WiscSIMSTool:
             # calculate average scale for preset
             scales = self.model.getScales()
             average_scale = sum(scales) / len(scales)
+
+            # set spot size
+            arows = self.model.getAvailableRows()
+            spot_sizes = [self.model.getBeam(r)["size"] for r in arows]
+            mean_spot_size = self.model.getAverage(spot_sizes)
+            self.dockwidget.Spn_Spot_Size.setValue(mean_spot_size)
+
+            #
             # set average scale to preset scales
             self.dockwidget.Spn_Preset_Pixel_Size.setValue(average_scale)
             self.update_ref_point_markers()
             self.update_canvas_rotation()
+
+        self.deactivate_button(self.dockwidget.Btn_Import_Alignments)
+        self.activate_button(self.dockwidget.Btn_Select_Workbook)
 
     def is_default_values(self, pt):
         return pt[0] == self.default_val and pt[1] == self.default_val
@@ -734,14 +754,16 @@ class WiscSIMSTool:
                 'The workbook must have a sheet named "Sum_table" or "Data".',
             )
             self.workbook_path = None
-            self.dockwidget.Grp_Layer.setEnabled(False)
+            # self.dockwidget.Grp_Layer.setEnabled(False)
+            self.deactivate_Import_Section()
         else:
             self.prev_workbook_path = self.workbook_path
             self.dockwidget.Tbx_Workbook.setText(os.path.basename(self.workbook_path))
+            self.deactivate_button(self.dockwidget.Btn_Select_Workbook)
 
     def is_ok_to_import(self):
         """check importing condition"""
-        if self.dockwidget.Grp_Alignment.isChecked() and not self.model.isAvailable():
+        if not self.model.isAvailable():
             """ use alignment but no alignment file imported """
             return False
 
@@ -749,9 +771,9 @@ class WiscSIMSTool:
             """ no excel file """
             return False
 
-        if self.dockwidget.Cmb_Target_Layer.currentIndex() == -1:
-            """ no layer is selected """
-            return False
+        # if self.dockwidget.Cmb_Target_Layer.currentIndex() == -1:
+        #     """ no layer is selected """
+        #     return False
         return True
 
     def update_conv_params(self):
@@ -844,12 +866,58 @@ class WiscSIMSTool:
 
         return importing_data
 
+    def test_import_dialog(self):
+        # get available import layers
+        self.excel_layers = self.get_excel_layers(self.xl)
+
+        # open dialogn with params (layers)
+        layers = [layer.name() for layer in self.excel_layers]
+        layers.insert(0, "New Layer")
+
+        self.import_layer_opt = ImportLayerOption(self.window, layers)
+        self.import_layer_opt.accepted.connect(self.handle_import_dialog_accepted)
+        self.import_layer_opt.rejected.connect(self.handle_import_dialog_canceled)
+
+        if len(self.excel_layers) == 0:
+            self.handle_import_dialog_accepted()
+            return
+
+        self.import_layer_opt.show()
+
+    def handle_import_dialog_accepted(self):
+        selected_index = self.import_layer_opt.Cmb_Layer_Option.currentIndex()
+        self.import_layer_opt.close()
+
+        self.target_layer = QgsVectorLayer()
+
+        if selected_index == 0:
+            # create new layer
+
+            # set new layer as a target layer
+            self.target_layer = self.create_new_layer()
+        else:
+            # set selected layer as a target layer
+            self.target_layer = self.excel_layers[selected_index - 1]
+
+        if self.target_layer.geometryType() != Qgis.GeometryType.Point:
+            print("invalid layer")
+            return
+
+        # import Excel data to the target layer
+        self.import_from_excel()
+
+    def handle_import_dialog_canceled(self):
+        self.import_layer_opt.close()
+
     def import_from_excel(self):
         if not self.is_ok_to_import():
             return
 
+        self.deactivate_button(self.dockwidget.Btn_Select_Workbook)
+        self.deactivate_button(self.dockwidget.Btn_Import_Alignments)
+
         # import date from Excel file
-        importing_data: DataFrame = self.get_importing_data()
+        importing_data = self.get_importing_data()
 
         features = []
 
@@ -857,7 +925,7 @@ class WiscSIMSTool:
         self.update_conv_params()
 
         i = 0
-        is_direct_import = not self.dockwidget.Grp_Alignment.isChecked()
+        # is_direct_import = not self.dockwidget.Grp_Alignment.isChecked()
 
         _r, _c = importing_data.shape
 
@@ -866,60 +934,84 @@ class WiscSIMSTool:
             if d["X"] == "" or d["Y"] == "":
                 continue
             i += 1
-            if is_direct_import:
-                canvasX, canvasY = [d["X"], d["Y"]]
-            else:
-                conv_model = self.get_conversion_models(
-                    [d["X"], d["Y"]], self.model.getStagePositions(), self.conv_params, 2
-                )
-                canvasX, canvasY = self.cot.getWtAveragedStageToCanvas([d["X"], d["Y"]], conv_model)
+            # if is_direct_import:
+            #     canvasX, canvasY = [d["X"], d["Y"]]
+            # else:
+            conv_model = self.get_conversion_models(
+                [d["X"], d["Y"]], self.model.getStagePositions(), self.conv_params, 2
+            )
+            canvasX, canvasY = self.cot.getWtAveragedStageToCanvas([d["X"], d["Y"]], conv_model)
             feature = QgsFeature()
             feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(canvasX, canvasY)))
             feature.setAttributes(list(d.values()))
             features.append(feature)
 
-        importing_layer = self.dockwidget.Cmb_Target_Layer.itemData(self.dockwidget.Cmb_Target_Layer.currentIndex())
+        # importing_layer = self.dockwidget.Cmb_Target_Layer.itemData(self.dockwidget.Cmb_Target_Layer.currentIndex())
 
-        dpr = importing_layer.dataProvider()
+        # dpr = importing_layer.dataProvider()
+        dpr = self.target_layer.dataProvider()
         dpr.addFeatures(features)
-        importing_layer.setDisplayExpression("File")
-        importing_layer.triggerRepaint()
+        self.target_layer.setDisplayExpression("File")
+        self.target_layer.triggerRepaint()
         QMessageBox.information(self.window, "Import Excel Data", f"{i} data were imported!")
 
     # self.canvas.refresh()
 
-    def workbook_udpated(self):
+    def workbook_updated(self):
         # addItems asc files
         if self.xl.ws is None:
             self.xl = SumTableTool(self.workbook_path)
         asc_list = self.xl.get_asc_list()
         # asc_list_s = map(lambda x: x[8:], asc_list)
+
+        # initialize from/to @xxx combobox
         self.dockwidget.Cmb_Excel_From.clear()
         self.dockwidget.Cmb_Excel_To.clear()
+
+        # add @xxx to from/to combobox
         [self.dockwidget.Cmb_Excel_From.addItem(asc[8:], asc) for asc in asc_list]
         [self.dockwidget.Cmb_Excel_To.addItem(asc[8:], asc) for asc in asc_list]
+
+        # set selected item in the "to" combobox
         self.dockwidget.Cmb_Excel_To.setCurrentIndex(len(asc_list) - 1)
-        self.dockwidget.Grp_Layer.setEnabled(True)
+
+        # select Opt_Range radiobox
         self.dockwidget.Opt_Range.setChecked(True)
-        # add appropriate layers to combobox
-        self.update_import_layers()
 
         # update number of importing data
         self.update_n_importing_data()
 
-    def update_import_layers(self):
-        current_layer_index = self.dockwidget.Cmb_Target_Layer.currentIndex()
+        # activate "#3 group box (import data button)"
+        self.activate_Import_Section()
 
-        self.dockwidget.Cmb_Target_Layer.clear()
-        layers = self.get_excel_layers(self.xl)
-        if len(layers) > 0:
-            [self.dockwidget.Cmb_Target_Layer.addItem(l.name(), l) for l in layers]
+    def activate_button(self, btn):
+        styles = "background-color: rgb(255, 49, 49); color: #ffffff;"
+        btn.setStyleSheet(styles)
+        btn.setEnabled(True)
 
-            self.dockwidget.Btn_Import_From_Excel.setEnabled(True)
-            if current_layer_index > -1:
-                self.dockwidget.Cmb_Target_Layer.setCurrentIndex(current_layer_index)
-        else:
-            self.dockwidget.Btn_Import_From_Excel.setEnabled(False)
+    def deactivate_button(self, btn):
+        styles = "background-color: none; color: none;"
+        btn.setStyleSheet(styles)
+
+    def activate_Workbook_Section(self):
+        self.dockwidget.Grp_Workbook.setEnabled(True)
+        self.deactivate_button(self.dockwidget.Btn_Import_Alignments)
+        self.deactivate_button(self.dockwidget.Btn_Import_From_Excel)
+        self.activate_button(self.dockwidget.Btn_Select_Workbook)
+
+    def deactivate_Workbook_Section(self):
+        self.dockwidget.Grp_Workbook.setEnabled(False)
+        self.deactivate_button(self.dockwidget.Btn_Select_Workbook)
+
+    def activate_Import_Section(self):
+        self.dockwidget.Grp_Import_Excel_Data.setEnabled(True)
+        self.deactivate_button(self.dockwidget.Btn_Import_Alignments)
+        self.deactivate_button(self.dockwidget.Btn_Select_Workbook)
+        self.activate_button(self.dockwidget.Btn_Import_From_Excel)
+
+    def deactivate_Import_Section(self):
+        self.dockwidget.Grp_Import_Excel_Data.setEnabled(False)
+        self.deactivate_button(self.dockwidget.Btn_Import_From_Excel)
 
     def create_new_layer(self, fpath=None):
         project_path = os.path.dirname(QgsProject.instance().fileName())
@@ -975,10 +1067,16 @@ class WiscSIMSTool:
             mySimpleSymbol = QgsMarkerSymbol.createSimple(props)
             newVlayer.renderer().setSymbol(mySimpleSymbol)
             newVlayer.updateExtents()
-            QgsProject.instance().addMapLayer(newVlayer)
+            insta = QgsProject.instance()
+            insta.addMapLayer(newVlayer)
+
+            # show feature count
+            root = insta.layerTreeRoot()
+            myLayerNode = root.findLayer(newVlayer.id())
+            myLayerNode.setCustomProperty("showFeatureCount", True)
+
             self.iface.setActiveLayer(newVlayer)
-            self.update_import_layers()
-            self.dockwidget.Cmb_Target_Layer.setCurrentIndex(self.dockwidget.Cmb_Target_Layer.findText(layerName))
+
             return newVlayer
 
         return None
