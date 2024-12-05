@@ -27,35 +27,35 @@ import math
 import os
 import os.path
 import re
-from PyQt5.QtCore import QCoreApplication, QModelIndex, QRect, QSettings, QSize, Qt, QTranslator, QVariant, qVersion
-from PyQt5.QtGui import QColor, QCursor, QIcon, QPixmap
+from PyQt5.QtCore import QCoreApplication, Qt, QTranslator, QSettings, qVersion  ##,  QModelIndex, QRect, QSize,QVariant
+from PyQt5.QtGui import QIcon  ##, QColor, QCursor, QPixmap
 from PyQt5.QtWidgets import (
-    QAbstractItemView,
     QAction,
-    QFileDialog,
-    QHeaderView,
-    QInputDialog,
-    QLineEdit,
-    QMessageBox,
-    QToolTip,
+    # QAbstractItemView,
+    # QFileDialog,
+    # QHeaderView,
+    # QInputDialog,
+    # QLineEdit,
+    # QMessageBox,
+    # QToolTip,
 )
 from qgis.core import (
-    Qgis,
-    QgsFeature,
-    QgsFeatureRequest,
-    QgsField,
-    QgsGeometry,
+    # Qgis,
+    # QgsFeature,
+    # QgsFeatureRequest,
+    # QgsField,
+    # QgsGeometry,
     QgsLayerTree,
     QgsLayerTreeLayer,
     QgsMapLayerType,
-    QgsMarkerSymbol,
-    QgsPalLayerSettings,
+    # QgsMarkerSymbol,
+    # QgsPalLayerSettings,
     QgsPointXY,
     QgsProject,
-    QgsPropertyCollection,
-    QgsVectorFileWriter,
-    QgsVectorLayer,
-    QgsVectorLayerSimpleLabeling,
+    # QgsPropertyCollection,
+    # QgsVectorFileWriter,
+    # QgsVectorLayer,
+    # QgsVectorLayerSimpleLabeling,
     QgsWkbTypes,
 )
 from qgis.gui import QgsRubberBand
@@ -258,7 +258,7 @@ class WiscSIMSTool:
 
         self.unsetMapTool()
 
-        self.clear_preview_spots()
+        self.preset.clear_preview_spots()
 
         self.pluginIsActive = False
 

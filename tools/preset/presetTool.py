@@ -22,38 +22,37 @@
  ***************************************************************************/
 """
 
-import json
 import math
 import os
 import os.path
-import re
+# import json
+# import re
 
 from PyQt5.QtCore import (
-    QCoreApplication,
-    QModelIndex,
     QObject,
     QRect,
-    QSettings,
-    QSize,
     Qt,
-    QTranslator,
     QVariant,
     pyqtSignal,
-    qVersion,
+    # QCoreApplication,
+    # QModelIndex,
+    # QSettings,
+    # QSize,
+    # QTranslator,
+    # qVersion,
 )
 from PyQt5.QtGui import QColor, QCursor, QIcon, QPixmap
 from PyQt5.QtWidgets import (
-    QAbstractItemView,
-    QAction,
     QFileDialog,
-    QHeaderView,
     QInputDialog,
     QLineEdit,
     QMessageBox,
     QToolTip,
+    # QAbstractItemView,
+    # QAction,
+    # QHeaderView,
 )
 from qgis.core import (
-    Qgis,
     QgsFeature,
     QgsFeatureRequest,
     QgsField,
@@ -67,7 +66,9 @@ from qgis.core import (
     QgsVectorLayer,
     QgsVectorLayerSimpleLabeling,
     QgsWkbTypes,
+    # Qgis,
 )
+
 from qgis.gui import QgsRubberBand
 
 from ..imports.coordinateTool import CoordinateTool
@@ -490,10 +491,12 @@ class PresetTool(QObject):
 
     def handle_change_PointPreview(self, state):
         # state 0: Unchecked, 2: Checked
-        self.update_preview_cursor(0)
+        print(f"handle change - PointPreview: {state}")
+        self.update_preview_cursor()
 
     def handle_change_CommentPreview(self):
-        self.preview.toggle_comment_preview()
+        # self.preview.toggle_comment_preview()
+        self.preview.disable_comment_preview()
 
     def get_preset_mode(self, idx=-1):
         if idx < 0:

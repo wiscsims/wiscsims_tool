@@ -22,6 +22,7 @@
  ***************************************************************************/
 """
 
+from this import d
 from PyQt5.QtCore import QVariant
 from PyQt5.QtGui import QColor
 from qgis.core import (
@@ -143,7 +144,7 @@ class PresetPreview:
         settings.setObstacleSettings(obs)
 
         settings.setDataDefinedProperties(coll)
-        self.preview_layer.setLabelsEnabled(True)  # TODO
+        self.preview_layer.setLabelsEnabled(False)  # TODO
         self.preview_layer.setLabeling(QgsVectorLayerSimpleLabeling(settings))
         self.preview_layer.updateExtents()
         self.preview_layer.commitChanges()
@@ -263,6 +264,11 @@ class PresetPreview:
 
         self.sc_dp.changeGeometryValues({feature_id[0]: geom})
         self.preview_layer.triggerRepaint()
+
+    def disable_comment_preview(self):
+        self.preview_layer.setLabelsEnabled(False)
+        self.preview_layer.updateExtents()
+        self.preview_layer.commitChanges()
 
     def toggle_comment_preview(self):
         current_status = self.preview_layer.labelsEnabled()
