@@ -62,6 +62,16 @@ class SumTableTool:
 
             self.ws = self.ws[~self.ws["File"].isna()]
 
+            k = list(self.ws.keys())
+
+            # convert Date and Time to str
+            if "Date" in k:
+                self.ws["Date"] = [r.strftime("%m/%d/%Y") for r in self.ws["Date"]]
+            if "Time" in k:
+                self.ws["Time"] = [r.strftime("%H:%M") for r in self.ws["Time"]]
+
+            self.ws = self.ws.astype("object")
+
             pat = re.compile(r"@([0-9]+)\.asc$")
             self.ws["n"] = [int(pat.search(f).groups()[0]) for f in self.ws["File"]]
 
@@ -136,6 +146,7 @@ class SumTableTool:
         except Exception as e:
             print("ERROR")
             print(e)
+
         return out
 
     def filter_by_asc(self, start=None, end=None):

@@ -81,6 +81,9 @@ from qgis.gui import (
     QgsMapCanvasAnnotationItem,
 )
 
+from qgis.core.additions.edit import edit
+
+
 # Initialize Qt resources from file resources.py
 from .resources import *  # noqa: F401, F403
 
@@ -442,7 +445,7 @@ class WiscSIMSTool:
         # dock.Btn_Create_New_Layer.clicked.connect(self.create_new_layer)
         # dock.Btn_Create_New_Layer.clicked.connect(self.test_import_dialog)
         # dock.Btn_Refresh_Import_Layers.clicked.connect(self.update_import_layers)
-        dock.Btn_Import_From_Excel.clicked.connect(self.test_import_dialog)
+        dock.Btn_Import_From_Excel.clicked.connect(self.handle_import_dialog)
 
         dock.Cmb_Excel_From.currentIndexChanged.connect(self.update_n_importing_data)
         dock.Cmb_Excel_To.currentIndexChanged.connect(self.update_n_importing_data)
@@ -711,7 +714,7 @@ class WiscSIMSTool:
 
         if self.new_aliginment:
             for aln in alignments:
-                if aln["used"] < 2 and aln["r"] != self.ref_selecting["row"]:
+                if aln["used"] < 2 and aln["r"] != selected_alignment:
                     continue
                 current_flag = selected_alignment == aln["r"]
                 if not self.is_default_values(aln["stage"]):
@@ -866,7 +869,7 @@ class WiscSIMSTool:
 
         return importing_data
 
-    def test_import_dialog(self):
+    def handle_import_dialog(self):
         # get available import layers
         self.excel_layers = self.get_excel_layers(self.xl)
 
@@ -926,11 +929,12 @@ class WiscSIMSTool:
 
         i = 0
         # is_direct_import = not self.dockwidget.Grp_Alignment.isChecked()
-
+        #
         _r, _c = importing_data.shape
 
         for r in range(_r):
             d = dict(importing_data.iloc[r])
+
             if d["X"] == "" or d["Y"] == "":
                 continue
             i += 1
@@ -943,12 +947,10 @@ class WiscSIMSTool:
             canvasX, canvasY = self.cot.getWtAveragedStageToCanvas([d["X"], d["Y"]], conv_model)
             feature = QgsFeature()
             feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(canvasX, canvasY)))
-            feature.setAttributes(list(d.values()))
+            vals = list(d.values())
+            feature.setAttributes(vals)
             features.append(feature)
 
-        # importing_layer = self.dockwidget.Cmb_Target_Layer.itemData(self.dockwidget.Cmb_Target_Layer.currentIndex())
-
-        # dpr = importing_layer.dataProvider()
         dpr = self.target_layer.dataProvider()
         dpr.addFeatures(features)
         self.target_layer.setDisplayExpression("File")
@@ -1085,7 +1087,7 @@ class WiscSIMSTool:
         return [f.name() for f in layer.fields()]
 
     def get_field_type(self, fieldName):
-        if re.match(r"^(file|comment|sample)", fieldName, re.I):
+        if re.match(r"^(file|comment|sample|date|time)", fieldName, re.I):
             return QVariant.String
         return QVariant.Double
 
