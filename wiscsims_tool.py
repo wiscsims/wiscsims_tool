@@ -150,6 +150,9 @@ class WiscSIMSTool:
             application at run time.
         :type iface: QgsInterface
         """
+
+        self.debug = False
+
         # Save reference to the QGIS interface
         self.iface = iface
 
@@ -833,7 +836,8 @@ class WiscSIMSTool:
                 out[key] = weight
                 new_conv_params[-1]["weight"] = weight
         wt_sum = sum(out.values())
-        # print([round(100 * a/wt_sum, 1) for a in out.values() if a > 0.0])
+        if self.debug:
+            print([round(100 * a / wt_sum, 1) for a in out.values() if a > 0.0])
         return new_conv_params
 
     def update_n_importing_data(self):
@@ -843,11 +847,7 @@ class WiscSIMSTool:
             return
 
         _r, _c = d.shape
-        if _r <= 1:
-            s = ""
-        else:
-            s = "s"
-        self.dockwidget.Txt_N_Importing_Data.setText(f"{_r} spot{s} will be imported")
+        self.dockwidget.Txt_N_Importing_Data.setText(f"{_r} spot{'s' if _r > 1 else ''} will be imported")
 
     def get_importing_data(self):
         importing_data = DataFrame()
@@ -866,6 +866,9 @@ class WiscSIMSTool:
             start_asc = self.dockwidget.Cmb_Excel_From.itemData(start_idx)
             end_asc = self.dockwidget.Cmb_Excel_To.itemData(end_idx)
             importing_data = self.xl.filter_by_asc(start=start_asc, end=end_asc)
+
+        if importing_data is None:
+            return DataFrame()
 
         return importing_data
 

@@ -149,11 +149,16 @@ class SumTableTool:
 
         return out
 
-    def filter_by_asc(self, start=None, end=None):
+    def filter_by_asc(self, start="", end=""):
         pat = re.compile(r"@(\d+)\.asc$")
 
-        start_n = int(pat.search(start).groups()[0])
-        end_n = int(pat.search(end).groups()[0])
+        s_m = pat.search(start)
+        e_m = pat.search(end)
+        if s_m is None or e_m is None:
+            return
+
+        start_n = int(s_m.groups()[0])
+        end_n = int(e_m.groups()[0])
 
         return self.ws[self.ws["n"].between(start_n, end_n)]
 
