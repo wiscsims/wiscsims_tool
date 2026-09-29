@@ -73,8 +73,11 @@ class CanvasMapTool(QgsMapTool):
 
     def canvasPressEvent(self, event):
         pt = self.getMapCoordinates(event)
+        modifiers = event.modifiers()
+        if modifiers & Qt.AltModifier:
+            return
         self.canvasPressed.emit(pt)
-        if QtWidgets.QApplication.keyboardModifiers() == Qt.ShiftModifier:
+        if modifiers & Qt.ShiftModifier:
             self.canvasClickedWShift.emit(event)
             return
 
@@ -85,17 +88,18 @@ class CanvasMapTool(QgsMapTool):
 
     def canvasReleaseEvent(self, event):
         pt = self.getMapCoordinates(event)
+        modifiers = event.modifiers()
 
         self.canvasReleased.emit(pt)
 
         if event.button() == Qt.RightButton:
             self.canvasClickedRight.emit(pt)
         else:
-            if QtWidgets.QApplication.keyboardModifiers() == (Qt.ShiftModifier | Qt.AltModifier):
+            if modifiers & Qt.ShiftModifier and modifiers & Qt.AltModifier:
                 self.canvasReleaseWAltShift.emit(event)
-            elif QtWidgets.QApplication.keyboardModifiers() == Qt.ShiftModifier:
+            elif modifiers & Qt.ShiftModifier:
                 self.canvasReleaseWShift.emit(event)
-            elif QtWidgets.QApplication.keyboardModifiers() == Qt.AltModifier:
+            elif modifiers & Qt.AltModifier:
                 self.canvasReleaseWAlt.emit(event)
             else:
                 self.canvasClicked.emit(pt)

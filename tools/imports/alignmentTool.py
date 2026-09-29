@@ -190,6 +190,8 @@ class AlignmentModelNew(QStandardItemModel):
 
     def calcParams(self):
         rows = [r for r in range(self.rowCount()) if self.getCheckStatus(r)]
+        self.scales = []
+        self.rotations = []
 
         for i in rows:
             i_stage = self.item(i, self.c["stage"]).data(0)
@@ -200,19 +202,19 @@ class AlignmentModelNew(QStandardItemModel):
                     continue
                 j_stage = self.item(j, self.c["stage"]).data(0)
                 j_canvas = self.item(j, self.c["canvas"]).data(0)
-                stage_l = ((i_stage[0] - j_stage[0]) ** 2 + (i_stage[1] - j_stage[1]) ** 2) ** 0.5
-                canvas_l = ((i_canvas[0] - j_canvas[0]) ** 2 + (i_canvas[1] - j_canvas[1]) ** 2) ** 0.5
-                if i_stage[0] == j_stage[0]:
-                    stage_r = 0
-                else:
-                    stage_r = (i_stage[1] - j_stage[1]) / (i_stage[0] - j_stage[0])
+                stage_dx = j_stage[0] - i_stage[0]
+                stage_dy = j_stage[1] - i_stage[1]
+                canvas_dx = j_canvas[0] - i_canvas[0]
+                canvas_dy = j_canvas[1] - i_canvas[1]
+                stage_l = math.hypot(stage_dx, stage_dy)
+                canvas_l = math.hypot(canvas_dx, canvas_dy)
+                if stage_l == 0 or canvas_l == 0:
+                    continue
 
-                if i_canvas[0] == j_canvas[0]:
-                    canvas_r = 0
-                else:
-                    canvas_r = (i_canvas[1] - j_canvas[1]) / (i_canvas[0] - j_canvas[0])
-
-                rotation = math.atan((stage_r - canvas_r) / (1 + stage_r * canvas_r))
+                rotation = math.degrees(
+                    math.atan2(canvas_dy, canvas_dx) - math.atan2(stage_dy, stage_dx)
+                )
+                rotation = (rotation + 180) % 360 - 180
                 scale = stage_l / canvas_l
                 self.scales.append(scale)
                 self.rotations.append(rotation)
@@ -271,6 +273,8 @@ class AlignmentModelNew(QStandardItemModel):
         if not self.isAvailable():
             return {}
         self.calcParams()
+        if not self.scales:
+            return {}
         return {
             "scale": self.getAverage(self.scales),
             "rotation": self.getAverage(self.rotations),

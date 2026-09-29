@@ -30,7 +30,7 @@ tags=python,SIMS,import,excel
 
 homepage=https://github.com/wiscsims/wiscsims_tool
 category=Plugins
-icon=icon.png
+icon=img/icon.png
 # experimental flag
 experimental=False
 

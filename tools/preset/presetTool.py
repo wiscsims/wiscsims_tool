@@ -96,7 +96,7 @@ class PresetTool(QObject):
         self.preset_layer = self.get_preset_layer()
         print("preset layer", self.preset_layer)
 
-        self.preview = PresetPreview(self.preset_layer)
+        self.preview = PresetPreview(self.preset_layer, self.canvas)
         print(self.preview)
 
         self.rb_line = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
@@ -150,6 +150,7 @@ class PresetTool(QObject):
         self.dock.Tbx_Comment.textChanged.connect(self.reset_current_number)
         self.dock.Tbx_Comment.textChanged.connect(self.handle_comment_change_preview)
         self.dock.Spn_Current_Number.valueChanged.connect(self.handle_comment_change_preview)
+        self.dock.Cbx_Number_Increment.toggled.connect(self.handle_comment_change_preview)
         self.dock.Btn_Reset_Current_Number.clicked.connect(self.reset_current_number)
 
         ## Layer
@@ -166,6 +167,7 @@ class PresetTool(QObject):
         ### Point
         self.dock.Opt_Point_Preview.stateChanged.connect(self.handle_change_PointPreview)
         self.dock.Opt_Comment_Preview.stateChanged.connect(self.handle_change_CommentPreview)
+        self.preview.set_text_preview(self.dock.Opt_Comment_Preview.isChecked())
 
         ### Line
         self.dock.Spn_Line_Step_Size.valueChanged.connect(self.update_line)
@@ -195,93 +197,49 @@ class PresetTool(QObject):
     def init_preset_layer_combobox(self, newLayer=None):
         if self.reorder_preview:
             return
-
-        # save original layer index
-        cmb_preset = self.dock.Cmb_Preset_Layer
-
-        orig_name = cmb_preset.currentText()
-        orig_names = [cmb_preset.itemText(i) for i in range(cmb_preset.count())]
-
-        cmb_preset.blockSignals(True)
-
-        # clear current items
-        self.dock.Cmb_Preset_Layer.clear()
-
-        # Add layers which have Vector, Point geometry and 'Comment' field to combobox for preset
-        layers = self.lt.get_vector_point_layers()
-
-        # filter layers which has 'Comment' field
-
-        layers = [
-            layer
-            for layer in layers
-            if "Comment" in self.lt.get_fields(layer) and layer.renderer().type() == "singleSymbol"
-        ]
-
-        if len(layers) == 0:
-            # No preset layers
-            self.preset_layer = None
-            self.preview.update_layer(None)
-            self.preview.reset()
-            return
-
-        # add to Cmb_Preset_Layer
-        [cmb_preset.addItem(layer.name(), layer) for layer in layers]
-
-        new_layer_names = [layer.name() for layer in layers]
-
-        new_index = 0
-        n_org = len(orig_names)
-        n_new = len(new_layer_names)
-
-        select_layer_name = orig_name
-
-        if newLayer:
-            # create new layer
-            print("<><><> create new layer")
-            new_index = new_layer_names.index(newLayer.name())
-            select_layer_name = newLayer.name()
-
-        elif n_org == n_new:
-            # rename or vis
-            if orig_names == new_layer_names:
-                print("<><><> vis", orig_names == new_layer_names)
-            else:
-                select_layer_name = list(set(new_layer_names) - set(orig_names))[0]
-                print("<><><> rename", list(set(new_layer_names) - set(orig_names)))
-
-        elif n_org < n_new:
-            # add
-            select_layer_name = list(set(new_layer_names) - set(orig_names))[-1]
-            print("<><><> add", list(set(new_layer_names) - set(orig_names)), " >>>>> ", select_layer_name)
-
-        elif n_org > n_new:
-            # remove
-            removed_layers = list(set(orig_names) - set(new_layer_names))
-            select_layer_name = list(set(orig_names) - set(removed_layers))[-1]
-            print("<><><> remove", removed_layers, " >>>>> ", list(set(orig_names) - set(removed_layers)))
-
-        # remove layer
-        try:
-            # remove layer(s) other than current preset layer
-            new_index = new_layer_names.index(select_layer_name)
-        except ValueError:
-            # remove layer(s) including current preset layer
-            new_index = 0
-
-        cmb_preset.setCurrentIndex(new_index)
-
-        cmb_preset.blockSignals(False)
-
-        #  TODO: set reasonable index (already selected or new)
-
-        self.preset_layer = layers[new_index]
-        self.handle_change_preset_layer(new_index)
-
         self.reorder_preview = True
-        self.preview.create()
-        self.reorder_preview = False
-        # self.handle_change_preset_layer(original_layer_index)
+        try:
+            cmb_preset = self.dock.Cmb_Preset_Layer
+            selected_layer = cmb_preset.currentData()
+            preferred = newLayer if newLayer is not None else selected_layer
+            try:
+                preferred_id = preferred.id() if preferred is not None else None
+            except RuntimeError:
+                # The selected QGIS layer may already have been removed.
+                preferred_id = None
+
+            layers = [
+                layer
+                for layer in self.lt.get_vector_point_layers()
+                if "Comment" in self.lt.get_fields(layer) and layer.renderer().type() == "singleSymbol"
+            ]
+
+            was_blocked = cmb_preset.blockSignals(True)
+            try:
+                cmb_preset.clear()
+                for layer in layers:
+                    cmb_preset.addItem(layer.name(), layer)
+
+                if not layers:
+                    self.preset_layer = None
+                    self.preview.update_layer(None)
+                    self.preview.reset()
+                    return
+
+                new_index = next(
+                    (index for index, layer in enumerate(layers) if layer.id() == preferred_id),
+                    0,
+                )
+                cmb_preset.setCurrentIndex(new_index)
+                self.preset_layer = layers[new_index]
+            finally:
+                cmb_preset.blockSignals(was_blocked)
+
+            self.handle_change_preset_layer(new_index)
+            self.preview.create()
+            self.update_preview_cursor()
+        finally:
+            self.reorder_preview = False
 
     def handle_change_preset_layer(self, idx=-1):
         if idx < 0 or self.preset_layer is None:
@@ -318,7 +276,8 @@ class PresetTool(QObject):
         #  field: [Comment]
         spot_size = self.dock.Spn_Preset_Spot_Size.value()
         pixel_size = self.dock.Spn_Preset_Pixel_Size.value()
-        vl = QgsVectorLayer("Point?crs=epsg:4326", "temporary_points", "memory")
+        vl = QgsVectorLayer("Point", "temporary_points", "memory")
+        vl.setCrs(self.canvas.mapSettings().destinationCrs())
         vl.setProviderEncoding("UTF-8")
         pr = vl.dataProvider()
         attrs = [
@@ -388,8 +347,7 @@ class PresetTool(QObject):
         # select/highlight created layer
         self.dock.Cmb_Preset_Layer.setCurrentIndex(self.dock.Cmb_Preset_Layer.findText(layer_name))
 
-        # self.preview.create()
-        self.preview.remove_objects()
+        self.update_preview_cursor()
 
     def store_ss_ps(self, data):
         self.preset_layer.startEditing()
@@ -494,9 +452,10 @@ class PresetTool(QObject):
         print(f"handle change - PointPreview: {state}")
         self.update_preview_cursor()
 
-    def handle_change_CommentPreview(self):
-        # self.preview.toggle_comment_preview()
-        self.preview.disable_comment_preview()
+    def handle_change_CommentPreview(self, _state=None):
+        self.preview.set_text_preview(self.dock.Opt_Comment_Preview.isChecked())
+        if self.get_preset_mode() == "point":
+            self.update_preview_cursor()
 
     def get_preset_mode(self, idx=-1):
         if idx < 0:
@@ -518,13 +477,21 @@ class PresetTool(QObject):
             self.canvas.setCursor(Qt.CrossCursor)
             return
 
-        idx = self.dock.Tab_Preset_Mode.currentIndex()
-
-        if self.preset_modes[idx] == "point" and self.dock.Opt_Point_Preview.isChecked():
-            comment = self.get_comment(0)
-            point = [self.cursor_pos, comment]
-            self.preview.add_points([point])
-            self.canvas.setCursor(Qt.BlankCursor)
+        if self.alt_key:
+            self.canvas.setCursor(Qt.PointingHandCursor)
+        elif self.shift_key:
+            cursor = Qt.ClosedHandCursor if self.mouse_left and self.feature_id is not None else Qt.OpenHandCursor
+            self.canvas.setCursor(cursor)
+        elif self.get_preset_mode() == "point":
+            show_marker = self.dock.Opt_Point_Preview.isChecked()
+            show_text = self.dock.Opt_Comment_Preview.isChecked()
+            if show_marker or show_text:
+                self.preview.show_cursor(
+                    self.cursor_pos,
+                    comment=self.get_comment(0),
+                    show_marker=show_marker,
+                )
+            self.canvas.setCursor(Qt.BlankCursor if show_marker else Qt.CrossCursor)
         else:
             self.canvas.setCursor(Qt.CrossCursor)
 
@@ -583,9 +550,8 @@ class PresetTool(QObject):
         self.add_preset_points()
 
         """ comment for next spot """
-        comment = self.get_comment(0)
-        if self.dock.Opt_Point_Preview.isChecked():
-            self.preview.add_points([[self.cursor_pos, comment]])
+        self.cursor_pos = pt
+        self.update_preview_cursor()
 
     def add_to_undo(self, undo_type, data):
         undo_data = {"type": undo_type, "data": data}
@@ -928,11 +894,13 @@ class PresetTool(QObject):
         # radius = spot_size / 2 / pixel_size (10 / 2 / 1 = 5)
         spot_size = self.dock.Spn_Preset_Spot_Size.value()
         pixel_size = self.dock.Spn_Preset_Pixel_Size.value()
+        if pixel_size <= 0:
+            return []
         radius = spot_size / 2 / pixel_size
         dp = layer.dataProvider()
         features = dp.getFeatures()
 
-        out = [f for f in features if 0 < geom.distance(f.geometry()) < radius]
+        out = [f for f in features if 0 <= geom.distance(f.geometry()) < radius]
         return out
 
     def delete_spot_original(self, e):
@@ -1002,6 +970,25 @@ class PresetTool(QObject):
 
         return True
 
+    def delete_spot_at(self, event):
+        """Delete the spot under an Alt+Shift click and keep it undoable."""
+        layer = self.get_preset_layer()
+        if layer is None:
+            return
+        cursor_geom = QgsGeometry.fromPointXY(event.mapPoint())
+        features = self.get_near_features(layer, cursor_geom)
+        if not features:
+            return
+        feature = features[-1]
+        comment = feature["Comment"]
+        if self.delete_spot(layer, feature.id(), comment):
+            self.add_to_undo(
+                "delete",
+                {"id": feature.id(), "geometry": feature.geometry(), "comment": comment},
+            )
+            self.update_undo_btn_state()
+            self.update_preview_cursor()
+
     def edit_point(self, e):
         layer = self.get_preset_layer()
         if layer is None:
@@ -1050,31 +1037,6 @@ class PresetTool(QObject):
         layer.changeAttributeValue(f_id, field_idx, new_comment)
         layer.commitChanges()
 
-    def update_cursor(self):
-        self.preview.reset()
-
-        if not self.active or self.preset_layer is None:
-            self.canvas.setCursor(Qt.CrossCursor)
-            return
-
-        if self.shift_key:
-            if self.mouse_left:
-                """ during relocation """
-                self.canvas.setCursor(Qt.ClosedHandCursor)
-                # spot preview with comment
-            else:
-                """ before relocation """
-                self.canvas.setCursor(Qt.OpenHandCursor)
-                # no spot preview
-        else:
-            """ Cancel relocation """
-            self.reset_preset_points()
-            self.canvas.setCursor(Qt.CrossCursor)
-        # - normal preview
-        #
-        # -
-        pass
-
     def handle_cursor_moved(self, pt):
         return
 
@@ -1120,49 +1082,16 @@ class PresetTool(QObject):
         self.clear_preview_spots(init=False)
 
     def handle_shift_key_state_changed(self, state):
+        if state and self.shift_key:
+            return
         self.shift_key = state
-
-        print("shift changed", self.shift_key, self.mouse_left)
-
-        self.update_cursor()
-        if self.current_preset_mode == "point":
-            if self.shift_key:
-                pass
-
-            elif self.mouse_left:
-                # shift released during the dragging to relocate spot
-                print("Cancel moving spot")
-                # Cancel moving spot
-        else:
-            pass
+        if not state and self.relocating_spot:
+            self.relocating_spot = False
+            self.reset_preset_points()
+        self.update_preview_cursor()
 
     def handle_shiftKey_state_changed(self, state):
-        # Move spot (drag and drop)
-        #
-        # Widnows/Linux/MacOS: Shift key
-        #
-        if self.preset_layer is None:
-            return
-
-        if self.current_preset_mode in ["line", "grid"]:
-            # cancel
-            self.clear_preview_spots(init=False)
-
-        if state:
-            self.preview.remove_objects()
-            self.canvas.setCursor(Qt.OpenHandCursor)
-            self.flag_cancel_moving_spot = False
-        else:
-            # shift key released
-            if self.feature_id:
-                # cancel moving
-                self.reset_preset_points()
-                self.flag_cancel_moving_spot = True
-            else:
-                # after spot movement
-                self.flag_cancel_moving_spot = False
-            self.update_preview_cursor()
-            # self.canvas.setCursor(Qt.CrossCursor)
+        self.handle_shift_key_state_changed(state)
 
     def handle_altKey_state_changed(self, state):
         self.alt_key = state
@@ -1178,36 +1107,22 @@ class PresetTool(QObject):
             # cancel
             self.clear_preview_spots(init=False)
 
-        if state:
-            # alt
-            self.canvas.setCursor(Qt.PointingHandCursor)
-            self.preview.remove_objects()
-        else:
-            self.update_preview_cursor()
-            # self.canvas.setCursor(Qt.CrossCursor)
+        self.update_preview_cursor()
 
     def handle_mouse_moved(self, pt: QgsPointXY):
         if not self.preset_layer:
             return
 
-        # print(".", end="", flush=True)
-
-        if self.mouse_move_counter < 5:
-            self.mouse_move_counter += 1
-            return
-        self.mouse_move_counter = 0
-
-        # print("*", end="", flush=True)
+        self.cursor_pos = pt
 
         if self.line_end_selecting:
             # update RB segment and preview spots
-            print("line end selecting")
             return
         else:
             # cursor with preview spot
             # moving preset point
-            if (self.relocating_spot and self.feature_id) or self.dock.Opt_Point_Preview.isChecked():
-                if self.feature_id:
+            if (self.relocating_spot and self.feature_id is not None) or self.preview.cursor_visible:
+                if self.feature_id is not None:
                     pt.set(pt.x() + self.movement_offset[0], pt.y() + self.movement_offset[1])
                 self.preview.update_position(pt)
 
@@ -1333,13 +1248,7 @@ class PresetTool(QObject):
         # Select target spot
         self.preset_layer.selectByIds([self.feature_id], QgsVectorLayer.SetSelection)
 
-        comment = [f["Comment"] for f in self.preset_layer.getFeatures(QgsFeatureRequest(self.feature_id))][0]
-        point = [pt, comment]
-
-        """
-        add the point to preview layer
-        """
-        self.preview.add_points([point])
+        self.preview.show_cursor(pt, moving=True, comment=feature["Comment"])
 
     def handle_finish_relocation(self, pt: QgsPointXY):
         if self.feature_id is None:

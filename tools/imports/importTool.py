@@ -146,46 +146,37 @@ class ImportTool(QObject):
                 "Stage Navigator alignment file (*.json)",
             )
 
-        self.dock.Grp_Workbook.setEnabled(False)
         if alnFile == "":
             return
+        try:
+            with open(alnFile, encoding="utf-8") as data_file:
+                obj = json.load(data_file)
+            new_alignment = AlignmentModelNew.isNewFormat(obj)
+            model = AlignmentModelNew() if new_alignment else AlignmentModel()
+            if not model.ImportFromsJson(obj):
+                raise ValueError("Could not read the alignment points.")
+            scales = model.getScales()
+            if not scales or any(not math.isfinite(scale) or scale <= 0 for scale in scales):
+                raise ValueError("No usable alignment points were found.")
+        except (OSError, ValueError, TypeError, KeyError) as error:
+            QMessageBox.warning(None, "Alignment File", str(error))
+            return
 
-        with open(alnFile) as data_file:
-            obj = json.load(data_file)
-
-            self.new_aliginment = AlignmentModelNew.isNewFormat(obj)
-
-            if not self.new_aliginment:
-                # AlignmentModelNew is default
-                self.model = AlignmentModel()
-
-            if self.model.isAvailable():
-                self.model.clear()
-
-            old_new = "OLD"
-            if self.new_aliginment:
-                self.model = AlignmentModelNew()
-                self.cot = CoordinateTool(new=True)
-                self.init_alignmentTableNew()
-                old_new = "NEW"
-            else:
-                self.model = AlignmentModel()
-                self.cot = CoordinateTool(new=False)
-                self.init_alignmentTable()
-
-            self.model.ImportFromsJson(obj)
-            # params = self.getParams()
-            # self.canvas.setRotation(params['rotation'])
-            self.dock.Grp_Workbook.setEnabled(True)
-            # calculate average scale for preset
-            scales = self.model.getScales()
-            average_scale = sum(scales) / len(scales)
-            # set average scale to preset scales
-            self.dock.Spn_Preset_Pixel_Size.setValue(average_scale)
-            self.update_ref_point_markers()
-            self.update_canvas_rotation()
-
-            self.dock.Grp_Alignment.setTitle(f"1. Import Alignment File ({old_new})")
+        self.model = model
+        self.ref_marker.model = model
+        self.new_aliginment = new_alignment
+        self.cot = CoordinateTool(new=new_alignment)
+        if new_alignment:
+            self.init_alignmentTableNew()
+        else:
+            self.init_alignmentTable()
+        self.dock.Grp_Workbook.setEnabled(True)
+        self.dock.Spn_Preset_Pixel_Size.setValue(sum(scales) / len(scales))
+        self.update_ref_point_markers()
+        self.update_canvas_rotation()
+        self.dock.Grp_Alignment.setTitle(
+            f"1. Import Alignment File ({'NEW' if new_alignment else 'OLD'})"
+        )
 
     def toggle_use_alignment(self, status):
         wb_status = True
@@ -224,7 +215,6 @@ class ImportTool(QObject):
         tbl.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
         tbl.setSelectionBehavior(QAbstractItemView.SelectRows)
         tbl.setSelectionMode(QAbstractItemView.SingleSelection)
-        tbl.clicked.connect(self.handle_tbl_clicked)
         self.model.itemChanged.connect(self.handle_item_changed)
         self.model.refPtUpdated.connect(self.handle_ref_point_updated)
 
@@ -254,10 +244,10 @@ class ImportTool(QObject):
         ex.exec()
 
     def handle_item_changed(self):
-        pass
+        self.update_conv_params()
 
     def handle_ref_point_updated(self):
-        pass
+        self.update_conv_params()
 
     def change_tableview_selection(self, index):
         if type(index) == QModelIndex:
@@ -279,7 +269,8 @@ class ImportTool(QObject):
         if saveFile == "":
             return None
 
-        vl = QgsVectorLayer("Point?crs=epsg:4326", "temporary_points", "memory")
+        vl = QgsVectorLayer("Point", "temporary_points", "memory")
+        vl.setCrs(self.canvas.mapSettings().destinationCrs())
         vl.setProviderEncoding("UTF-8")
         pr = vl.dataProvider()
         labels = self.xl.get_headers()
@@ -291,8 +282,9 @@ class ImportTool(QObject):
 
         reg = QgsProject.instance()
         # Remove layers which have same souce file as shape file to be overwritten
-        layers = [layer.source() for layer in self.lt.get_layer_list(layertype=0)]
-        [reg.removeMapLayer(layer) for layer in layers if layer == saveFile]
+        for layer in self.lt.get_layer_list(layertype=0):
+            if layer.source() == saveFile:
+                reg.removeMapLayer(layer.id())
 
         # write shape + etc files
         error, _ = QgsVectorFileWriter.writeAsVectorFormat(vl, saveFile, "UTF-8", vl.crs(), "ESRI Shapefile")
@@ -336,32 +328,32 @@ class ImportTool(QObject):
     def select_workbook(self):
         title = "Select WiscSIMS sesssion Workbook"
         mypath = os.path.dirname(QgsProject.instance().fileName())
-        self.workbook_path, _ = QFileDialog.getOpenFileName(None, title, mypath, "Excel (*.xls *.xlsx)")
+        workbook_path, _ = QFileDialog.getOpenFileName(None, title, mypath, "Excel (*.xls *.xlsx)")
 
-        if self.workbook_path == "":
+        if workbook_path == "":
             return
-        if self.prev_workbook_path == self.workbook_path:
+        if self.prev_workbook_path == workbook_path:
             return
 
-        self.xl = SumTableTool(self.workbook_path)
-        if self.xl.ws is None:
+        workbook = SumTableTool(workbook_path)
+        if workbook.ws is None:
             QMessageBox.warning(
                 None,
                 "Excel File Selection",
-                "Open appropriate workbook in Excel, then select the workbook.\n\n"
-                'The workbook must have a sheet named "Sum_table" or "Data".',
+                "Could not read the workbook. It needs a sheet named Sum_table or Data.\n\n"
+                f"{workbook.load_error or ''}",
             )
-            self.workbook_path = None
-            self.dock.Grp_Layer.setEnabled(False)
-        else:
-            self.prev_workbook_path = self.workbook_path
-            self.dock.Tbx_Workbook.setText(os.path.basename(self.workbook_path))
-            self.dock.Tbx_Workbook.setToolTip(self.workbook_path)
+            return
+        self.xl = workbook
+        self.workbook_path = workbook_path
+        self.prev_workbook_path = workbook_path
+        self.dock.Tbx_Workbook.setText(os.path.basename(workbook_path))
+        self.dock.Tbx_Workbook.setToolTip(workbook_path)
 
     def workbook_udpated(self):
         # addItems asc files
-        if self.xl.ws is None:
-            self.xl = SumTableTool(self.workbook_path)
+        if self.xl is None or self.xl.ws is None:
+            return
         asc_list = self.xl.get_asc_list()
         # asc_list_s = map(lambda x: x[8:], asc_list)
         self.dock.Cmb_Excel_From.clear()
@@ -369,7 +361,7 @@ class ImportTool(QObject):
         [self.dock.Cmb_Excel_From.addItem(asc[8:], asc) for asc in asc_list]
         [self.dock.Cmb_Excel_To.addItem(asc[8:], asc) for asc in asc_list]
         self.dock.Cmb_Excel_To.setCurrentIndex(len(asc_list) - 1)
-        self.dock.Grp_Layer.setEnabled(True)
+        self.dock.Grp_Layer.setEnabled(bool(asc_list))
         self.dock.Opt_Range.setChecked(True)
         # add appropriate layers to combobox
         self.update_import_layers()
@@ -399,7 +391,11 @@ class ImportTool(QObject):
 
         # import date from Excel file
         if self.dock.Opt_Comment.isChecked():
-            importing_data = self.xl.filter_by_comment(self.dock.Tbx_Comment_Match.text())
+            try:
+                importing_data = self.xl.filter_by_comment(self.dock.Tbx_Comment_Match.text())
+            except re.error as error:
+                QMessageBox.warning(None, "Import Excel Data", f"Invalid comment pattern: {error}")
+                return
         else:
             start_idx = self.dock.Cmb_Excel_From.currentIndex()
             end_idx = self.dock.Cmb_Excel_To.currentIndex()
@@ -412,30 +408,42 @@ class ImportTool(QObject):
             importing_data = self.xl.filter_by_asc(start=start_asc, end=end_asc)
 
         importing_layer = self.dock.Cmb_Import_Layer.itemData(self.dock.Cmb_Import_Layer.currentIndex())
-        X, Y = self.xl.find_columns(["X", "Y"], False)
+        coordinate_columns = self.xl.find_columns(["X", "Y"], False)
+        if coordinate_columns is None:
+            QMessageBox.warning(None, "Import Excel Data", "The workbook needs X and Y columns.")
+            return
+        X, Y = coordinate_columns
 
         features = []
-        i = 0
         is_direct_import = not self.dock.Grp_Alignment.isChecked()
 
-        if self.new_aliginment:
+        if self.new_aliginment and not is_direct_import:
             self.update_conv_params()
+            if not self.conv_params:
+                QMessageBox.warning(None, "Import Excel Data", "At least two usable alignment points are needed.")
+                return
 
         for d in importing_data:
-            if d[X] == "" or d[Y] == "":
+            try:
+                point = [float(d[X]), float(d[Y])]
+            except (TypeError, ValueError):
                 continue
-            i += 1
+            if not all(math.isfinite(coordinate) for coordinate in point):
+                continue
             if is_direct_import:
-                canvasX, canvasY = [d[X], d[Y]]
+                canvasX, canvasY = point
             else:
                 if self.new_aliginment:
                     # get conversion model
                     conv_model = self.get_conversion_models(
-                        [d[X], d[Y]], self.model.getStagePositions(), self.conv_params, 2
+                        point, self.model.getStagePositions(), self.conv_params, 2
                     )
-                    canvasX, canvasY = self.cot.getWtAveragedStageToCanvas([d[X], d[Y]], conv_model)
+                    if not conv_model:
+                        QMessageBox.warning(None, "Import Excel Data", "No usable alignment pair was found.")
+                        return
+                    canvasX, canvasY = self.cot.getWtAveragedStageToCanvas(point, conv_model)
                 else:
-                    canvasX, canvasY = self.getWtAverageStageToCanvas([d[X], d[Y]])
+                    canvasX, canvasY = self.getWtAverageStageToCanvas(point)
             feature = QgsFeature()
             feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(canvasX, canvasY)))
             feature.setAttributes(d)
@@ -443,10 +451,13 @@ class ImportTool(QObject):
             features.append(feature)
 
         dpr = importing_layer.dataProvider()
-        dpr.addFeatures(features)
+        success, added_features = dpr.addFeatures(features)
+        if not success:
+            QMessageBox.warning(None, "Import Excel Data", "The layer could not accept the selected data.")
+            return
         importing_layer.setDisplayExpression("File")
         importing_layer.triggerRepaint()
-        QMessageBox.information(None, "Import Excel Data", f"{i} data were imported!")
+        QMessageBox.information(None, "Import Excel Data", f"{len(added_features)} data were imported!")
 
     def update_ref_point_markers(self):
         self.ref_marker.init_ref_point_markers()
@@ -476,7 +487,8 @@ class ImportTool(QObject):
     def update_canvas_rotation(self):
         if self.model.isAvailable():
             params = self.model.getParams()
-            self.canvas.setRotation(params["rotation"])
+            if "rotation" in params:
+                self.canvas.setRotation(params["rotation"])
 
     def handle_ref_marker(self, pt, name, current=False):
         # print(pt, name)
@@ -491,7 +503,7 @@ class ImportTool(QObject):
             """use alignment but no alignment file imported"""
             return False
 
-        if self.xl.ws is None:
+        if self.xl is None or self.xl.ws is None:
             """no excel file"""
             return False
 
@@ -581,12 +593,15 @@ class ImportTool(QObject):
                     # Get combinations of indexes
                     key = f"{g}-{r}"
                     # Calculate ConvertParams
-                    scale, offset, rotation = self.cot.getConvertParams(
-                        self.model.getStagePosition(g),
-                        self.model.getCanvasPosition(g),
-                        self.model.getStagePosition(r),
-                        self.model.getCanvasPosition(r),
-                    )
+                    try:
+                        scale, offset, rotation = self.cot.getConvertParams(
+                            self.model.getStagePosition(g),
+                            self.model.getCanvasPosition(g),
+                            self.model.getStagePosition(r),
+                            self.model.getCanvasPosition(r),
+                        )
+                    except ZeroDivisionError:
+                        continue
                     self.conv_params[key] = {
                         "scale": scale,
                         "offset": offset,
@@ -608,20 +623,17 @@ class ImportTool(QObject):
 
     def get_conversion_models(self, pt, ref_pos, conv_params, limit=2):
         sorted_idxes = self.sort_by_distance(pt, ref_pos)
-        # if limit less than 2, all conv_params are going to be used
-        sorted_idxes = sorted_idxes[:limit]
-
-        new_conv_params = []
-        out = {}
-        for j in sorted_idxes:
-            for k in sorted_idxes:
-                if j[0] >= k[0]:
-                    continue
-                key = f"{j[0]}-{k[0]}"
-                new_conv_params.append(conv_params[key])
-                weight = 1 / (j[1] + k[1]) ** 2
-                out[key] = weight
-                new_conv_params[-1]["weight"] = weight
-        # wt_sum = sum(out.values())
-        # print([round(100 * a/wt_sum, 1) for a in out.values() if a > 0.0])
-        return new_conv_params
+        pairs = []
+        for index, (first_row, first_distance) in enumerate(sorted_idxes):
+            for second_row, second_distance in sorted_idxes[index + 1 :]:
+                low, high = sorted((first_row, second_row))
+                key = f"{low}-{high}"
+                if key in conv_params:
+                    pairs.append((first_distance + second_distance, key))
+        pairs.sort()
+        if limit >= 2:
+            pairs = pairs[: max(1, limit * (limit - 1) // 2)]
+        return [
+            {**conv_params[key], "weight": 1 / max(distance, 1e-10) ** 2}
+            for distance, key in pairs
+        ]

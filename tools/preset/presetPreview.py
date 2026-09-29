@@ -22,9 +22,10 @@
  ***************************************************************************/
 """
 
-from this import d
-from PyQt5.QtCore import QVariant
-from PyQt5.QtGui import QColor
+from PyQt5.QtCore import Qt, QVariant
+from PyQt5.QtGui import QColor, QFont, QPen
+from PyQt5.QtWidgets import QGraphicsSimpleTextItem
+from qgis.PyQt import sip
 from qgis.core import (
     QgsDataProvider,
     QgsDrawSourceEffect,
@@ -42,22 +43,29 @@ from qgis.core import (
     QgsVectorLayerSimpleLabeling,
     Qgis,
 )
+from qgis.gui import QgsVertexMarker
 
 
 class PresetPreview:
     """Docstring for PreviewLayer."""
 
-    def __init__(self, preset_layer):
+    MIN_CURSOR_DIAMETER_PX = 16
+
+    def __init__(self, preset_layer, canvas):
         self.preview_layer: QgsVectorLayer = None
+        self.preview_layer_id = None
         self.sc_dp: QgsDataProvider = None
         self.preset_layer: QgsVectorLayer = preset_layer
-        self.cleanup_old_layers()
-
+        self.canvas = canvas
+        self.cursor_marker = None
+        self.cursor_label = None
+        self.cursor_visible = False
+        self.cursor_icon_visible = True
+        self.cursor_diameter = None
+        self.cursor_comment = ""
+        self.text_preview_enabled = False
         self.scale = 1
         self.spot_size = 10
-
-        # if self.preset_layer:
-        self.create()
 
         self.colors = {
             "spot_fill_normal": QColor(64, 143, 176, 102),  # light blue
@@ -67,12 +75,14 @@ class PresetPreview:
             "comment_fill": QColor(255, 0, 0),  # white
         }
 
-    def __del__(self):
-        self.cleanup_old_layers()
+        self.create()
 
     def create(self):
         self.cleanup_old_layers()
-        self.preview_layer = QgsVectorLayer("Point", "tmp", "memory")
+        self.preview_layer = QgsVectorLayer("Point", "WiscSIMS preview", "memory")
+        self.preview_layer_id = self.preview_layer.id()
+        crs = self.preset_layer.crs() if self.preset_layer is not None else QgsProject.instance().crs()
+        self.preview_layer.setCrs(crs)
 
         self.preview_layer.startEditing()
         self.preview_layer.setFlags(QgsMapLayer.Private)
@@ -144,7 +154,7 @@ class PresetPreview:
         settings.setObstacleSettings(obs)
 
         settings.setDataDefinedProperties(coll)
-        self.preview_layer.setLabelsEnabled(False)  # TODO
+        self.preview_layer.setLabelsEnabled(self.text_preview_enabled)
         self.preview_layer.setLabeling(QgsVectorLayerSimpleLabeling(settings))
         self.preview_layer.updateExtents()
         self.preview_layer.commitChanges()
@@ -163,6 +173,26 @@ class PresetPreview:
         self.preview_layer.triggerRepaint()
         QgsProject.instance().addMapLayer(self.preview_layer)
 
+        self.cursor_marker = QgsVertexMarker(self.canvas)
+        self.cursor_marker.setIconType(QgsVertexMarker.ICON_CIRCLE)
+        self.cursor_marker.setColor(self.colors["spot_stroke"])
+        self.cursor_marker.setFillColor(self.colors["spot_fill_normal"])
+        self.cursor_marker.setPenWidth(1)
+        self.cursor_marker.setZValue(1000)
+        self.cursor_marker.setAcceptedMouseButtons(Qt.NoButton)
+        self.cursor_label = QGraphicsSimpleTextItem("", self.cursor_marker)
+        font = QFont()
+        font.setPixelSize(14)
+        font.setBold(True)
+        self.cursor_label.setFont(font)
+        self.cursor_label.setBrush(self.colors["comment_fill"])
+        self.cursor_label.setPen(QPen(Qt.NoPen))
+        self.cursor_label.setAcceptedMouseButtons(Qt.NoButton)
+        self.cursor_label.hide()
+        self.cursor_marker.hide()
+        self.cursor_diameter = None
+        self.canvas.extentsChanged.connect(self._update_cursor_size)
+
     def reset(self, moving=False):
         self.remove_objects()
         if self.preview_layer is None:
@@ -180,13 +210,23 @@ class PresetPreview:
         self.preset_layer = new_layer
 
     def cleanup_old_layers(self):
+        if self.cursor_marker is not None:
+            self.canvas.extentsChanged.disconnect(self._update_cursor_size)
+            self.canvas.scene().removeItem(self.cursor_marker)
+            self.cursor_label = None
+            sip.delete(self.cursor_marker)
+            self.cursor_marker = None
+        self.cursor_visible = False
+        self.cursor_diameter = None
+        layer_id = self.preview_layer_id
+        self.preview_layer = None
+        self.preview_layer_id = None
+        self.sc_dp = None
+        if layer_id is None:
+            return
         instance = QgsProject.instance()
-        vals = instance.mapLayers().values()
-        [
-            instance.removeMapLayer(layer)
-            for layer in vals
-            if layer.name() == "tmp" and layer.storageType() == "Memory storage"
-        ]
+        if instance.mapLayer(layer_id) is not None:
+            instance.removeMapLayer(layer_id)
 
     def create_feature(self, pt, comment):
         geom = QgsGeometry.fromPointXY(pt)
@@ -207,10 +247,11 @@ class PresetPreview:
         self.preview_layer.triggerRepaint()
 
     def remove_objects(self):
-        if self.preset_layer is None:
-            return
-
-        self.preset_layer.removeSelection()
+        if self.cursor_marker is not None:
+            self.cursor_marker.hide()
+        self.cursor_visible = False
+        if self.preset_layer is not None:
+            self.preset_layer.removeSelection()
         if self.sc_dp is None:
             return
 
@@ -223,6 +264,10 @@ class PresetPreview:
         self.preview_layer.triggerRepaint()
 
     def update_comment(self, comment):
+        self.cursor_comment = str(comment or "")
+        self._update_cursor_text()
+        if self.sc_dp is None:
+            return
         field_index = self.preview_layer.fields().indexOf("Comment")
         features = self.preview_layer.getFeatures()
         feature_list = [f for f in features]
@@ -254,8 +299,58 @@ class PresetPreview:
         sc_props["size"] = size
         self.preview_layer.renderer().setSymbol(QgsMarkerSymbol.createSimple(sc_props))
         self.preview_layer.triggerRepaint()
+        if self.cursor_visible:
+            self._update_cursor_size()
+
+    def _update_cursor_size(self):
+        if self.cursor_marker is None:
+            return
+        map_units_per_pixel = self.canvas.mapSettings().mapUnitsPerPixel()
+        if map_units_per_pixel <= 0:
+            return
+        diameter = max(
+            self.MIN_CURSOR_DIAMETER_PX,
+            round(self.scale * self.spot_size / map_units_per_pixel),
+        )
+        if self.cursor_diameter != diameter:
+            self.cursor_marker.setIconSize(diameter)
+            self.cursor_diameter = diameter
+            self._position_cursor_text()
+
+    def _position_cursor_text(self):
+        if self.cursor_label is None:
+            return
+        diameter = self.cursor_diameter or self.MIN_CURSOR_DIAMETER_PX
+        offset = diameter / 2 + 6 if self.cursor_icon_visible else 12
+        self.cursor_label.setPos(offset, -self.cursor_label.boundingRect().height() / 2)
+
+    def _update_cursor_text(self):
+        if self.cursor_label is None:
+            return
+        self.cursor_label.setText(self.cursor_comment)
+        self.cursor_label.setVisible(self.text_preview_enabled and bool(self.cursor_comment))
+        self._position_cursor_text()
+
+    def show_cursor(self, pt, moving=False, comment="", show_marker=True):
+        if self.cursor_marker is None:
+            return
+        self.cursor_icon_visible = show_marker
+        icon = QgsVertexMarker.ICON_CIRCLE if show_marker else QgsVertexMarker.ICON_NONE
+        self.cursor_marker.setIconType(icon)
+        self._update_cursor_size()
+        fill = self.colors["spot_fill_move"] if moving else self.colors["spot_fill_normal"]
+        self.cursor_marker.setFillColor(fill)
+        self.cursor_comment = str(comment or "")
+        self._update_cursor_text()
+        self.cursor_marker.setCenter(pt)
+        self.cursor_marker.show()
+        self.cursor_visible = True
 
     def update_position(self, pt):
+        if self.cursor_visible:
+            self._update_cursor_size()
+            self.cursor_marker.setCenter(pt)
+            return
         geom = QgsGeometry.fromPointXY(pt)
         feature_id = [f.id() for f in self.sc_dp.getFeatures()]
 
@@ -265,14 +360,9 @@ class PresetPreview:
         self.sc_dp.changeGeometryValues({feature_id[0]: geom})
         self.preview_layer.triggerRepaint()
 
-    def disable_comment_preview(self):
-        self.preview_layer.setLabelsEnabled(False)
-        self.preview_layer.updateExtents()
-        self.preview_layer.commitChanges()
-
-    def toggle_comment_preview(self):
-        current_status = self.preview_layer.labelsEnabled()
-        print("xxxxxxxxxxxxxx", current_status)
-        self.preview_layer.setLabelsEnabled(not current_status)  # TODO
-        self.preview_layer.updateExtents()
-        self.preview_layer.commitChanges()
+    def set_text_preview(self, enabled):
+        self.text_preview_enabled = bool(enabled)
+        if self.preview_layer is not None:
+            self.preview_layer.setLabelsEnabled(self.text_preview_enabled)
+            self.preview_layer.triggerRepaint()
+        self._update_cursor_text()

@@ -27,7 +27,7 @@ import math
 import os
 import os.path
 import re
-from PyQt5.QtCore import QCoreApplication, Qt, QTranslator, QSettings, qVersion  ##,  QModelIndex, QRect, QSize,QVariant
+from PyQt5.QtCore import QCoreApplication, QEvent, Qt, QTranslator, QSettings, qVersion  ##,  QModelIndex, QRect, QSize,QVariant
 from PyQt5.QtGui import QIcon  ##, QColor, QCursor, QPixmap
 from PyQt5.QtWidgets import (
     QAction,
@@ -59,6 +59,7 @@ from qgis.core import (
     QgsWkbTypes,
 )
 from qgis.gui import QgsRubberBand
+from qgis.PyQt import sip
 
 # Initialize Qt resources from file resources.py
 from .resources import *
@@ -110,18 +111,20 @@ class WiscSIMSTool:
 
         # Declare instance attributes
         self.actions = []
-        self.menu = self.tr("&WiscSIMS - menu")
+        self.menu = self.tr("&WiscSIMS")
         # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar("WiscSIMS - toolbar")
         self.toolbar.setObjectName("WiscSIMS Tool")
 
         self.pluginIsActive = False
-        # self.dockwidget = None
+        self._pending_dock = None
 
         self.rb_line = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
         self.pxsize_line = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
 
         self.prev_tool = None
+        self.canvasMapTool = None
+        self._map_tool_connected = False
 
         self.feature_id = None
 
@@ -229,8 +232,7 @@ class WiscSIMSTool:
 
         self.wiscsims_tool_action = self.add_action(
             icon_path,
-            # text=self.tr("WiscSIMS Tool (initGui)"),
-            text="WiscSIMS Tool (initGui)",
+            text=self.tr("WiscSIMS Tool"),
             callback=self.run,
             parent=self.iface.mainWindow(),
         )
@@ -241,52 +243,61 @@ class WiscSIMSTool:
 
     def onClosePlugin(self):
         """Cleanup necessary items here when plugin dockwidget is closed"""
-
-        # disconnects
-        # self.dockwidget.closingPlugin.disconnect(self.onClosePlugin)
+        if not self.pluginIsActive:
+            return
+        dock = self.dockwidget
         self.wiscsims_tool_action.setChecked(False)
-        # remove this statement if ockwidget is to remain
-        # for reuse if plugin is reopened
-        # Commented next statement since it causes QGIS crashe
-        # when closing the docked window:
-
         self.remove_legend_connections()
         self.remove_ui_connections()
-
-        # self.dockwidget = None
-        delattr(self, "dockwidget")
-
         self.unsetMapTool()
-
         self.preset.clear_preview_spots()
-
+        self.preset.preview.cleanup_old_layers()
+        self.imp.unload()
+        dock.closingPlugin.disconnect(self.onClosePlugin)
+        self.iface.removeDockWidget(dock)
+        dock.deleteLater()
+        self._pending_dock = dock
+        del self.dockwidget
         self.pluginIsActive = False
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
-
-        # self.preset.clear_preview_points()
-        # self.imp.unload()
+        if self.pluginIsActive:
+            self.onClosePlugin()
+        self._delete_pending_dock()
+        if self.toolbar is None:
+            return
 
         for action in self.actions:
-            self.iface.removePluginMenu(self.tr("&WiscSIMS"), action)
-            self.iface.removeToolBarIcon(action)
-        # remove the toolbar
-        del self.toolbar
+            self.iface.removePluginMenu(self.menu, action)
+            self.toolbar.removeAction(action)
+            action.deleteLater()
+            QCoreApplication.sendPostedEvents(action, QEvent.DeferredDelete)
+        self.actions.clear()
+        self.toolbar.deleteLater()
+        QCoreApplication.sendPostedEvents(self.toolbar, QEvent.DeferredDelete)
+        self.toolbar = None
+
+    def _delete_pending_dock(self):
+        if self._pending_dock is not None:
+            if not sip.isdeleted(self._pending_dock):
+                QCoreApplication.sendPostedEvents(self._pending_dock, QEvent.DeferredDelete)
+            self._pending_dock = None
 
     # --------------------------------------------------------------------------
     def run(self):
         """Run method that loads and starts the plugin"""
         print("run wiscsims tool")
         if self.pluginIsActive:
-            print("already activated")
-            if not self.wiscsims_tool_action.isChecked():
-                print("set to active!!!!")
-                self.wiscsims_tool_action.setChecked(True)
-            self.init_map_tool()
+            if self.wiscsims_tool_action.isChecked():
+                self.init_map_tool()
+            else:
+                self.unsetMapTool()
+                self.dockwidget.setEnabled(False)
             return
 
-        self.pluginIsActive = True
+        self._delete_pending_dock()
+
         # dockwidget may not exist if:
         #    first run of plugin
         #    removed on close (see self.onClosePlugin method)
@@ -319,6 +330,7 @@ class WiscSIMSTool:
 
         self.dockwidget.show()
 
+        self.pluginIsActive = True
         self.init_map_tool()
 
     def handle_legend_layers_changed(self, layers):
@@ -356,69 +368,22 @@ class WiscSIMSTool:
         dock.Tab_Tool.currentChanged.connect(self.handle_tool_changed)
 
     def remove_ui_connections(self):
-        dock = self.dockwidget
-
-        dock.Tab_Tool.currentChanged.disconnect(self.handle_tool_changed)
-
-        # Import/Alignment
-        # dock.Grp_Alignment.toggled.disconnect(self.toggle_use_alignment)
-        # dock.Tbv_Alignment.clicked.disconnect(self.change_tableview_selection)
-        # dock.Tbv_Alignment.doubleClicked.disconnect(self.handle_table_doubleClicked)
-        # dock.Gbx_Alignment_Ref_Point_Markers.toggled.disconnect(self.update_ref_point_markers)
-        # dock.Cbx_Alignment_Ref_Points.toggled.disconnect(self.update_ref_point_markers)
-        # dock.Cbx_Alignment_Ref_Names.toggled.disconnect(self.update_ref_point_markers)
-        # dock.Btn_Import_Alignments.clicked.disconnect(self.import_alignments)
-        # dock.Btn_Select_Workbook.clicked.disconnect(self.select_workbook)
-        # dock.Tbx_Workbook.textChanged.disconnect(self.workbook_udpated)
-        # dock.Btn_Create_New_Layer.clicked.disconnect(self.create_new_layer)
-        # dock.Btn_Import_From_Excel.clicked.disconnect(self.import_from_excel)
-
-        # Preset
-        ## Comment
-        dock.Tbx_Comment.textChanged.disconnect(self.reset_current_number)
-        dock.Tbx_Comment.textChanged.disconnect(self.handle_comment_change_preview)
-        dock.Spn_Current_Number.valueChanged.disconnect(self.handle_comment_change_preview)
-        dock.Btn_Reset_Current_Number.clicked.disconnect(self.reset_current_number)
-
-        ## Layer
-        dock.Btn_Create_Preset_Layer.clicked.disconnect(self.create_preset_layer)
-        dock.Cmb_Preset_Layer.currentIndexChanged.disconnect(self.handle_change_preset_layer)
-
-        ## Scale
-        dock.Spn_Preset_Pixel_Size.valueChanged.disconnect(self.handle_change_pixel_size)
-        dock.Spn_Preset_Spot_Size.valueChanged.disconnect(self.handle_change_spot_size)
-
-        ## Mode
-        dock.Tab_Preset_Mode.currentChanged.disconnect(self.handle_preset_mode_changed)
-
-        ### Point
-        dock.Opt_Point_Preview.stateChanged.disconnect(self.handle_change_PointPreview)
-
-        ### Line
-        dock.Spn_Line_Step_Size.valueChanged.disconnect(self.update_line)
-        dock.Spn_Line_N_Spot.valueChanged.disconnect(self.update_line)
-        dock.Btn_Line_Add_Points.clicked.disconnect(self.add_preset_points)
-
-        ### Grid
-        dock.Spn_Grid_Step_Size_X.valueChanged.disconnect(self.update_grid)
-        dock.Spn_Grid_Step_Size_Y.valueChanged.disconnect(self.update_grid)
-        dock.Spn_Grid_N_Point_X.valueChanged.disconnect(self.update_grid)
-        dock.Spn_Grid_N_Point_Y.valueChanged.disconnect(self.update_grid)
-        dock.Cmb_Grid_Move_Order.currentIndexChanged.disconnect(self.update_grid)
-        dock.Btn_Grid_Add_Points.clicked.disconnect(self.add_preset_points)
-
-        ## Undo
-        dock.Btn_Undo_Add_Preset_Point.clicked.disconnect(self.handle_undo)
+        self.dockwidget.Tab_Tool.currentChanged.disconnect(self.handle_tool_changed)
 
     def init_map_tool(self):
         # check the plugin activation state
         if self.wiscsims_tool_action.isChecked():
+            if self.canvasMapTool is not None and self.canvas.mapTool() is self.canvasMapTool:
+                self.dockwidget.setEnabled(True)
+                return
             # when the user activate the WiscSIMS Tool
             self.prev_tool = self.canvas.mapTool()
             self.wiscsims_tool_action.setChecked(True)
             self.canvasMapTool = CanvasMapTool(self.canvas)
 
-            self.canvas.mapToolSet.connect(self.mapToolChanged)
+            if not self._map_tool_connected:
+                self.canvas.mapToolSet.connect(self.mapToolChanged)
+                self._map_tool_connected = True
             self.canvasMapTool.canvasClicked.connect(self.canvasClicked)  # released
 
             self.canvasMapTool.canvasPressed.connect(self.handle_canvas_pressed)  # pressed
@@ -445,17 +410,8 @@ class WiscSIMSTool:
 
             self.canvas.setMapTool(self.canvasMapTool)
         else:
-            # when the user deactivate the WiscSIMS Tool
-            try:
-                self.wiscsims_tool_action.setChecked(False)
-                self.canvas.mapToolSet.disconnect(self.mapToolChanged)
-                self.canvas.unsetMapTool(self.canvasMapTool)
-                if not re.search("wiscsims_tool", self.prev_tool):
-                    self.canvas.setMapTool(self.prev_tool)
-                self.dockwidget.setEnabled(False)
-
-            except Exception:
-                pass
+            self.unsetMapTool()
+            self.dockwidget.setEnabled(False)
 
     # def get_true_shapefile_headers(self, headers):
     #     # create tmporal shapefile with provided headers
@@ -510,21 +466,23 @@ class WiscSIMSTool:
     """
 
     def mapToolChanged(self, tool, prev_tool):
-        if re.search(r"wiscsims_tool", str(tool)) or re.search(r"WiscSIMSTool", str(tool)):
+        if tool is self.canvasMapTool:
             self.dockwidget.setEnabled(True)
             return
-
-        try:
-            self.unsetMapTool()
-            self.preset.reset_preset_points()
-            self.wiscsims_tool_action.setChecked(False)
-            self.dockwidget.setEnabled(False)
-        except Exception:
-            print("Error: MapToo Changed")
+        self.unsetMapTool()
+        self.preset.reset_preset_points()
+        self.wiscsims_tool_action.setChecked(False)
+        self.dockwidget.setEnabled(False)
 
     def unsetMapTool(self):
-        self.canvas.mapToolSet.disconnect(self.mapToolChanged)
-        self.canvas.unsetMapTool(self.canvasMapTool)
+        if self._map_tool_connected:
+            self.canvas.mapToolSet.disconnect(self.mapToolChanged)
+            self._map_tool_connected = False
+        if self.canvasMapTool is not None and self.canvas.mapTool() is self.canvasMapTool:
+            self.canvas.unsetMapTool(self.canvasMapTool)
+            if self.prev_tool is not None and self.prev_tool is not self.canvasMapTool:
+                self.canvas.setMapTool(self.prev_tool)
+        self.canvasMapTool = None
 
     def canvasClickedWShift(self, e):
         # Start moving preset point
@@ -542,7 +500,7 @@ class WiscSIMSTool:
         # self.canvas.setCursor(Qt.CrossCursor)
 
     def canvasReleaseWAltShift(self, e):
-        self.preset.delete_spot(e)
+        self.preset.delete_spot_at(e)
 
     def canvasReleaseWAlt(self, e):
         self.preset.edit_point(e)
@@ -561,7 +519,7 @@ class WiscSIMSTool:
             return
 
         if self.current_tool != "preset":
-            self.reset_preset_points()
+            self.preset.reset_preset_points()
 
     def canvasClickedRight(self, pt):
         self.canvasClicked(pt)

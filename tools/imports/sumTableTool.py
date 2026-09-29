@@ -1,24 +1,35 @@
 import os
 import re
 
-import xlrd as xl
+class _OpenpyxlSheet:
+    """Expose the small worksheet API used by SumTableTool."""
 
-# if os.name == 'nt':
-#     import win32com.client
-#     import win32gui
-#     import win32con
+    def __init__(self, sheet):
+        self.sheet = sheet
+        self.nrows = sheet.max_row
+
+    def row_values(self, index, start_colx=0):
+        row = next(
+            self.sheet.iter_rows(min_row=index + 1, max_row=index + 1, values_only=True),
+            (),
+        )
+        return ["" if value is None else value for value in row[start_colx:]]
+
+    def col_values(self, index):
+        return [self.row_values(row)[index] for row in range(self.nrows)]
+
+    def cell_value(self, row, column):
+        value = self.sheet.cell(row + 1, column + 1).value
+        return "" if value is None else value
 
 
 class SumTableTool:
     def __init__(self, wb_path):
         self.path = wb_path
-
-        if not os.path.exists(self.path):
-            return None
-
-        # self.excel = None
-        # self.wb = None
-        # self.ws = None
+        self.excel = None
+        self.wb = None
+        self.ws = None
+        self.load_error = None
 
         self.prev = []
         self.values = []
@@ -28,29 +39,46 @@ class SumTableTool:
         self.asc_filter = {"from": None, "to": None}
         self.comment_filter = ""
 
-        self.load_workbook()
+        if os.path.exists(self.path):
+            self.load_workbook()
+        else:
+            self.load_error = "File not found."
 
     def load_workbook(self):
+        self.excel = None
+        self.wb = None
+        self.ws = None
+        self.load_error = None
+        self.values = []
         try:
-            self.excel = xl.open_workbook(filename=self.path)
-        except Exception:
-            print("error on open_workbook // path: {}".format(self.path))
+            if self.path.lower().endswith(".xlsx"):
+                from openpyxl import load_workbook
+
+                self.excel = load_workbook(self.path, read_only=True, data_only=True)
+            else:
+                import xlrd
+
+                self.excel = xlrd.open_workbook(filename=self.path)
+        except Exception as error:
+            self.load_error = str(error)
             return None
 
-        try:
-            self.wb = self.excel
-        except Exception:
-            return None
+        self.wb = self.excel
 
         try:
-            if "Sum_table" in self.wb.sheet_names():
-                self.ws = self.wb.sheet_by_name("Sum_table")
-            elif "Data" in self.wb.sheet_names():
-                self.ws = self.wb.sheet_by_name("Data")
+            sheet_names = self.wb.sheetnames if self.path.lower().endswith(".xlsx") else self.wb.sheet_names()
+            if "Sum_table" in sheet_names:
+                name = "Sum_table"
+            elif "Data" in sheet_names:
+                name = "Data"
             else:
                 raise ValueError("No appropriate worksheet.")
+            if self.path.lower().endswith(".xlsx"):
+                self.ws = _OpenpyxlSheet(self.wb[name])
+            else:
+                self.ws = self.wb.sheet_by_name(name)
         except ValueError as err:
-            print(err)
+            self.load_error = str(err)
             return None
 
     def reload_workbook(self):
@@ -95,15 +123,18 @@ class SumTableTool:
         return self.ws.row_values(0, 0)
 
     def get_values(self):
-        # last_row = self.find_last_row()
-        self.values = [list(r) for r in self.ws._cell_values if r[0] is not None and self.asc_pattern.match(r[0])]
+        self.values = self._all_data_rows()
         if self.asc_filter["from"] is not None or self.asc_filter["to"] is not None:
             self.values = self.filter_by_asc(self.asc_filter["from"], self.asc_filter["to"])
         elif self.comment_filter != "":
-            print("comfil: ", self.comment_filter)
             self.values = self.filter_by_comment(self.comment_filter)
-            print("value: ", self.values)
         return self.values
+
+    def _all_data_rows(self):
+        if self.ws is None:
+            return []
+        rows = (self.ws.row_values(index) for index in range(1, self.ws.nrows))
+        return [row for row in rows if row and isinstance(row[0], str) and self.asc_pattern.match(row[0])]
 
     def get_asc_list(self):
         if self.values == []:
@@ -111,25 +142,26 @@ class SumTableTool:
         return [r[0] for r in self.values]
 
     def filter_by_comment(self, pattern):
-        comm_col = self.find_columns(["Comment"])[0]
+        columns = self.find_columns(["Comment"])
+        if columns is None:
+            return []
+        comm_col = columns[0]
         pat = re.compile(pattern, re.I)
-        if self.values == []:
-            self.values = self.get_values()
-
-        return [r for r in self.values if pat.search(r[comm_col])]
+        return [r for r in self._all_data_rows() if pat.search(str(r[comm_col]))]
 
     def filter_by_asc(self, start=None, end=None):
         # start=None, end=None: All (from smallest to largest)
         # start=None, end=xxx: from smallest to xxx
         # start=xxx, end=None: from xxx to largest
         # start=xxx, end=yyy: from xxx to yyy
-        if self.values == []:
-            self.values = self.get_values()
-        asc = [r[0] for r in self.values]
-        rNum = len(self.values)
+        values = self._all_data_rows()
+        if not values:
+            return []
+        asc = [r[0] for r in values]
+        rNum = len(values)
         if start is None:
             if end is None:
-                return self.values
+                return values
             else:
                 smallest = asc[0]
                 largest = end
@@ -144,16 +176,16 @@ class SumTableTool:
             s_idx = asc.index(smallest)
             e_idx = asc.index(largest)
             if s_idx < 0 or e_idx < 0:
-                return self.values
+                return values
         except ValueError:
-            return self.values
+            return values
 
-        return self.values[s_idx : e_idx + 1]
+        return values[s_idx : e_idx + 1]
 
     def is_modified(self, val=None):
         if val is None:
             if self.values == []:
-                self.get_values()
+                val = self.get_values()
             else:
                 val = self.values
         return not self.prev == val
