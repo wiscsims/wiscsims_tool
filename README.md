@@ -1,152 +1,155 @@
-
 # WiscSIMS Tool
 
-A QGIS3 plugin for external/internal WiscSIMS users.
+A QGIS 3 plugin for external and internal WiscSIMS users. It helps you import session data, pre-select SIMS spots on a map, and measure pixel size from a known scale bar.
 
 ## Table of Contents
 
-<!-- START doctoc generated TOC please keep comment here to allow auto update -->
-<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-
 - [Features](#features)
 - [Requirements](#requirements)
-  - [QGIS3](#qgis3)
+  - [QGIS 3](#qgis-3)
 - [Installation](#installation)
-  - [Install from QGIS Plugin Repository (Recommended)](#install-from-qgis-plugin-repository-recommended)
+  - [Install from QGIS Plugin Repository](#install-from-qgis-plugin-repository)
   - [Install from ZIP file](#install-from-zip-file)
 - [Usage](#usage)
   - [Import Data](#import-data)
+    - [Alignment file](#alignment-file)
+    - [Excel file](#excel-file)
+    - [Data range](#data-range)
   - [Preset (pre-select SIMS spots on QGIS maps)](#preset-pre-select-sims-spots-on-qgis-maps)
     - [Comments](#comments)
     - [Layer](#layer)
     - [Scale](#scale)
     - [Preset Mode](#preset-mode)
+    - [Preview](#preview)
     - [Undo](#undo)
     - [Modify spot locations](#modify-spot-locations)
     - [Modify comment](#modify-comment)
-
-<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+  - [Pixel Size](#pixel-size)
+- [Current limitations](#current-limitations)
 
 ## Features
 
-WiscSIMS Tool has two features.
+WiscSIMS Tool has three main functions:
 
-1. Importing Excel spreadsheets into QGIS maps.
-2. Pre-selecting (preset) SIMS spots on QGIS maps.
+1. Import WiscSIMS session data from Excel workbooks into a QGIS point layer.
+2. Pre-select SIMS spots on QGIS maps in the Preset tab.
+3. Measure pixel size from a known length on the map and use it for preset spots.
 
 ## Requirements
 
-### [QGIS3](https://www.qgis.org/)
-QGIS3 (>3.10) is recommended.
-  - [MacOS](https://qgis.org/downloads/macos/qgis-macos-ltr.dmg)
-  - [Windows](https://qgis.org/downloads/QGIS-OSGeo4W-3.10.8-1-Setup-x86_64.exe) (64 bit)
-  - [Windows](https://qgis.org/downloads/QGIS-OSGeo4W-3.10.8-1-Setup-x86.exe) (32 bit)
+### [QGIS 3](https://www.qgis.org/)
+
+The plugin metadata declares QGIS 3.4 as the minimum version. The current automated tests run with QGIS 3.44.13; older versions are not covered by those tests. Download QGIS from the [official QGIS site](https://qgis.org/download/).
+
+For Excel import, QGIS's Python environment needs `openpyxl` for `.xlsx` files or `xlrd` for `.xls` files.
 
 ## Installation
-There are two ways to install `WiscSIMS Tool`.
 
-### Install from QGIS Plugin Repository (Recommended)
+There are two ways to install WiscSIMS Tool. The screenshots below show an older QGIS interface; button placement may differ in your version.
 
-1. Open QGIS.
+### Install from QGIS Plugin Repository
 
-2. From the QGIS menu, select `Plugins` > `Manege and Install Plugins`.
-<a href="img/readme/plugin_install_menu.png" target="_blank"><img src="img/readme/plugin_install_menu.png" width="500" alt=""></a>
+1. Open QGIS and select **Plugins > Manage and Install Plugins**.
 
-3. Search/find `WiscSIMS Tool` from the plugin list and click `Install Plugin` button on the right bottom of `Manege and Install Plugins` window.
-<a href="img/readme/search_and_install_WiscSIMSTool.png" target="_blank"><img src="img/readme/search_and_install_WiscSIMSTool.png" width="600" alt="Install WiscSIMS Tool from the list"></a>
+   <a href="img/readme/plugin_install_menu.png" target="_blank"><img src="img/readme/plugin_install_menu.png" width="500" alt="QGIS Plugins menu"></a>
 
-4. Select `Installed Plugins` to make sure `WiscSIMS Tool` was correctlly installed. If it is not checked, click the checkbox (on the left of green puzzle piece icon) to activate the plugin. You also see `WiscSIMS Tool` icon in the QGIS toolbar.
+2. Search for **WiscSIMS Tool** in the [QGIS Plugin Repository](https://plugins.qgis.org/plugins/wiscsims_tool/) and click **Install Plugin**.
 
+   <a href="img/readme/search_and_install_WiscSIMSTool.png" target="_blank"><img src="img/readme/search_and_install_WiscSIMSTool.png" width="600" alt="Install WiscSIMS Tool from the plugin list"></a>
+
+3. Check **Installed Plugins** to confirm that it is enabled. You should also see its icon in the QGIS toolbar.
+
+The published repository package and this development checkout may be different versions. This checkout's `metadata.txt` currently names the plugin **WiscSIMS Tool2**; its QGIS menu action is **WiscSIMS Tool**.
 
 ### Install from ZIP file
+
 Manual installation is also available.
-1. Download `WiscSIMS Tool`  (**wiscsims_tool.zip**) from [WiscSIMS GitHub repository](https://github.com/wiscsims/wiscsims_tool/releases/latest/download/wiscsims_tool.zip).
 
-2. Open QGIS.
+1. Download a packaged plugin ZIP from the [WiscSIMS Tool releases](https://github.com/wiscsims/wiscsims_tool/releases), or package the version of this checkout that you want to use.
+2. In QGIS, select **Plugins > Manage and Install Plugins**.
+3. Select **Install from ZIP**, choose the ZIP file, and click **Install Plugin**.
 
-3.  From the QGIS menu, select `Plugins` > `Manege and Install Plugins`.
-<a href="img/readme/plugin_install_menu.png" target="_blank"><img src="img/readme/plugin_install_menu.png" width="500" alt=""></a>
+   <a href="img/readme/plugin_install_zip.png" target="_blank"><img src="img/readme/plugin_install_zip.png" width="600" alt="Install a QGIS plugin from a ZIP file"></a>
 
-1. Select `Intall from ZIP` and hit `...` button to select downloaded `wiscsims_tool.zip` file.
-<a href="img/readme/plugin_install_zip.png" target="_blank"><img src="img/readme/plugin_install_zip.png" width="600" alt="Install WiscSIMS Tool from zip file"></a>
-
-
-1. Hit `Install Plugin` to install `WiscSIMS Tool`.
-2. Select `Installed Plugins` to make sure `WiscSIMS Tool` was correctlly installed. You also see `WiscSIMS Tool` icon in the QGIS toolbar.
+4. Check **Installed Plugins** to confirm that it is enabled.
 
 ## Usage
 
-Activate **`WiscSIMS Tool`** from toolbar or menu `plugins` > `WiscSIMS` > `WiscSIMS Tool`.
+Open the dock from its toolbar button or **Plugins > WiscSIMS > WiscSIMS Tool**. The dock has **Import**, **Preset**, and **Pixel Size** tabs. Keep the WiscSIMS Tool map tool active when selecting locations on the map.
 
 ### Import Data
-After SIMS session at the WiscSIMS, you can import SIMS data from Excel file which is provided by WiscSIMS to the QGIS maps you used in the SIMS session. 
+
+After a WiscSIMS session, use the **Import** tab to add data from a session workbook to a QGIS point layer. You can convert stage coordinates with an alignment file or import coordinates directly.
 
 #### Alignment file
 
+If you have a Stage Navigator alignment `.json` file, load it under **Import Alignment File**. The plugin uses the alignment to transform stage coordinates to map coordinates. You can inspect the reference points in the dock, and loading the alignment updates the Preset pixel size.
+
+If the workbook's `X` and `Y` values are already map coordinates, uncheck **Import Alignment File** to import them directly.
+
 #### Excel file
+
+1. Choose a `.xlsx` or `.xls` file under **Select Excel Workbook**. The workbook controls become available after a usable alignment is loaded or alignment is turned off.
+2. The workbook needs a sheet named `Sum_table` or `Data`. Its first row supplies field names; data rows need a first-column filename such as `20240929@1.asc` and `X` and `Y` columns. **Comment Match** also needs a `Comment` column.
+3. Select a compatible, visible point layer under **Select Layer to Import SIMS Data**, or click **Create…** to make a new ESRI Shapefile with fields from the workbook. **Spot Size for the Session** sets the symbol size of a new layer.
+4. Click **Import Excel Data**. Valid rows are appended to the chosen layer; rows without usable numeric coordinates are skipped.
 
 #### Data range
 
-- Regular expression to extract data
-- xxx
-- XXXX
-
-
+Use **Data Range** to import rows between selected `.asc` filenames. Alternatively, use **Comment Match** to filter the `Comment` column with a case-insensitive regular expression.
 
 ### Preset (pre-select SIMS spots on QGIS maps)
 
-You can select spots for SIMS analysis with three selecting modes: Point, Line and Grid. All or part of selected spots can be exported to Excel file (WiscSIMS session file) for manual/automated analysis.
+Use the **Preset** tab to place spots on a QGIS point layer before SIMS analysis. Choose **Point**, **Line**, or **Grid** under Preset Mode.
 
 #### Comments
 
-You can set comment as you want. Comments are saved with preset point into selected layer. `{}` in the comment will be replaced by incremented numbers. Incremented numbers can be formatted using Python's [Format Specification Mini-Language](https://docs.python.org/2.7/library/string.html#format-specification-mini-language). For example, {:04} (four characters padded with zeros) will be formatted as '0001'.
+Comments are saved with preset points in the selected layer. With **Auto Number Increments** enabled, a Python format placeholder in the comment is replaced by the current number. For example, `spot-{:04}` produces `spot-0001` when the number is 1. See Python's [format specification](https://docs.python.org/3/library/string.html#format-specification-mini-language).
+
+Use **Start with #** and **Reset** to control the sequence. **Reset when comment changes** starts the sequence again when you edit the comment template. **Auto pop-up comment box** opens an editor before each spot is added.
 
 #### Layer
 
-Layers for preset must be vector layer and have a column/field named `Comment` (first letter should be capital). You can use pre-existing layers or create a new layer for preset spots. Hit refresh button when you added layer for preset manually to update layer list.
+Preset layers must be point vector layers with a field named `Comment` and a single symbol renderer. Select an existing layer, or click **Layer > Create…** to create a new ESRI Shapefile. A new preset layer also has fields for spot size and pixel size. Use the refresh button if a layer you added manually does not appear in the list.
 
 #### Scale
 
-You can define the scale of image as a `Pixel Size`. In WiscSIMS Tool, pixel size has unit of **`µm/map_unit`**. If you have `aligment file (.json)` used in your WiscSIMS session and loaded in `Import` panel, `Pixel Size` will be automatically updated.
-If you don't know the pixel size of the image, you can use **1 µm** for now. If the spot size displayed is too large or too small, adjust the pixel size appropriately. This scale will be used to preset spots in WiscSIMS Tool.
+Set **Spot Size** in µm and **Pixel Size** in µm per map unit. The diameter saved for the spot symbol in map units is `spot size / pixel size`. Loading an alignment file in **Import** updates the Preset pixel size. You can also enter it manually or calculate it in the **Pixel Size** tab.
 
 #### Preset Mode
 
-There are three types of preset mode, Point, Line and Grid in WiscSIMS Tool. You can change those three modes with tabs in Preset Mode section in Preset panel.
+- **Point:** Left click the sample image on the map to add a spot. With **Auto pop-up comment box** enabled, edit or confirm its comment before adding it.
+- **Line:** Left click to set the start point. Move the pointer to preview the line, then left or right click to set its end point. Choose **N of Spots** to include both endpoints at even intervals, or **Step Size** in µm to place spots at that fixed interval from the start. In Step Size mode, the end point gets a spot only when it falls on the interval; a line shorter than one interval has just the start spot. Click **Add Points** to save the previewed spots.
+- **Grid:** Left click to place the first spot. Set the horizontal and vertical step sizes in µm (negative values reverse direction), the number of spots in each direction, and the **Order of Analysis**. The preview follows the current map rotation. Click **Add Points** to save the previewed spots. Click another location to start a new grid before adding it.
 
-- **Point Mode**
+Line and Grid each allow up to 5,000 spots per placement. The **Add Points** button stays disabled until a valid preview is ready.
 
-  In Point Mode, SIMS spots are added by clicking on your sample images on a QGIS map. If you want to change the comment for each spot, the "pop up comment box" option is helpful. A small window will appear right after you click on it and you can edit your comment.
+#### Preview
 
-- **Line**
-
-  In Line Mode, you can add spots along the line defined by two spots. At first, you can select a start-point of line by **`left click`**, then select a end-point by **`right click`**. You will see previews of red spots and comments in gray square ballon. Note that red circles only show positions of the spots to be added, circle size is not to scale. Secondly, you can modify step size or number of spots as you want. Preview will be updated automatically with your modification. Finally, hit `Add Points` button at the bottom of `Preset Mode` section to addf points to the selected layer.
-
-- **Grid**
-
-  In Grid Mode, you can add spots as a grid (m x n). Left click defines the first spot of the grid. Preview will show up as well as `Line Mode`. You can modify step sizes and number of spots for vertical and horizontal. You can also choose analysis order in the grid from two options (`Vertical, then Horizontal` or `Horizontal, then Vertical`). Thin red line in the preview indicates chosen analysis order. After hit `Add Points`, poins are stored in the selected layer.
+In Point mode, **Preview** shows a spot circle at the pointer. **Preview (Text)** shows the next comment beside the pointer and works independently of the circle. The circle resizes after zooming, with a minimum on-screen diameter of 16 pixels so it stays visible when zoomed far out. This display minimum does not alter the spot size saved to the layer. Line and Grid show the candidate spots on the map before you click **Add Points**.
 
 #### Undo
 
-Undo for added point(s) is avaiable when `Undo` button is active. Currently, a maximum of 100 undo is possible.
+Click **Undo** to reverse a recent spot addition, movement, comment edit, or deletion. The button is enabled when there is an action to undo.
 
 #### Modify spot locations
 
-Use _built-in_ <a href="https://sites.google.com/a/wisc.edu/wiscsims-micro-qgis/learn-to-use-qgis/editing/selecting-objects" target="_blank">`Select and Move Features`</a>.
-
-### <span style="color: red;">⬇️ ONLY FOR INSTALLED BY .zip VERSION</span>
-
-#### Modify spot locations
-
-Locations of preset spots can be modified by clicking the feature (spot) with `Shift` key, then drag & drop. If you want to move multiple spots, use _built-in_ <a href="https://sites.google.com/a/wisc.edu/wiscsims-micro-qgis/learn-to-use-qgis/editing/selecting-objects" target="_blank">`Select and Move Features`</a>.
-
-TODO: [movie]
+Hold **Shift** and drag an existing spot to move it. To move multiple features, use QGIS's built-in feature editing tools.
 
 #### Modify comment
 
-Comments for each spot can be modified later. Click the spot with pressing `Alt(Windows)/Option(MacOS)`, then small popup window shows for editing original comment.
+Hold **Alt** (or **Option** on macOS) and click an existing spot to open its comment editor. Clicking empty space does nothing. The dialog also offers deletion. To delete a spot directly, hold **Alt + Shift** (or **Option + Shift** on macOS) and click it; confirm the deletion when prompted.
 
-TODO: [movie]
+### Pixel Size
 
+Use the **Pixel Size** tab when you know the real length represented by a scale bar on the map:
 
+1. Click the scale bar's start and end points on the map.
+2. Enter the known **Scale Bar Length** in µm.
+3. Check the calculated **Pixel Size**, then click **Set Pixel Size** to copy it to the **Preset** tab.
 
+The calculation is `known length in µm / measured distance in map units`. The distance field is labeled `px` in the interface; that label is literal only when the map coordinates represent image pixels. Click the map again to start another measurement.
+
+## Current limitations
+
+- Exporting preset spots to a WiscSIMS Excel session workbook is not currently implemented in this checkout.

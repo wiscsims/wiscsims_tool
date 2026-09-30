@@ -31,12 +31,10 @@ except ImportError:
 class QgisLifecycleTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.app = QgsApplication([], True)
-        cls.app.initQgis()
-
-    @classmethod
-    def tearDownClass(cls):
-        cls.app.exitQgis()
+        cls.app = QgsApplication.instance()
+        if cls.app is None:
+            cls.app = QgsApplication([], True)
+            cls.app.initQgis()
 
     def test_creating_layer_with_synchronous_legend_callbacks(self):
         canvas = QgsMapCanvas()

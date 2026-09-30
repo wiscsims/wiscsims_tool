@@ -72,6 +72,8 @@ class CanvasMapTool(QgsMapTool):
             self.canvasEscapeKeyState.emit()
 
     def canvasPressEvent(self, event):
+        if event.button() != Qt.LeftButton:
+            return
         pt = self.getMapCoordinates(event)
         modifiers = event.modifiers()
         if modifiers & Qt.AltModifier:
@@ -87,6 +89,8 @@ class CanvasMapTool(QgsMapTool):
         return
 
     def canvasReleaseEvent(self, event):
+        if event.button() not in (Qt.LeftButton, Qt.RightButton):
+            return
         pt = self.getMapCoordinates(event)
         modifiers = event.modifiers()
 

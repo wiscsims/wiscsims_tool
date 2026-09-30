@@ -508,8 +508,9 @@ class WiscSIMSTool:
         self.state_alt_key = False
 
     def canvasClicked(self, pt):
-        # if self.current_tool == "preset":
-        # self.preset.handle_clicked(pt)
+        if self.current_tool == "preset":
+            self.preset.handle_clicked(pt)
+            return
 
         if self.current_tool == "pixelsize":
             self.pxsizetool.handle_selecting_point(pt)
@@ -522,7 +523,10 @@ class WiscSIMSTool:
             self.preset.reset_preset_points()
 
     def canvasClickedRight(self, pt):
-        self.canvasClicked(pt)
+        if self.current_tool == "preset" and self.preset.current_preset_mode == "line":
+            self.preset.handle_clicked(pt, finish_line=True)
+        elif self.current_tool == "pixelsize":
+            self.canvasClicked(pt)
 
     def canvasMoved(self, pt):
         if self.current_tool == "pixelsize":

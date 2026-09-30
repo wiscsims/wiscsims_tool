@@ -25,6 +25,7 @@
 import math
 import os
 import os.path
+import time
 # import json
 # import re
 
@@ -80,6 +81,8 @@ from .presetPreview import PresetPreview
 class PresetTool(QObject):
     setActiveLayer = pyqtSignal(QgsVectorLayer)
     undo_max: int = 100
+    max_preset_points: int = 5000
+    line_preview_interval: float = 0.05
 
     def __init__(self, dock, canvas):
         QObject.__init__(self)
@@ -90,8 +93,6 @@ class PresetTool(QObject):
         self.dock = dock
 
         self.lt = LayerTool()
-        self.cot = CoordinateTool()
-
         # in memory layer while moving the spot
         self.preset_layer = self.get_preset_layer()
         print("preset layer", self.preset_layer)
@@ -100,11 +101,10 @@ class PresetTool(QObject):
         print(self.preview)
 
         self.rb_line = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
-        self.pxsize_line = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
-
         self.start_point = []
         self.end_point = []
         self.line_in_progress = False
+        self.last_line_preview_at = 0.0
         self.prev_tool = None
 
         self.preset_points = []
@@ -126,11 +126,6 @@ class PresetTool(QObject):
         self.mouse_right = False
 
         self.relocating_spot = False
-        self.line_end_selecting = False
-
-        self.mouse_move_counter = 0
-        self.move_throttling_threshold = 3
-
         self.cursor_pos = QgsPointXY(0, 0)
 
         self.active = False
@@ -170,6 +165,7 @@ class PresetTool(QObject):
         self.preview.set_text_preview(self.dock.Opt_Comment_Preview.isChecked())
 
         ### Line
+        self.dock.Opt_Line_Step_Size.toggled.connect(self.handle_line_spacing_mode_changed)
         self.dock.Spn_Line_Step_Size.valueChanged.connect(self.update_line)
         self.dock.Spn_Line_N_Spot.valueChanged.connect(self.update_line)
         self.dock.Btn_Line_Add_Points.clicked.connect(self.add_preset_points)
@@ -181,6 +177,7 @@ class PresetTool(QObject):
         self.dock.Spn_Grid_N_Point_Y.valueChanged.connect(self.update_grid)
         self.dock.Cmb_Grid_Move_Order.currentIndexChanged.connect(self.update_grid)
         self.dock.Btn_Grid_Add_Points.clicked.connect(self.add_preset_points)
+        self.canvas.rotationChanged.connect(self.update_grid)
 
         ## Undo
         self.dock.Btn_Undo_Add_Preset_Point.clicked.connect(self.handle_undo)
@@ -242,11 +239,16 @@ class PresetTool(QObject):
             self.reorder_preview = False
 
     def handle_change_preset_layer(self, idx=-1):
-        if idx < 0 or self.preset_layer is None:
+        if idx < 0:
             print("handle preset None")
             return
 
-        self.preset_layer = self.get_preset_layer()
+        layer = self.get_preset_layer()
+        if layer is None:
+            return
+        self.preset_layer = layer
+        self.preview.update_layer(layer)
+        self.clear_preview_spots()
 
         ssps = self.get_ss_ps()
 
@@ -387,6 +389,8 @@ class PresetTool(QObject):
         return out
 
     def handle_change_pixel_size(self, size):
+        if size <= 0:
+            return
         self.scale = 1 / size
         ss = self.dock.Spn_Preset_Spot_Size.value()
         self.handle_change_spot_size(ss)
@@ -472,6 +476,14 @@ class PresetTool(QObject):
         self.update_preview_cursor()
 
     def update_preview_cursor(self):
+        if self.current_preset_mode != "point":
+            if self.preview.cursor_marker is not None:
+                self.preview.cursor_marker.hide()
+            self.preview.cursor_visible = False
+            editing = self.active and self.preset_layer is not None and self.alt_key
+            self.canvas.setCursor(Qt.PointingHandCursor if editing else Qt.CrossCursor)
+            return
+
         self.preview.reset()
         if not self.active or self.preset_layer is None:
             self.canvas.setCursor(Qt.CrossCursor)
@@ -497,13 +509,13 @@ class PresetTool(QObject):
 
     def reset_preset_points(self):
         self.preview.remove_objects()
+        self.preset_points = []
         self.feature_id = None
         self.update_add_points_btn_status(False)
 
     def add_preset_points(self):
-        self.reset_preset_points()
-
-        if len(self.preset_points) == 0:
+        points = list(self.preset_points)
+        if not points:
             return
 
         if self.dock.Cmb_Preset_Layer.currentIndex() == -1:
@@ -513,7 +525,7 @@ class PresetTool(QObject):
         layer.startEditing()
         fields = layer.fields()
         features = []
-        for p in self.preset_points:
+        for p in points:
             feature = QgsFeature()
             feature.setFields(fields)
             geom = QgsGeometry.fromPointXY(QgsPointXY(p[1], p[2]))
@@ -523,20 +535,18 @@ class PresetTool(QObject):
             features.append(feature)
         dpr = layer.dataProvider()
         results, newFeatures = dpr.addFeatures(features)
-        layer.commitChanges()
+        if not results or not layer.commitChanges():
+            layer.rollBack()
+            return
         points_for_undo = [f.id() for f in newFeatures]
-        self.add_to_undo("addition", points_for_undo)
-
-        # check number of undos
-        if len(self.undo_preset) > self.undo_max:
-            del self.undo_preset[0]
+        if points_for_undo:
+            self.add_to_undo("addition", points_for_undo)
 
         self.update_undo_btn_state()
 
         if self.dock.Cbx_Number_Increment.isChecked():
-            self.dock.Spn_Current_Number.setValue(self.dock.Spn_Current_Number.value() + len(self.preset_points))
+            self.dock.Spn_Current_Number.setValue(self.dock.Spn_Current_Number.value() + len(points))
 
-        self.init_rb_line()
         self.clear_preview_spots()
 
     def add_preset_point(self, pt):
@@ -554,22 +564,28 @@ class PresetTool(QObject):
         self.update_preview_cursor()
 
     def add_to_undo(self, undo_type, data):
-        undo_data = {"type": undo_type, "data": data}
+        layer = self.get_preset_layer()
+        if layer is None:
+            return
+        undo_data = {"type": undo_type, "data": data, "layer_id": layer.id()}
         self.undo_preset.append(undo_data)
+        if len(self.undo_preset) > self.undo_max:
+            del self.undo_preset[0]
 
     def handle_undo(self):
-        if len(self.undo_preset) == 0:
+        while self.undo_preset:
+            undo_item = self.undo_preset[-1]
+            preset_layer = QgsProject.instance().mapLayer(undo_item["layer_id"])
+            if preset_layer is not None:
+                break
+            self.undo_preset.pop()
+        else:
+            self.update_undo_btn_state()
             return
 
-        current_layer_index = self.dock.Cmb_Preset_Layer.currentIndex()
-        if current_layer_index == -1:
+        if not preset_layer.startEditing():
             return
-
-        # get and remove last item from self.undo_preset
-        undo_item = self.undo_preset.pop()
-
-        preset_layer = self.dock.Cmb_Preset_Layer.itemData(current_layer_index)
-        preset_layer.startEditing()
+        self.undo_preset.pop()
 
         undo_message = ""
         if undo_item["type"] == "addition":
@@ -607,7 +623,6 @@ class PresetTool(QObject):
         preset_layer.dataProvider().changeGeometryValues({fid: geom})
 
     def undo_delete_preset_point(self, preset_layer, data):
-        preset_layer.startEditing()
         fields = preset_layer.fields()
         feature = QgsFeature()
         feature.setFields(fields)
@@ -617,13 +632,17 @@ class PresetTool(QObject):
         feature["Comment"] = comment
         dpr = preset_layer.dataProvider()
         dpr.addFeatures([feature])
-        preset_layer.commitChanges()
 
     def undo_add_preset_point(self, preset_layer, id_list):
         preset_layer.deleteFeatures(id_list)
 
         # update increment number
-        if self.dock.Cbx_Number_Increment.isChecked():
+        current_layer = self.get_preset_layer()
+        if (
+            self.dock.Cbx_Number_Increment.isChecked()
+            and current_layer is not None
+            and current_layer.id() == preset_layer.id()
+        ):
             spn = self.dock.Spn_Current_Number
             spn.setValue(spn.value() - len(id_list))
 
@@ -637,12 +656,7 @@ class PresetTool(QObject):
         print("undo btn state", self.dock.Btn_Undo_Add_Preset_Point.isEnabled())
 
     def clear_preview_points(self):
-        if self.rb_line.size() > 0:
-            self.rb_line.reset()
-            # self.rb2.reset()
-            # self.rb_start.reset()
-            self.init_rb_line()
-            # self.init_annotation()
+        self.init_rb_line()
 
     def clear_preview_spots(self, init=True):
         # clear/init all preview related items
@@ -650,17 +664,14 @@ class PresetTool(QObject):
         self.end_point = []
         self.feature_id = None
         self.line_in_progress = False
+        self.last_line_preview_at = 0.0
+        self.reset_preset_points()
         if init:
             self.preview.reset()
-        else:
-            self.reset_preset_points()
         self.clear_preview_points()
 
     def init_rb_line(self):
-        if self.rb_line.size() > 0:
-            self.rb_line.reset()
-        self.rb_line = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
-        # self.rb = QgsRubberBand(self.canvas, True)  # False = not a polygon
+        self.rb_line.reset()
         self.rb_line.setWidth(2)
         self.rb_line.setColor(QColor(255, 20, 20, 60))
         self.dock.Txt_Line_Length.setText("0")
@@ -682,29 +693,17 @@ class PresetTool(QObject):
     def hide_tooltip(self):
         QToolTip.hideText()
 
-    def update_add_points_btn_status(self, status):
-        btns = []
-
-        if self.current_preset_mode == "line":
-            btns.append(self.dock.Btn_Line_Add_Points)
-        elif self.current_preset_mode == "grid":
-            btns.append(self.dock.Btn_Grid_Add_Points)
-        else:
-            btns.append(self.dock.Btn_Line_Add_Points)
-            btns.append(self.dock.Btn_Grid_Add_Points)
-
-        if status:  # Activate
-            fg_color = "rgb(255, 255, 255)"
-            bg_color = "rgb(255, 49, 49)"
-        else:  # Deactivate
-            fg_color = "rgb(128, 128, 128)"
-            bg_color = "rgb(192, 192, 192)"
-
-        styles = f"background-color: {bg_color};" f"color: {fg_color};" "font-weight: bold;"
-
-        for btn in btns:
-            btn.setStyleSheet(styles)
-            btn.setEnabled(status)
+    def update_add_points_btn_status(self, status, reason=""):
+        for mode, btn in (
+            ("line", self.dock.Btn_Line_Add_Points),
+            ("grid", self.dock.Btn_Grid_Add_Points),
+        ):
+            enabled = status and self.current_preset_mode == mode
+            bg_color = "rgb(255, 49, 49)" if enabled else "rgb(192, 192, 192)"
+            fg_color = "rgb(255, 255, 255)" if enabled else "rgb(128, 128, 128)"
+            btn.setStyleSheet(f"background-color: {bg_color};color: {fg_color};font-weight: bold;")
+            btn.setEnabled(enabled)
+            btn.setToolTip(reason if mode == self.current_preset_mode and not enabled else "")
 
     def preset_line(self, pt, line_end=False, live_preview=False):
         if line_end:
@@ -714,12 +713,13 @@ class PresetTool(QObject):
                 self.line_in_progress = False
         else:  # start line drawing
             self.init_rb_line()
-
-            # self.preview.reset()
+            self.preview.remove_objects()
+            self.preset_points = []
             self.start_point = pt
-
+            self.end_point = []
             self.preview.add_points([[pt, ""]])
             self.line_in_progress = True
+            self.update_add_points_btn_status(False)
 
             self.rb_line.addPoint(self.start_point, False)
             self.rb_line.addPoint(self.start_point, True)
@@ -727,52 +727,62 @@ class PresetTool(QObject):
 
     def update_line(self):
         if len(self.start_point) and len(self.end_point):
-            if self.preview:
-                self.preview.reset()
-                # self.preview.update_symbol_size()
-            self.preset_points = []
-            self.draw_line_points()
+            self.draw_line_points(live_preview=self.line_in_progress)
+
+    def handle_line_spacing_mode_changed(self, use_step_size):
+        number_field = self.dock.Spn_Line_N_Spot
+        was_blocked = number_field.blockSignals(True)
+        try:
+            number_field.setMinimum(1 if use_step_size else 2)
+        finally:
+            number_field.blockSignals(was_blocked)
+        self.update_line()
 
     def draw_line_points(self, live_preview=False):
-        if len(self.start_point) == 0:
+        if len(self.start_point) == 0 or len(self.end_point) == 0 or self.scale <= 0:
             return
-        # update line length in the widget
         length = self.update_line_length(self.end_point)
+        self.preview.remove_objects()
+        self.preset_points = []
+        if length <= 0:
+            self.preview.add_points([[self.start_point, ""]])
+            self.update_add_points_btn_status(False, "Choose a different end point.")
+            return
 
         if self.dock.Opt_Line_Step_Size.isChecked():
-            # use step size
             step = self.dock.Spn_Line_Step_Size.value()
-            n_spots = int(length / step) + 1
+            if step <= 0:
+                self.update_add_points_btn_status(False, "Step size must be positive.")
+                return
+            n_spots = math.floor(length / step) + 1
+            if n_spots > self.max_preset_points:
+                self.update_add_points_btn_status(False, f"Maximum {self.max_preset_points} spots.")
+                return
             self.set_value_without_signal(self.dock.Spn_Line_N_Spot, n_spots)
+            distances = [n * step for n in range(n_spots)]
         else:
-            # use number of spots
             n_spots = self.dock.Spn_Line_N_Spot.value()
+            if n_spots < 2:
+                self.update_add_points_btn_status(False, "Choose at least two spots.")
+                return
+            if n_spots > self.max_preset_points:
+                self.update_add_points_btn_status(False, f"Maximum {self.max_preset_points} spots.")
+                return
             step = length / (n_spots - 1)
-            self.set_value_without_signal(self.dock.Spn_Line_Step_Size, step)
-
-        angle = self.cot.get_angle(self.start_point, self.end_point)
-        cos = step * math.cos(angle)
-        sin = step * math.sin(angle)
-        x, y = 0, 0
-        pt = QgsPointXY(x, y)
+            self.set_value_without_signal(self.dock.Spn_Line_Step_Size, round(step))
+            distances = [n * step for n in range(n_spots)]
 
         preview_points = []
-
-        for n in range(n_spots):
-            x = self.start_point[0] + cos * n * self.scale
-            y = self.start_point[1] + sin * n * self.scale
+        for n, distance in enumerate(distances):
+            fraction = distance / length
+            x = self.start_point[0] + (self.end_point[0] - self.start_point[0]) * fraction
+            y = self.start_point[1] + (self.end_point[1] - self.start_point[1]) * fraction
             comment = self.get_comment(n)
-            pt = QgsPointXY(x, y)
-            preview_points.append([pt, comment])
-            self.preset_points.append([comment, x, y])
-        print("preview points")
+            preview_points.append([QgsPointXY(x, y), comment])
+            if not live_preview:
+                self.preset_points.append([comment, x, y])
         self.preview.add_points(preview_points)
-
-        if live_preview:
-            self.preset_points = []
-
-        self.update_add_points_btn_status(True)
-        self.canvas.refresh()
+        self.update_add_points_btn_status(not live_preview)
 
     def preset_grid(self, pt):
         self.start_point = pt
@@ -781,13 +791,11 @@ class PresetTool(QObject):
         self.draw_grid_points()
 
     def update_grid(self):
-        if self.start_point is None:
+        if len(self.start_point) == 0:
             return
 
         self.preset_points = []
-        if self.preview:
-            self.preview.reset()
-            # self.preview.update_symbol_size()
+        self.preview.remove_objects()
         self.init_rb_line()
         self.draw_grid_points()
 
@@ -799,6 +807,13 @@ class PresetTool(QObject):
         n_step_y = self.dock.Spn_Grid_N_Point_Y.value()
         rotation = self.canvas.rotation()
         if len(self.start_point) == 0:
+            return
+        count = n_step_x * n_step_y
+        if count > self.max_preset_points:
+            self.update_add_points_btn_status(False, f"Maximum {self.max_preset_points} spots.")
+            return
+        if (n_step_x > 1 and step_x == 0) or (n_step_y > 1 and step_y == 0):
+            self.update_add_points_btn_status(False, "Step size must be nonzero when using multiple spots.")
             return
 
         points = self.calculate_grid_positions(
@@ -823,38 +838,30 @@ class PresetTool(QObject):
 
         self.preview.add_points(preview_points)
         self.update_add_points_btn_status(True)
-        self.canvas.refresh()
 
     def calculate_grid_positions(self, start_xy, step_xy, n_xy, order, scale=1, rotation=0):
-        # start, step, n are lists
-        # order: 0 = Horizontal, then vertical
-        #        1 = Vertical, then horizontal
-        start_xy = list(start_xy)
-        if order == 0:
-            for i in [start_xy, step_xy, n_xy]:
-                i.reverse()
-        p_n, s_n = n_xy
-        p_step, s_step = step_xy
-        p_pt, s_pt = start_xy
-        out = []
-        for p in range(p_n):  #
-            p_val = p_pt + p * p_step * scale
-            for s in range(s_n):
-                s_val = s_pt + s * s_step * scale
-                xy = [s_val, p_val]
-                if order:
-                    xy.reverse()
-                out.append(xy)
+        start_x, start_y = start_xy[0], start_xy[1]
+        step_x, step_y = step_xy
+        n_x, n_y = n_xy
+        if order == 0:  # Horizontal, then vertical
+            indices = ((x, y) for y in range(n_y) for x in range(n_x))
+        else:  # Vertical, then horizontal
+            indices = ((x, y) for x in range(n_x) for y in range(n_y))
+
+        points = [
+            [start_x + x * step_x * scale, start_y + y * step_y * scale]
+            for x, y in indices
+        ]
         if rotation:
-            if order == 0:
-                start_xy.reverse()
-            out = CoordinateTool.rotate_coordinates(out, rotation, start_xy)
-        return out
+            return list(CoordinateTool.rotate_coordinates(points, rotation, [start_x, start_y]))
+        return points
 
     def set_value_without_signal(self, target, value):
-        target.blockSignals(True)
-        target.setValue(value)
-        target.blockSignals(False)
+        was_blocked = target.blockSignals(True)
+        try:
+            target.setValue(value)
+        finally:
+            target.blockSignals(was_blocked)
 
     def handle_comment_change_preview(self):
         current_mode = self.get_preset_mode()
@@ -1037,44 +1044,6 @@ class PresetTool(QObject):
         layer.changeAttributeValue(f_id, field_idx, new_comment)
         layer.commitChanges()
 
-    def handle_cursor_moved(self, pt):
-        return
-
-        if self.preset_layer is None:
-            return
-
-        if self.line_in_progress:
-            # drawing a tie line between start-point and cursor
-            self.rb_line.removeLastPoint()  # remove temp end-point (cursor)
-            self.rb_line.addPoint(pt, True)  # add new temp end-point
-            self.update_line_length(pt)
-
-        # Throttling of preview repainting
-        # no throttling for rubberband line of the Line mode
-        self.mouse_move_counter += 1
-        if self.mouse_move_counter < self.move_throttling_threshold:
-            return
-
-        self.mouse_move_counter = 0
-
-        self.cursor_pos = pt
-
-        if self.line_in_progress:
-            # update Line length
-            self.preview.reset()
-            self.preset_line(pt, True, True)
-            return
-
-        if self.current_preset_mode != "point":
-            return
-
-        # moving preset point
-        if self.feature_id is not None or self.dock.Opt_Point_Preview.isChecked():
-            # self.preview.add_points([[self.cursor_pos, ""]])
-            if self.feature_id:
-                pt.set(pt.x() + self.movement_offset[0], pt.y() + self.movement_offset[1])
-            self.preview.update_position(pt)
-
     def handle_escapeKey(self):
         if self.preset_layer is None:
             return
@@ -1114,23 +1083,20 @@ class PresetTool(QObject):
             return
 
         self.cursor_pos = pt
-
-        if self.line_end_selecting:
-            # update RB segment and preview spots
+        if self.current_preset_mode == "line" and self.line_in_progress:
+            self.rb_line.removeLastPoint()
+            self.rb_line.addPoint(pt, True)
+            self.update_line_length(pt)
+            now = time.monotonic()
+            if now - self.last_line_preview_at >= self.line_preview_interval:
+                self.last_line_preview_at = now
+                self.preset_line(pt, line_end=True, live_preview=True)
             return
-        else:
-            # cursor with preview spot
-            # moving preset point
+        if self.current_preset_mode == "point":
             if (self.relocating_spot and self.feature_id is not None) or self.preview.cursor_visible:
                 if self.feature_id is not None:
                     pt.set(pt.x() + self.movement_offset[0], pt.y() + self.movement_offset[1])
                 self.preview.update_position(pt)
-
-        # flags
-        # - point
-        #   - relocating spot
-        # - line
-        #   - selecting end point
 
     def handle_mouse_pressed(self, pt):
         self.mouse_left = True
@@ -1174,40 +1140,33 @@ class PresetTool(QObject):
             pass
             # print(self.current_tool)
 
-    def handle_clicked(self, pt):
-        return
-        self.preview.remove_objects()
-
+    def handle_clicked(self, pt, finish_line=False):
         if self.preset_layer is None:
-            # preset layer has not been selected yet
             return
-
-        if self.flag_cancel_moving_spot:
-            self.flag_cancel_moving_spot = False
-            self.update_preview_cursor()
-            return
-
-        self.update_preview_cursor()
-
         if self.current_preset_mode == "point":
-            self.add_preset_point(pt)
+            # Point mode adds on mouse press so editing gestures cannot add a spot.
+            return
 
-        elif self.current_preset_mode == "line":
-            if self.line_in_progress:
-                # select end-point
-                self.show_tooltip("line-end")
-                self.preset_line(pt, True)
-            else:
-                # select start-point
-                self.show_tooltip("line-start")
-                self.start_point = []
-                self.end_point = []
-                # elif self.start_point and self.end_point:
+        if self.current_preset_mode == "line":
+            if not self.line_in_progress:
+                if finish_line:
+                    return
+                self.clear_preview_spots(init=False)
                 self.preset_line(pt)
+                self.show_tooltip("line-start")
+            elif CoordinateTool.get_distance(self.start_point, pt) > 0:
+                self.rb_line.removeLastPoint()
+                self.rb_line.addPoint(pt, True)
+                self.preset_line(pt, line_end=True)
+                self.show_tooltip("line-end")
+            else:
+                self.rb_line.removeLastPoint()
+                self.rb_line.addPoint(pt, True)
+                self.preset_line(pt, line_end=True, live_preview=True)
+            return
 
-        elif self.current_preset_mode == "grid":
-            self.preset_points = []
-            self.init_rb_line()
+        if self.current_preset_mode == "grid" and not finish_line:
+            self.clear_preview_spots(init=False)
             self.preset_grid(pt)
 
     def initiate_relocation(self, pt):
