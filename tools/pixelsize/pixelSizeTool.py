@@ -21,18 +21,21 @@
  *                                                                         *
  ***************************************************************************/
 """
-from PyQt5.QtCore import QObject, QRect, pyqtSignal
-from PyQt5.QtGui import QColor, QCursor
-from PyQt5.QtWidgets import QToolTip
+from qgis.PyQt.QtCore import QObject, QRect, pyqtSignal
+from qgis.PyQt.QtGui import QColor, QCursor
+from qgis.PyQt.QtWidgets import QToolTip
 from qgis.core import QgsPointXY, QgsWkbTypes
 from qgis.gui import QgsRubberBand
+from qgis.PyQt import sip
 
 
 class PixelSizeTool(QObject):
+    """Measure a known scale bar and send micrometers per pixel to Preset."""
+
     setPixelSize = pyqtSignal(float)
 
     def __init__(self, dock, canvas):
-        QObject.__init__(self)
+        super().__init__(dock)
 
         self._dock = dock
         self._canvas = canvas
@@ -53,33 +56,33 @@ class PixelSizeTool(QObject):
 
         self.line_color = QColor(255, 127, 0, 160)
 
-        self.reset_emphasize_step()
-
         self.reset()
-        self.init_scale_coordinates()
 
     def reset(self):
-        if self.pxsize_line.size() > 0:
-            self.pxsize_line.reset()
-        self.pxsize_line = QgsRubberBand(self._canvas, QgsWkbTypes.LineGeometry)
+        self.pxsize_line.reset(QgsWkbTypes.LineGeometry)
         self.pxsize_line.setWidth(4)
         self.pxsize_line.setColor(self.line_color)
 
         self.pxsize_start_point = QgsPointXY()
         self.pxsize_end_point = QgsPointXY()
 
-        self._dock.TXT_PST_Start_X.setText("0")
-        self._dock.TXT_PST_Start_Y.setText("0")
-        self._dock.TXT_PST_End_X.setText("0")
-        self._dock.TXT_PST_End_Y.setText("0")
-
+        self.init_scale_coordinates()
         self._dock.SPN_PST_PixelSize.setValue(0)
 
         self.show_tooltip()
 
     def init_scale_coordinates(self):
-        [x.setText("0") for x in self.scale_coordinates]
+        for field in self.scale_coordinates:
+            field.setText("0")
         self.emphasize_step(1)
+
+    def cleanup(self):
+        """Remove the measurement item when the plugin dock closes."""
+        self.hide_tooltip()
+        if self.pxsize_line is not None:
+            self._canvas.scene().removeItem(self.pxsize_line)
+            sip.delete(self.pxsize_line)
+            self.pxsize_line = None
 
     def handle_cursor_moved(self, pt):
         if not self.pxsize_start_point.isEmpty() and self.pxsize_end_point.isEmpty():
@@ -177,8 +180,6 @@ class PixelSizeTool(QObject):
         else:
             txt = ""
         QToolTip.showText(pos, txt, self._canvas, QRect(pos.x(), pos.y(), 200, 200), 30000)
-        # QToolTip.showText(pos, txt, self.window)
-        #
 
     def hide_tooltip(self):
         QToolTip.hideText()

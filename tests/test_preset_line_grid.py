@@ -21,6 +21,7 @@ try:
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
     from wiscsims_tool_class.tools.canvasMapTool import CanvasMapTool
     from wiscsims_tool_class.tools.preset.presetTool import PresetTool
+    from wiscsims_tool_class.tools.preset.layer_settings import read_sizes, write_sizes
     from wiscsims_tool_class.ui.wiscsims_tool_dockwidget import WiscSIMSToolDockWidget
     from wiscsims_tool_class.wiscsims_tool import WiscSIMSTool
 except ImportError:
@@ -234,6 +235,43 @@ class PresetLineGridTests(unittest.TestCase):
         self.assertTrue(self.preset.line_in_progress)
         click_at(QPoint(200, 100), Qt.RightButton)
         self.assertTrue(self.dock.Btn_Line_Add_Points.isEnabled())
+
+    def test_drag_preserves_grab_offset_and_can_be_undone(self):
+        self.preset.add_preset_point(QgsPointXY(10, 20))
+        original = next(self.layer.getFeatures())
+        self.preset.handle_shift_key_state_changed(True)
+        self.preset.handle_mouse_pressed(QgsPointXY(11, 21))
+        self.assertEqual(self.preset.feature_id, original.id())
+        self.preset.handle_mouse_moved(QgsPointXY(31, 41))
+        self.preset.handle_mouse_released(QgsPointXY(31, 41))
+        event = SimpleNamespace(mapPoint=lambda: QgsPointXY(31, 41))
+        WiscSIMSTool.canvasReleaseWShift(self.controller, event)
+        moved = self.layer.getFeature(original.id()).geometry().asPoint()
+        self.assertEqual((moved.x(), moved.y()), (30, 40))
+        self.assertEqual(self.layer.featureCount(), 1)
+        self.preset.handle_undo()
+        restored = self.layer.getFeature(original.id()).geometry().asPoint()
+        self.assertEqual((restored.x(), restored.y()), (10, 20))
+
+    def test_size_settings_preserve_existing_edit_session_and_missing_fields(self):
+        self.layer.startEditing()
+        pixel_index = next(i for i, f in enumerate(self.layer.fields()) if f.name().startswith("ps_"))
+        self.layer.deleteAttribute(pixel_index)
+        self.assertTrue(write_sizes(self.layer, 12, 0.25))
+        self.assertTrue(self.layer.isEditable())
+        self.assertEqual(read_sizes(self.layer), {"ss": 12, "ps": 0.25})
+        self.layer.rollBack()
+        self.assertEqual(read_sizes(self.layer), {"ss": 10, "ps": 1.0})
+
+    def test_malformed_size_fields_fall_back_to_defaults(self):
+        self.layer.startEditing()
+        for index, field in enumerate(self.layer.fields()):
+            if field.name().startswith("ss_"):
+                self.layer.renameAttribute(index, "ss_invalid")
+            elif field.name().startswith("ps_"):
+                self.layer.renameAttribute(index, "ps_nan")
+        self.assertEqual(read_sizes(self.layer), {"ss": 10, "ps": 1.0})
+        self.layer.rollBack()
 
     def test_undo_after_layer_switch_targets_original_layer(self):
         self.dock.Tab_Preset_Mode.setCurrentIndex(1)

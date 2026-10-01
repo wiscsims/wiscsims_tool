@@ -22,9 +22,9 @@
  ***************************************************************************/
 """
 
-from PyQt5.QtCore import Qt, QVariant
-from PyQt5.QtGui import QColor, QFont, QPen
-from PyQt5.QtWidgets import QGraphicsSimpleTextItem
+from qgis.PyQt.QtCore import Qt, QVariant
+from qgis.PyQt.QtGui import QColor, QFont, QPen
+from qgis.PyQt.QtWidgets import QGraphicsSimpleTextItem
 from qgis.PyQt import sip
 from qgis.core import (
     QgsDataProvider,
@@ -47,7 +47,7 @@ from qgis.gui import QgsVertexMarker
 
 
 class PresetPreview:
-    """Docstring for PreviewLayer."""
+    """Own the temporary placement layer and lightweight pointer marker."""
 
     MIN_CURSOR_DIAMETER_PX = 16
 
@@ -69,16 +69,20 @@ class PresetPreview:
 
         self.colors = {
             "spot_fill_normal": QColor(64, 143, 176, 102),  # light blue
-            "spot_stroke": QColor(255, 255, 255),  # white
-            "spot_fill_move": QColor(96, 180, 84, 102),  # vegas gold
-            "comment_stroke": QColor(255, 255, 255),  # white
-            "comment_fill": QColor(255, 0, 0),  # white
+            "spot_stroke": QColor(255, 255, 255),
+            "spot_fill_move": QColor(96, 180, 84, 102),
+            "comment_stroke": QColor(255, 255, 255),
+            "comment_fill": QColor(255, 0, 0),
         }
 
         self.create()
 
     def create(self):
         self.cleanup_old_layers()
+        self._create_preview_layer()
+        self._create_cursor()
+
+    def _create_preview_layer(self):
         self.preview_layer = QgsVectorLayer("Point", "WiscSIMS preview", "memory")
         self.preview_layer_id = self.preview_layer.id()
         crs = self.preset_layer.crs() if self.preset_layer is not None else QgsProject.instance().crs()
@@ -91,17 +95,10 @@ class PresetPreview:
         renderer = self.preview_layer.renderer()
 
         if self.preset_layer:
-            # Copy and paste symbol sytle from preset layer
+            # Copy and paste symbol style from preset layer
             symbol = self.preset_layer.renderer().symbol()
             props = symbol.symbolLayer(0).properties()
         else:
-            # spotSize = 1.0 * self.dock.Spn_Spot_Size.value()
-            # if self.model.isAvailable():
-            #     scale = self.get_average(self.model.getScales())
-            # else:
-            #     scale = 1.0
-            # scale = self.ct[self.getNavAlign()].scale / 1.0
-            # props["size"] = str(spotSize / scale)
             props = renderer.symbol().symbolLayer(0).properties()
 
         props["size"] = f"{1.0 * self.scale * self.spot_size}"
@@ -112,9 +109,7 @@ class PresetPreview:
         mySimpleSymbol = QgsMarkerSymbol.createSimple(props)
         renderer.setSymbol(mySimpleSymbol)
 
-        # black
         renderer.symbol().symbolLayer(0).setStrokeColor(QColor(255, 255, 255))
-        # light blue
         renderer.symbol().setColor(QColor(64, 143, 176, 102))
 
         self.sc_dp = self.preview_layer.dataProvider()
@@ -122,40 +117,7 @@ class PresetPreview:
         # add "Comment" field to the attribute table
         self.sc_dp.addAttributes([QgsField("Comment", QVariant.String)])
 
-        # Label formatting:
-        #   "Comment" field,
-        #   diplay all comments,
-        #   drop shodow,
-        #   buffer (white)
-        #
-        settings = QgsPalLayerSettings()
-        # print(dir(settings))
-        settings.enabled = True
-        settings.fieldName = "Comment"
-        settings.displayAll = True
-        coll = QgsPropertyCollection("preview")
-        coll.setProperty(settings.Size, 20)
-        # coll.setProperty(settings.ShadowDraw, True)
-        # coll.setProperty(settings.Color, QColor(255, 255, 255)) # <- whilte
-        coll.setProperty(settings.Color, QColor(255, 0, 0))
-
-        coll.setProperty(settings.BufferDraw, True)
-        # coll.setProperty(settings.BufferColor, QColor(0, 0, 0))
-        coll.setProperty(settings.BufferColor, QColor(255, 255, 255))
-
-        # rendering: overlap
-        plmt = settings.placementSettings()
-        plmt.setOverlapHandling(Qgis.LabelOverlapHandling.AllowOverlapAtNoCost)
-        settings.setPlacementSettings(plmt)
-
-        # placement: obstacle
-        obs = settings.obstacleSettings()
-        obs.setIsObstacle(False)
-        settings.setObstacleSettings(obs)
-
-        settings.setDataDefinedProperties(coll)
-        self.preview_layer.setLabelsEnabled(self.text_preview_enabled)
-        self.preview_layer.setLabeling(QgsVectorLayerSimpleLabeling(settings))
+        self._configure_labels()
         self.preview_layer.updateExtents()
         self.preview_layer.commitChanges()
 
@@ -173,6 +135,30 @@ class PresetPreview:
         self.preview_layer.triggerRepaint()
         QgsProject.instance().addMapLayer(self.preview_layer)
 
+    def _configure_labels(self):
+        """Use red comments with a white buffer, allowing label overlap."""
+        settings = QgsPalLayerSettings()
+        settings.enabled = True
+        settings.fieldName = "Comment"
+        settings.displayAll = True
+        coll = QgsPropertyCollection("preview")
+        coll.setProperty(settings.Size, 20)
+        coll.setProperty(settings.Color, QColor(255, 0, 0))
+
+        coll.setProperty(settings.BufferDraw, True)
+        coll.setProperty(settings.BufferColor, QColor(255, 255, 255))
+        plmt = settings.placementSettings()
+        plmt.setOverlapHandling(Qgis.LabelOverlapHandling.AllowOverlapAtNoCost)
+        settings.setPlacementSettings(plmt)
+        obs = settings.obstacleSettings()
+        obs.setIsObstacle(False)
+        settings.setObstacleSettings(obs)
+
+        settings.setDataDefinedProperties(coll)
+        self.preview_layer.setLabelsEnabled(self.text_preview_enabled)
+        self.preview_layer.setLabeling(QgsVectorLayerSimpleLabeling(settings))
+
+    def _create_cursor(self):
         self.cursor_marker = QgsVertexMarker(self.canvas)
         self.cursor_marker.setIconType(QgsVertexMarker.ICON_CIRCLE)
         self.cursor_marker.setColor(self.colors["spot_stroke"])
@@ -200,9 +186,9 @@ class PresetPreview:
             return
 
         symbol = self.preview_layer.renderer().symbol()
-        symbol.symbolLayer(0).setStrokeColor(QColor(255, 255, 255))  # stroke: while
+        symbol.symbolLayer(0).setStrokeColor(QColor(255, 255, 255))
         if moving:
-            symbol.setColor(QColor(96, 180, 84, 102))  # fill: vegas yellow?
+            symbol.setColor(QColor(96, 180, 84, 102))
         else:
             symbol.setColor(QColor(64, 143, 176, 102))  # fill: light blue
 
@@ -284,20 +270,11 @@ class PresetPreview:
         if self.preview_layer is None:
             return
 
-        # size = 10
-        #
-        # if self.preset_layer:
-        #     symbol = self.preset_layer.renderer().symbol()
-        #     props = symbol.symbolLayer(0).properties()
-        #     size = props["size"]
-
         self.scale = scale
         self.spot_size = spot_size
         size = 1.0 * self.scale * self.spot_size
 
-        sc_props = self.preview_layer.renderer().symbol().symbolLayer(0).properties()
-        sc_props["size"] = size
-        self.preview_layer.renderer().setSymbol(QgsMarkerSymbol.createSimple(sc_props))
+        self.preview_layer.renderer().symbol().setSize(size)
         self.preview_layer.triggerRepaint()
         if self.cursor_visible:
             self._update_cursor_size()

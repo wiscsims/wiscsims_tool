@@ -25,6 +25,7 @@ A QGIS 3 plugin for external and internal WiscSIMS users. It helps you import se
     - [Modify spot locations](#modify-spot-locations)
     - [Modify comment](#modify-comment)
   - [Pixel Size](#pixel-size)
+- [Development](#development)
 
 ## Features
 
@@ -207,3 +208,7 @@ Use the **Pixel Size** tab to calibrate an image from its scale bar. In the micr
 The calculation is `1000 / 1148.5 ≈ 0.8707 µm / map unit`, displayed as **0.87** in this example. Applying it lets Preset convert a spot diameter in µm into the corresponding diameter in map units.
 
 The measured distance depends on the image's map coordinates. Use the distance reported by your own measurement; 1148.5 is the value for this example. A map unit represents a pixel only when the map coordinates use image pixels. Click the map again to start another measurement.
+
+## Development
+
+See the [development guide](docs/development.md) for module responsibilities, coordinate units, cleanup rules and test commands.

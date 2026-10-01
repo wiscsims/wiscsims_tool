@@ -25,50 +25,15 @@
 import json
 import math
 import os
-import os.path
 import re
 
-from PyQt5.QtCore import (
-    QCoreApplication,
-    QModelIndex,
-    QObject,
-    QRect,
-    QSettings,
-    QSize,
-    Qt,
-    QTranslator,
-    QVariant,
-    pyqtSignal,
-    qVersion,
-)
-from PyQt5.QtGui import QColor, QCursor, QIcon, QPixmap
-from PyQt5.QtWidgets import (
-    QAbstractItemView,
-    QAction,
-    QFileDialog,
-    QHeaderView,
-    QInputDialog,
-    QLineEdit,
-    QMessageBox,
-    QToolTip,
-)
+from qgis.PyQt.QtCore import QModelIndex, QObject, QSize, pyqtSignal
+from qgis.PyQt.QtGui import QIcon, QPixmap
+from qgis.PyQt.QtWidgets import QAbstractItemView, QFileDialog, QHeaderView, QInputDialog, QLineEdit, QMessageBox
 from qgis.core import (
-    Qgis,
-    QgsFeature,
-    QgsFeatureRequest,
-    QgsField,
-    QgsGeometry,
-    QgsMarkerSymbol,
-    QgsPalLayerSettings,
-    QgsPointXY,
-    QgsProject,
-    QgsPropertyCollection,
-    QgsVectorFileWriter,
-    QgsVectorLayer,
-    QgsVectorLayerSimpleLabeling,
-    QgsWkbTypes,
+    QgsFeature, QgsField, QgsGeometry, QgsMarkerSymbol, QgsPointXY,
+    QgsProject, QgsVectorFileWriter, QgsVectorLayer,
 )
-from qgis.gui import QgsRubberBand
 
 from ..layerTool import LayerTool
 from .alignmentInfo import AlignmentInfo
@@ -79,15 +44,16 @@ from .sumTableTool import SumTableTool
 
 
 class ImportTool(QObject):
+    """Coordinate alignment references, workbook controls and layer imports."""
+
     setActiveLayer = pyqtSignal(QgsVectorLayer)
 
     def __init__(self, dock, canvas):
-        QObject.__init__(self)
+        super().__init__(dock)
 
         self.canvas = canvas
         self.dock = dock
 
-        """TODO: to be defined."""
         self.model = AlignmentModelNew()
         self.ref_marker = AlignmentMarker(self.canvas, self.model)
 
@@ -113,7 +79,6 @@ class ImportTool(QObject):
 
     def unload(self):
         self.ref_marker.init_ref_point_markers()
-        pass
 
     def initialize_ui(self):
         # Import
@@ -370,7 +335,6 @@ class ImportTool(QObject):
         if self.xl is None:
             return
         # if not self.dock.Cmb_Import_Layer.isEnabled():
-        #     return
 
         current_layer_index = self.dock.Cmb_Import_Layer.currentIndex()
 
@@ -468,8 +432,6 @@ class ImportTool(QObject):
         alignments = self.model.ExportAsObject()
         selected_alignment = self.dock.Tbv_Alignment.currentIndex().row()
 
-        # print(f"New Alignment: {self.new_aliginment}")
-
         if self.new_aliginment:
             for aln in alignments:
                 if aln["used"] < 2 and aln["r"] != selected_alignment:
@@ -491,7 +453,6 @@ class ImportTool(QObject):
                 self.canvas.setRotation(params["rotation"])
 
     def handle_ref_marker(self, pt, name, current=False):
-        # print(pt, name)
         if self.dock.Cbx_Alignment_Ref_Points.isChecked():
             self.ref_marker.add_ref_marker(pt, name, current)
         if self.dock.Cbx_Alignment_Ref_Names.isChecked():
@@ -520,7 +481,6 @@ class ImportTool(QObject):
         my_fields = [f for f in self.lt.get_fields(layer) if not pattern.search(f)]
         my_fields_names = [f[:field_max_len] for f in my_fields]
         xl_fields_len = len(self.intersect(my_fields_names, xl_fields))
-        print("identical:", layer.name(), xl_fields_len, len(my_fields), xl_fields_len == len(my_fields))
         return xl_fields_len == len(my_fields)
 
     def get_excel_layers(self, xl):
@@ -538,19 +498,6 @@ class ImportTool(QObject):
             return []
 
         return [layer for layer in layers if self.is_identical_field_names(layer, xl_fields, field_max_len)]
-
-    def getParams(self):
-        if not self.model.isAvailable():
-            return None
-        scales = self.model.getScales()
-        rotations = self.model.getRotations()
-        return {
-            "scale": self.get_average(scales),
-            "rotation": self.get_average(rotations),
-        }
-
-    def my_round_int(self, val):
-        return int((val * 2 + 1) // 2)
 
     def intersect(self, list1, list2):
         return [lst for lst in list1 if lst in list2]

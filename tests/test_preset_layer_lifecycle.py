@@ -11,8 +11,8 @@ from unittest.mock import Mock, patch
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 try:
-    from qgis.core import Qgis, QgsApplication, QgsPointXY, QgsProject, QgsRectangle, QgsVectorFileWriter, QgsVectorLayer
-    from qgis.gui import QgsMapCanvas, QgsMapMouseEvent
+    from qgis.core import Qgis, QgsApplication, QgsPointXY, QgsProject, QgsRectangle, QgsTextAnnotation, QgsVectorFileWriter, QgsVectorLayer
+    from qgis.gui import QgsMapCanvas, QgsMapCanvasAnnotationItem, QgsMapMouseEvent
     from qgis.PyQt import sip
     from qgis.PyQt.QtCore import QEvent, QPoint, QSettings, Qt
     from qgis.PyQt.QtWidgets import QDockWidget, QDoubleSpinBox, QFileDialog, QMainWindow, QToolBar
@@ -23,6 +23,8 @@ try:
     from wiscsims_tool_class.tools.preset.presetTool import PresetTool
     from wiscsims_tool_class.tools.pixelsize.pixelSizeTool import PixelSizeTool
     from wiscsims_tool_class.wiscsims_tool import WiscSIMSTool
+    from wiscsims_tool_class.tools.signal_connections import SignalConnections
+    from wiscsims_tool_class.tools.imports.alignmentMarker import AlignmentMarker
 except ImportError:
     QgsApplication = None
 
@@ -83,11 +85,13 @@ class QgisLifecycleTests(unittest.TestCase):
             def __init__(self, preset):
                 self.imp = Mock()
                 self.preset = preset
+                self._legend_connections = SignalConnections()
 
         canvas = QgsMapCanvas()
         dock = WiscSIMSToolDockWidget()
         preset = PresetTool(dock, canvas)
         controller = Controller(preset)
+        controller.create_legend_connections()
         controller.create_legend_connections()
         try:
             with tempfile.TemporaryDirectory() as directory:
@@ -380,6 +384,10 @@ class QgisLifecycleTests(unittest.TestCase):
         dock = WiscSIMSToolDockWidget()
         tool = PixelSizeTool(dock, canvas)
         try:
+            original_band = tool.pxsize_line
+            for _ in range(5):
+                tool.reset()
+            self.assertIs(tool.pxsize_line, original_band)
             tool.handle_selecting_point(QgsPointXY(1, 2))
             tool.handle_cursor_moved(QgsPointXY(2, 3))
             tool.handle_selecting_point(QgsPointXY(2.5, 2))
@@ -404,6 +412,26 @@ class QgisLifecycleTests(unittest.TestCase):
             )
         finally:
             dock.deleteLater()
+            canvas.deleteLater()
+            self.app.processEvents()
+
+    def test_alignment_refresh_preserves_other_annotations_and_releases_own_items(self):
+        canvas = QgsMapCanvas()
+        annotation = QgsTextAnnotation()
+        other_item = QgsMapCanvasAnnotationItem(annotation, canvas)
+        markers = AlignmentMarker(canvas, None)
+        try:
+            markers.add_ref_marker(QgsPointXY(10, 20), "Reference")
+            markers.add_ref_marker_annotation(QgsPointXY(10, 20), "Reference", False)
+            own_marker = markers.ref_markers[0]
+            own_label = markers.ref_annotations[0]
+            markers.init_ref_point_markers()
+            markers.init_ref_point_markers()
+            self.assertTrue(sip.isdeleted(own_marker))
+            self.assertTrue(sip.isdeleted(own_label))
+            self.assertFalse(sip.isdeleted(other_item))
+            self.assertIn(other_item, canvas.scene().items())
+        finally:
             canvas.deleteLater()
             self.app.processEvents()
 
@@ -445,11 +473,21 @@ class QgisLifecycleTests(unittest.TestCase):
             first = WiscSIMSTool(iface)
             first.initGui()
             first.wiscsims_tool_action.setChecked(True)
+            rotation_receivers = iface.canvas.receivers(iface.canvas.rotationChanged)
             first.run()
             old_dock = first.dockwidget
+            preset_band = first.preset.rb_line
+            pixel_band = first.pxsizetool.pxsize_line
+            old_preset = first.preset
+            old_pixel_tool = first.pxsizetool
             first.unload()
             first.unload()
             self.assertTrue(sip.isdeleted(old_dock))
+            self.assertTrue(sip.isdeleted(preset_band))
+            self.assertTrue(sip.isdeleted(pixel_band))
+            self.assertTrue(sip.isdeleted(old_preset))
+            self.assertTrue(sip.isdeleted(old_pixel_tool))
+            self.assertEqual(iface.canvas.receivers(iface.canvas.rotationChanged), rotation_receivers)
             self.assertEqual(len(iface.window.findChildren(QDockWidget)), 0)
             self.assertEqual(len(iface.window.findChildren(QToolBar)), 0)
 
@@ -459,6 +497,9 @@ class QgisLifecycleTests(unittest.TestCase):
             second.run()
             self.assertEqual(len(iface.window.findChildren(QDockWidget)), 1)
             second.dockwidget.close()
+            second.wiscsims_tool_action.setChecked(True)
+            second.run()
+            self.assertEqual(len(iface.window.findChildren(QDockWidget)), 1)
             second.unload()
             second.unload()
             self.assertEqual(len(iface.window.findChildren(QDockWidget)), 0)

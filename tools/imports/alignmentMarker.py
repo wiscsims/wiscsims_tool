@@ -1,23 +1,21 @@
 # -*- coding: utf-8 -*-
-from PyQt5.QtCore import QPointF, QSizeF
-from PyQt5.QtGui import QColor, QTextDocument
+"""Own the reference markers and labels drawn by the Import tool."""
+
+from qgis.PyQt import sip
+from qgis.PyQt.QtCore import QPointF, QSizeF
+from qgis.PyQt.QtGui import QColor, QTextDocument
 from qgis.core import QgsFillSymbol, QgsMargins, QgsMarkerSymbol, QgsTextAnnotation, Qgis
 from qgis.gui import QgsMapCanvasAnnotationItem, QgsRubberBand
 
-"""""" """""" """""" """""" """""" """""" """
-*** Alignment Marker Class
-""" """""" """""" """""" """""" """""" """"""
-
-
 class AlignmentMarker:
-    """docstring for AlignmentMarker"""
+    """Track canvas items so refreshing references removes only our own items."""
 
     def __init__(self, canvas, model):
         self.canvas = canvas
         self.scene = self.canvas.scene()
         self.model = model
         self.ref_markers = []
-        self.cursor_ann = None
+        self.ref_annotations = []
 
     def add_ref_marker(self, pt, name, current=False):
         rb = QgsRubberBand(self.canvas, Qgis.GeometryType.Point)
@@ -54,21 +52,22 @@ class AlignmentMarker:
         a.setMapPosition(pt)
         a.setFillSymbol(frm)
         a.setContentsMargin(QgsMargins(0, 0, 0, 0))
-        QgsMapCanvasAnnotationItem(a, self.canvas)
+        self.ref_annotations.append(QgsMapCanvasAnnotationItem(a, self.canvas))
 
     def init_ref_point_markers(self):
-        # print('init markers')
-        [marker.reset() for marker in self.ref_markers]
+        for marker in self.ref_markers:
+            self.remove_scene_item(marker)
         self.ref_markers = []
 
         self.init_annotation()
         return True
 
     def init_annotation(self):
-        [self.remove_scene_item(i) for i in self.scene.items() if self.is_annotation_item(i)]
-
-    def is_annotation_item(self, item):
-        return issubclass(type(item), QgsMapCanvasAnnotationItem)
+        for item in self.ref_annotations:
+            self.remove_scene_item(item)
+        self.ref_annotations = []
 
     def remove_scene_item(self, item):
-        self.scene.removeItem(item)
+        if not sip.isdeleted(item):
+            self.scene.removeItem(item)
+            sip.delete(item)

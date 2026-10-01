@@ -22,54 +22,21 @@
  ***************************************************************************/
 """
 
-import json
-import math
 import os
-import os.path
-import re
-from PyQt5.QtCore import QCoreApplication, QEvent, Qt, QTranslator, QSettings, qVersion  ##,  QModelIndex, QRect, QSize,QVariant
-from PyQt5.QtGui import QIcon  ##, QColor, QCursor, QPixmap
-from PyQt5.QtWidgets import (
-    QAction,
-    # QAbstractItemView,
-    # QFileDialog,
-    # QHeaderView,
-    # QInputDialog,
-    # QLineEdit,
-    # QMessageBox,
-    # QToolTip,
-)
-from qgis.core import (
-    # Qgis,
-    # QgsFeature,
-    # QgsFeatureRequest,
-    # QgsField,
-    # QgsGeometry,
-    QgsMapLayerType,
-    # QgsMarkerSymbol,
-    # QgsPalLayerSettings,
-    QgsPointXY,
-    QgsProject,
-    # QgsPropertyCollection,
-    # QgsVectorFileWriter,
-    # QgsVectorLayer,
-    # QgsVectorLayerSimpleLabeling,
-    QgsWkbTypes,
-)
-from qgis.gui import QgsRubberBand
-from qgis.PyQt import sip
 
-# Initialize Qt resources from file resources.py
-from .resources import *
+from qgis.PyQt import sip
+from qgis.PyQt.QtCore import QCoreApplication, QEvent, Qt, QTranslator, QSettings
+from qgis.PyQt.QtGui import QIcon
+from qgis.PyQt.QtWidgets import QAction
+from qgis.core import QgsMapLayerType, QgsPointXY, QgsProject
+
+# Importing the generated module registers the plugin's Qt resources.
+from . import resources
 from .tools.canvasMapTool import CanvasMapTool
 from .tools.imports.importTool import ImportTool
-
-# Import custom tools
-from .tools.layerTool import LayerTool
 from .tools.pixelsize.pixelSizeTool import PixelSizeTool
 from .tools.preset.presetTool import PresetTool
-
-# Import the code for the DockWidget
+from .tools.signal_connections import SignalConnections
 from .ui.wiscsims_tool_dockwidget import WiscSIMSToolDockWidget
 
 
@@ -77,7 +44,6 @@ class WiscSIMSTool:
     """QGIS Plugin Implementation."""
 
     def __init__(self, iface):
-        # self.debug = False
         """Constructor.
 
         :param iface: An interface instance that will be passed to this class
@@ -88,52 +54,38 @@ class WiscSIMSTool:
         # Save reference to the QGIS interface
         self.iface = iface
 
-        self.window = self.iface.mainWindow()
         self.canvas = self.iface.mapCanvas()
-
-        self.lt = LayerTool()
 
         # initialize plugin directory
         self.plugin_dir = os.path.dirname(__file__)
 
         # initialize locale
-        locale = QSettings().value("locale/userLocale")[0:2]
+        locale = QSettings().value("locale/userLocale", "en_US")[0:2]
         locale_path = os.path.join(self.plugin_dir, "i18n", "WiscSIMSTool_{}.qm".format(locale))
 
         if os.path.exists(locale_path):
             self.translator = QTranslator()
             self.translator.load(locale_path)
 
-            if qVersion() > "4.3.3":
-                QCoreApplication.installTranslator(self.translator)
+            QCoreApplication.installTranslator(self.translator)
 
         # Declare instance attributes
         self.actions = []
         self.menu = self.tr("&WiscSIMS")
-        # TODO: We are going to let the user set this up in a future iteration
         self.toolbar = self.iface.addToolBar("WiscSIMS - toolbar")
         self.toolbar.setObjectName("WiscSIMS Tool")
 
         self.pluginIsActive = False
         self._pending_dock = None
-
-        self.rb_line = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
-        self.pxsize_line = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
+        self._legend_connections = SignalConnections()
 
         self.prev_tool = None
         self.canvasMapTool = None
         self._map_tool_connected = False
 
-        self.feature_id = None
-
-        self.cursor_pos = QgsPointXY(0, 0)
-
         self.tools = ["import", "preset", "pixelsize"]
 
         self.current_tool = "preset"
-
-        self.state_shift_key = False
-        self.state_alt_key = False
 
     # noinspection PyMethodMayBeStatic
 
@@ -163,44 +115,7 @@ class WiscSIMSTool:
         whats_this=None,
         parent=None,
     ):
-        """Add a toolbar icon to the toolbar.
-
-        :param icon_path: Path to the icon for this action. Can be a resource
-            path (e.g. ':/plugins/foo/bar.png') or a normal file system path.
-        :type icon_path: str
-
-        :param text: Text that should be shown in menu items for this action.
-        :type text: str
-
-        :param callback: Function to be called when the action is triggered.
-        :type callback: function
-
-        :param enabled_flag: A flag indicating if the action should be enabled
-            by default. Defaults to True.
-        :type enabled_flag: bool
-
-        :param add_to_menu: Flag indicating whether the action should also
-            be added to the menu. Defaults to True.
-        :type add_to_menu: bool
-
-        :param add_to_toolbar: Flag indicating whether the action should also
-            be added to the toolbar. Defaults to True.
-        :type add_to_toolbar: bool
-
-        :param status_tip: Optional text to show in a popup when mouse pointer
-            hovers over the action.
-        :type status_tip: str
-
-        :param parent: Parent widget for the new action. Defaults None.
-        :type parent: QWidget
-
-        :param whats_this: Optional text to show in the status bar when the
-            mouse pointer hovers over the action.
-
-        :returns: The action that was created. Note that the action is also
-            added to self.actions list.
-        :rtype: QAction
-        """
+        """Create an action, connect its handler and register it in the UI."""
 
         icon = QIcon(icon_path)
         action = QAction(icon, text, parent)
@@ -248,8 +163,8 @@ class WiscSIMSTool:
         self.remove_legend_connections()
         self.remove_ui_connections()
         self.unsetMapTool()
-        self.preset.clear_preview_spots()
-        self.preset.preview.cleanup_old_layers()
+        self.preset.cleanup()
+        self.pxsizetool.cleanup()
         self.imp.unload()
         dock.closingPlugin.disconnect(self.onClosePlugin)
         self.iface.removeDockWidget(dock)
@@ -257,6 +172,7 @@ class WiscSIMSTool:
         self._pending_dock = dock
         del self.dockwidget
         self.pluginIsActive = False
+        self.imp = self.preset = self.pxsizetool = None
 
     def unload(self):
         """Removes the plugin menu item and icon from QGIS GUI."""
@@ -285,7 +201,6 @@ class WiscSIMSTool:
     # --------------------------------------------------------------------------
     def run(self):
         """Run method that loads and starts the plugin"""
-        print("run wiscsims tool")
         if self.pluginIsActive:
             if self.wiscsims_tool_action.isChecked():
                 self.init_map_tool()
@@ -302,7 +217,6 @@ class WiscSIMSTool:
         if not hasattr(self, "dockwidget"):
             # Create the dockwidget (after translation) and keep reference
             self.dockwidget = WiscSIMSToolDockWidget()
-            # icon_open_folder = os.path.join(plugin_path, 'img', 'icon_open_folder.png')
 
         # connect to provide cleanup on closing of dockwidget
         self.dockwidget.closingPlugin.connect(self.onClosePlugin)
@@ -317,9 +231,9 @@ class WiscSIMSTool:
         # Signal handlers
         self.pxsizetool.setPixelSize.connect(self.preset.handle_set_pixel_size)
         self.imp.setActiveLayer.connect(self.handle_set_active_layer)
+        self.preset.setActiveLayer.connect(self.handle_set_active_layer)
 
         # show the dockwidget
-        # TODO: fix to allow choice of dock location
         self.iface.addDockWidget(Qt.RightDockWidgetArea, self.dockwidget)
 
         # initiallize tool and preset mode tabs, and cursor
@@ -337,21 +251,15 @@ class WiscSIMSTool:
         self.preset.init_preset_layer_combobox()
 
     def create_legend_connections(self):
-        ltr = QgsProject.instance().layerTreeRoot()
-        ltr.visibilityChanged.connect(self.handle_legend_layers_changed)
-        ltr.addedChildren.connect(self.handle_legend_layers_changed)
-        ltr.removedChildren.connect(self.handle_legend_layers_changed)
-        ltr.nameChanged.connect(self.handle_legend_layers_changed)
+        self._legend_connections.disconnect_all()
+        root = QgsProject.instance().layerTreeRoot()
+        for signal in (root.visibilityChanged, root.addedChildren, root.removedChildren, root.nameChanged):
+            self._legend_connections.connect(signal, self.handle_legend_layers_changed)
 
     def remove_legend_connections(self):
-        ltr = QgsProject.instance().layerTreeRoot()
-        ltr.visibilityChanged.disconnect(self.handle_legend_layers_changed)
-        ltr.addedChildren.disconnect(self.handle_legend_layers_changed)
-        ltr.removedChildren.disconnect(self.handle_legend_layers_changed)
-        ltr.nameChanged.disconnect(self.handle_legend_layers_changed)
+        self._legend_connections.disconnect_all()
 
     def handle_set_active_layer(self, layer):
-        print("handle set active layer")
         self.iface.setActiveLayer(layer)
 
     def create_ui_connections(self):
@@ -375,58 +283,31 @@ class WiscSIMSTool:
             if not self._map_tool_connected:
                 self.canvas.mapToolSet.connect(self.mapToolChanged)
                 self._map_tool_connected = True
-            self.canvasMapTool.canvasClicked.connect(self.canvasClicked)  # released
-
-            self.canvasMapTool.canvasPressed.connect(self.handle_canvas_pressed)  # pressed
-            self.canvasMapTool.canvasReleased.connect(self.handle_canvas_released)  # released
-
-            # start moving spot
-            self.canvasMapTool.canvasClickedWShift.connect(self.canvasClickedWShift)
-            # finish moving spot
-            self.canvasMapTool.canvasReleaseWShift.connect(self.canvasReleaseWShift)
-            # edit comment
-            self.canvasMapTool.canvasReleaseWAlt.connect(self.canvasReleaseWAlt)
-            # delete spot
-            self.canvasMapTool.canvasReleaseWAltShift.connect(self.canvasReleaseWAltShift)
-
-            self.canvasMapTool.canvasClickedRight.connect(self.canvasClickedRight)
-            self.canvasMapTool.canvasMoved.connect(self.canvasMoved)
-
-            self.canvasMapTool.canvasShiftKeyState.connect(self.canvasShiftKeyState)
-            self.canvasMapTool.canvasAltKeyState.connect(self.canvasAltKeyState)
-            self.canvasMapTool.canvasEscapeKeyState.connect(self.canvasEscapeKeyState)
-            self.canvasMapTool.canvasCtrlKeyState.connect(self.canvasCtrlKeyState)
-
-            self.canvasMapTool.canvasUndoKey.connect(self.preset.handle_undo)
+            self._connect_map_tool_signals()
 
             self.canvas.setMapTool(self.canvasMapTool)
         else:
             self.unsetMapTool()
             self.dockwidget.setEnabled(False)
 
-    # def get_true_shapefile_headers(self, headers):
-    #     # create tmporal shapefile with provided headers
-    #     tmp_file_path = "KK_tmp_file.shp"
-    #     vl = QgsVectorLayer("Point?crs=epsg:4326", "temporary_points", "memory")
-    #     vl.setProviderEncoding("UTF-8")
-    #     pr = vl.dataProvider()
-    #     attrs = [QgsField(header, self.get_field_type(header)) for header in headers]
-    #
-    #     pr.addAttributes(attrs)
-    #     vl.setDisplayExpression("File")
-    #     vl.updateFields()
-    #     error, _error_str = QgsVectorFileWriter.writeAsVectorFormat(
-    #         vl, tmp_file_path, "UTF-8", vl.crs(), "ESRI Shapefile"
-    #     )
-    #     if error != QgsVectorFileWriter.NoError:
-    #         print(_error_str)
-    #         return
-    #     # open shapefile, then get and return headers
-    #     tmp_layer = QgsVectorLayer(tmp_file_path, "kk", "ogr")
-    #     fields = self.get_fields(tmp_layer)
-    #
-    #     return fields
-    #
+    def _connect_map_tool_signals(self):
+        routes = (
+            ("canvasClicked", self.canvasClicked),
+            ("canvasPressed", self.handle_canvas_pressed),
+            ("canvasReleased", self.handle_canvas_released),
+            ("canvasReleaseWShift", self.canvasReleaseWShift),
+            ("canvasReleaseWAlt", self.canvasReleaseWAlt),
+            ("canvasReleaseWAltShift", self.canvasReleaseWAltShift),
+            ("canvasClickedRight", self.canvasClickedRight),
+            ("canvasMoved", self.canvasMoved),
+            ("canvasShiftKeyState", self.canvasShiftKeyState),
+            ("canvasAltKeyState", self.canvasAltKeyState),
+            ("canvasEscapeKeyState", self.canvasEscapeKeyState),
+            ("canvasCtrlKeyState", self.canvasCtrlKeyState),
+            ("canvasUndoKey", self.preset.handle_undo),
+        )
+        for name, handler in routes:
+            getattr(self.canvasMapTool, name).connect(handler)
 
     def get_current_tool(self, idx=-1):
         if idx < 0:
@@ -472,46 +353,29 @@ class WiscSIMSTool:
         if self.canvasMapTool is not None and self.canvas.mapTool() is self.canvasMapTool:
             self.canvas.unsetMapTool(self.canvasMapTool)
             if self.prev_tool is not None and self.prev_tool is not self.canvasMapTool:
-                self.canvas.setMapTool(self.prev_tool)
+                if not sip.isdeleted(self.prev_tool):
+                    self.canvas.setMapTool(self.prev_tool)
+        if self.canvasMapTool is not None:
+            self.canvasMapTool.deleteLater()
         self.canvasMapTool = None
 
-    def canvasClickedWShift(self, e):
-        # Start moving preset point
-        self.preset.handle_move_point_start(e)
+    def canvasReleaseWShift(self, event):
+        if self.current_tool == "preset":
+            self.preset.handle_move_point_end(event)
 
-        return
+    def canvasReleaseWAltShift(self, event):
+        if self.current_tool == "preset":
+            self.preset.delete_spot_at(event)
 
-    def canvasReleaseWShift(self, e):
-        # End move preset point
-        #
-        self.preset.handle_move_point_end(e)
-        return
-
-        # # reset cursor
-        # self.canvas.setCursor(Qt.CrossCursor)
-
-    def canvasReleaseWAltShift(self, e):
-        self.preset.delete_spot_at(e)
-
-    def canvasReleaseWAlt(self, e):
-        self.preset.edit_point(e)
-        # reset curosr and mod_key status
-        self.state_alt_key = False
+    def canvasReleaseWAlt(self, event):
+        if self.current_tool == "preset":
+            self.preset.edit_point(event)
 
     def canvasClicked(self, pt):
         if self.current_tool == "preset":
             self.preset.handle_clicked(pt)
-            return
-
-        if self.current_tool == "pixelsize":
+        elif self.current_tool == "pixelsize":
             self.pxsizetool.handle_selecting_point(pt)
-            return
-
-        elif self.current_tool == "import":
-            return
-
-        if self.current_tool != "preset":
-            self.preset.reset_preset_points()
 
     def canvasClickedRight(self, pt):
         if self.current_tool == "preset" and self.preset.current_preset_mode == "line":
@@ -522,54 +386,28 @@ class WiscSIMSTool:
     def canvasMoved(self, pt):
         if self.current_tool == "pixelsize":
             self.pxsizetool.handle_cursor_moved(pt)
-            return
-
-        elif self.current_tool == "import":
-            return
-
         elif self.current_tool == "preset":
             self.preset.handle_mouse_moved(pt)
-            # self.preset.handle_cursor_moved(pt)
 
     def canvasShiftKeyState(self, state):
-        #
-        # Move spot (drag and drop)
-        #
-        # Widnows/Linux/MacOS: Shift key
-        #
-
-        self.state_shift_key = state
-
-        # self.preset.handle_shiftKey_state_changed(state)
+        """Shift controls dragging of existing Preset spots."""
         self.preset.handle_shift_key_state_changed(state)
 
     def canvasCtrlKeyState(self, state):
-        #
-        # Toggle vibility of the selected raster layer
-        #
-        # Windows/Linux: Ctrl, MacOS: Command
-
+        """Ctrl (Command on macOS) toggles the selected raster layer."""
         self.toggle_raster_layer_visible_state(state)
 
     def canvasAltKeyState(self, state):
-        #
-        # Edit spot (modify comment, delete post)
-        #
-        # Windows/Linux: Alt, MacOS: Option
-        #
-
-        self.state_alt_key = state
+        """Alt (Option on macOS) controls editing of existing Preset spots."""
         self.preset.handle_altKey_state_changed(state)
 
     def canvasEscapeKeyState(self):
         self.preset.clear_preview_spots(init=False)
 
     def handle_canvas_released(self, pt: QgsPointXY):
-        print("released")
         if self.current_tool == "preset":
             self.preset.handle_mouse_released(pt)
 
     def handle_canvas_pressed(self, pt: QgsPointXY):
-        print("pressed", self.current_tool)
         if self.current_tool == "preset":
             self.preset.handle_mouse_pressed(pt)

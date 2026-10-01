@@ -22,91 +22,71 @@
  ***************************************************************************/
 """
 
-import math
 import os
-import os.path
 import time
-# import json
-# import re
 
-from PyQt5.QtCore import (
+from qgis.PyQt.QtCore import (
     QObject,
     QRect,
     Qt,
-    QVariant,
     pyqtSignal,
-    # QCoreApplication,
-    # QModelIndex,
-    # QSettings,
-    # QSize,
-    # QTranslator,
-    # qVersion,
 )
-from PyQt5.QtGui import QColor, QCursor, QIcon, QPixmap
-from PyQt5.QtWidgets import (
+from qgis.PyQt.QtGui import QColor, QCursor
+from qgis.PyQt.QtWidgets import (
     QFileDialog,
     QInputDialog,
     QLineEdit,
     QMessageBox,
     QToolTip,
-    # QAbstractItemView,
-    # QAction,
-    # QHeaderView,
 )
 from qgis.core import (
-    Qgis,
     QgsFeature,
-    QgsFeatureRequest,
-    QgsField,
     QgsGeometry,
-    QgsMarkerSymbol,
-    QgsPalLayerSettings,
     QgsPointXY,
     QgsProject,
-    QgsPropertyCollection,
-    QgsVectorFileWriter,
     QgsVectorLayer,
-    QgsVectorLayerSimpleLabeling,
     QgsWkbTypes,
-    # Qgis,
 )
 
 from qgis.gui import QgsRubberBand
+from qgis.PyQt import sip
 
 from ..imports.coordinateTool import CoordinateTool
 from ..layerTool import LayerTool
+from ..signal_connections import SignalConnections
 from .edit_dialog import EditDialog
 from .presetPreview import PresetPreview
+from .placement import grid_positions, line_positions
+from .layer_settings import create_layer, read_sizes, set_symbol_size, write_sizes
 
 
 class PresetTool(QObject):
+    """Coordinate Preset controls, placement previews and spot editing."""
+
     setActiveLayer = pyqtSignal(QgsVectorLayer)
     undo_max: int = 100
     max_preset_points: int = 5000
     line_preview_interval: float = 0.05
 
     def __init__(self, dock, canvas):
-        QObject.__init__(self)
+        super().__init__(dock)
 
         self.reorder_preview = False
 
         self.canvas = canvas
         self.dock = dock
+        self._canvas_connections = SignalConnections()
 
         self.lt = LayerTool()
-        # in memory layer while moving the spot
         self.preset_layer = self.get_preset_layer()
-        print("preset layer", self.preset_layer)
 
         self.preview = PresetPreview(self.preset_layer, self.canvas)
-        print(self.preview)
 
         self.rb_line = QgsRubberBand(self.canvas, QgsWkbTypes.LineGeometry)
         self.start_point = []
         self.end_point = []
         self.line_in_progress = False
         self.last_line_preview_at = 0.0
-        self.prev_tool = None
 
         self.preset_points = []
         self.undo_preset = []
@@ -114,17 +94,11 @@ class PresetTool(QObject):
         self.scale = 1
 
         self.feature_id = None
-
-        self.flag_cancel_moving_spot = False
-
-        self.state_shift_key = False
-        self.state_alt_key = False
-
+        self.movement_offset = [0, 0]
         self.shift_key = False
         self.alt_key = False
 
         self.mouse_left = False
-        self.mouse_right = False
 
         self.relocating_spot = False
         self.cursor_pos = QgsPointXY(0, 0)
@@ -135,12 +109,12 @@ class PresetTool(QObject):
         self.current_preset_mode = "point"
 
         self.init_preset_layer_combobox()
-        self.initialze_ui()
+        self.initialize_ui()
 
         self.dock.Tab_Preset_Mode.setCurrentIndex(self.preset_modes.index(self.current_preset_mode))
         self.handle_preset_mode_changed(self.preset_modes.index(self.current_preset_mode))
 
-    def initialze_ui(self):
+    def initialize_ui(self):
         # Preset
         ## Comment
         self.dock.Tbx_Comment.textChanged.connect(self.reset_current_number)
@@ -178,7 +152,7 @@ class PresetTool(QObject):
         self.dock.Spn_Grid_N_Point_Y.valueChanged.connect(self.update_grid)
         self.dock.Cmb_Grid_Move_Order.currentIndexChanged.connect(self.update_grid)
         self.dock.Btn_Grid_Add_Points.clicked.connect(self.add_preset_points)
-        self.canvas.rotationChanged.connect(self.update_grid)
+        self._canvas_connections.connect(self.canvas.rotationChanged, self.update_grid)
 
         ## Undo
         self.dock.Btn_Undo_Add_Preset_Point.clicked.connect(self.handle_undo)
@@ -189,8 +163,17 @@ class PresetTool(QObject):
         self.clear_preview_spots()
         self.update_preview_cursor()
 
-    def intersect(self, list1, list2):
-        return [lst for lst in list1 if lst in list2]
+    def cleanup(self):
+        """Release canvas subscriptions and scene items before deleting the dock."""
+        self._canvas_connections.disconnect_all()
+        self.hide_tooltip()
+        if self.preview.preview_layer is not None:
+            self.preview.remove_objects()
+        self.preview.cleanup_old_layers()
+        if self.rb_line is not None:
+            self.canvas.scene().removeItem(self.rb_line)
+            sip.delete(self.rb_line)
+            self.rb_line = None
 
     def init_preset_layer_combobox(self, newLayer=None):
         if self.reorder_preview:
@@ -241,7 +224,6 @@ class PresetTool(QObject):
 
     def handle_change_preset_layer(self, idx=-1):
         if idx < 0:
-            print("handle preset None")
             return
 
         layer = self.get_preset_layer()
@@ -253,141 +235,49 @@ class PresetTool(QObject):
 
         ssps = self.get_ss_ps()
 
-        self.dock.Spn_Preset_Pixel_Size.setValue(ssps["ps"])
-        self.dock.Spn_Preset_Spot_Size.setValue(ssps["ss"])
-
-        self.preview.update_layer(self.get_preset_layer())
-        self.preview.update_symbol_size(self.scale, ssps["ss"])
-        print("after clear")
+        # Load both fields before applying sizes, avoiding intermediate writes.
+        self.set_value_without_signal(self.dock.Spn_Preset_Pixel_Size, ssps["ps"])
+        self.set_value_without_signal(self.dock.Spn_Preset_Spot_Size, ssps["ss"])
         self.handle_change_pixel_size(ssps["ps"])
-        print("handle change preset layer", self.preview)
 
     def create_preset_layer(self):
-        # ask layer name
         project_path = os.path.dirname(QgsProject.instance().fileName())
-        saveFile, _filter = QFileDialog.getSaveFileName(
-            None,
-            "Save a Shape file",
-            os.path.join(project_path, "preset.shp"),
+        path, _filter = QFileDialog.getSaveFileName(
+            None, "Save a Shape file", os.path.join(project_path, "preset.shp"),
             "ESRI Shapefile (*.shp)",
         )
-
-        if saveFile == "":
-            return None
-
-        # create layer with given name
-        #  field: [Comment]
-        spot_size = self.dock.Spn_Preset_Spot_Size.value()
-        pixel_size = self.dock.Spn_Preset_Pixel_Size.value()
-        vl = QgsVectorLayer("Point", "temporary_points", "memory")
-        vl.setCrs(self.canvas.mapSettings().destinationCrs())
-        vl.setProviderEncoding("UTF-8")
-        pr = vl.dataProvider()
-        attrs = [
-            QgsField("Comment", QVariant.String),
-            QgsField(f"ss_{spot_size}", QVariant.Int),
-            QgsField(f"ps_{pixel_size}", QVariant.Double),
-        ]
-
-        pr.addAttributes(attrs)
-        vl.setDisplayExpression("Comment")
-        vl.updateFields()
-
-        error, _error_str = QgsVectorFileWriter.writeAsVectorFormat(vl, saveFile, "UTF-8", vl.crs(), "ESRI Shapefile")
-
-        # Set layer name without duplication
-        layer_names = [layer.name() for layer in self.lt.get_vector_point_layers()]
-        layer_name = "Preset"
-
-        # check layer names to avoid name duplication
-        i = 1
-        while layer_name in layer_names:
-            i += 1
-            layer_name = "Preset_{}".format(i)
-
-        spot_size = self.dock.Spn_Preset_Spot_Size.value()
-        if error != QgsVectorFileWriter.NoError:
-            print(_error_str)
+        if not path:
             return
 
-        newVlayer = QgsVectorLayer(saveFile, layer_name, "ogr")
+        layer_names = {layer.name() for layer in self.lt.get_vector_point_layers()}
+        name = "Preset"
+        suffix = 1
+        while name in layer_names:
+            suffix += 1
+            name = f"Preset_{suffix}"
+        try:
+            layer = create_layer(
+                path, name, self.canvas.mapSettings().destinationCrs(),
+                self.dock.Spn_Preset_Spot_Size.value(),
+                self.dock.Spn_Preset_Pixel_Size.value(), self.scale,
+            )
+        except ValueError as error:
+            QMessageBox.warning(self.dock, "Create Preset Layer", str(error))
+            return
 
-        props = newVlayer.renderer().symbol().symbolLayer(0).properties()
-        props["name"] = "circle"
-        props["size_unit"] = "MapUnit"
-        props["offset_unit"] = "MapUnit"
-        props["outline_width_unit"] = "MapUnit"
-        props["size"] = f"{1.0 * self.scale * spot_size}"  # spot size
-        mySimpleSymbol = QgsMarkerSymbol.createSimple(props)
-        newVlayer.renderer().setSymbol(mySimpleSymbol)
-        newVlayer.updateExtents()
-
-        # load and register created layer to mapCanvas
-        QgsProject.instance().addMapLayer(newVlayer)
-        self.setActiveLayer.emit(newVlayer)
-
-        settings = QgsPalLayerSettings()
-        settings.enabled = True
-        settings.fieldName = "Comment"
-        settings.displayAll = True
-        coll = QgsPropertyCollection("preset")
-        coll.setProperty(settings.ShadowDraw, True)
-        coll.setProperty(settings.BufferDraw, True)
-        settings.setDataDefinedProperties(coll)
-
-        newVlayer.setLabelsEnabled(True)
-        newVlayer.setLabeling(QgsVectorLayerSimpleLabeling(settings))
-        newVlayer.triggerRepaint()
-
-        # show feature count
-        root = QgsProject.instance().layerTreeRoot()
-        myLayerNode = root.findLayer(newVlayer.id())
-        myLayerNode.setCustomProperty("showFeatureCount", True)
-
-        # add created layer to Cmb_Preset_Layer
-        self.init_preset_layer_combobox(newVlayer)
-
-        # select/highlight created layer
-        self.dock.Cmb_Preset_Layer.setCurrentIndex(self.dock.Cmb_Preset_Layer.findText(layer_name))
-
+        # Register only after styling; legend callbacks can run synchronously.
+        project = QgsProject.instance()
+        project.addMapLayer(layer)
+        self.setActiveLayer.emit(layer)
+        project.layerTreeRoot().findLayer(layer.id()).setCustomProperty("showFeatureCount", True)
+        self.init_preset_layer_combobox(layer)
         self.update_preview_cursor()
 
     def store_ss_ps(self, data):
-        self.preset_layer.startEditing()
-        # Rename field
-        flag_rename = False
-        for field in self.preset_layer.fields():
-            if field.name()[:3] == "ss_":
-                idx = self.preset_layer.fields().indexFromName(field.name())
-                self.preset_layer.renameAttribute(idx, f"ss_{data['ss']}")
-                flag_rename = True
-            elif field.name()[:3] == "ps_":
-                idx = self.preset_layer.fields().indexFromName(field.name())
-                self.preset_layer.renameAttribute(idx, f"ps_{data['ps']}")
-                flag_rename = True
-
-        if not flag_rename:  # no ss_ or ps_
-            pr = self.preset_layer.dataProvider()
-            attrs = [
-                QgsField(f"ss_{data['ss']}", QVariant.Int),
-                QgsField(f"ps_{data['ps']}", QVariant.Double),
-            ]
-            pr.addAttributes(attrs)
-
-        # Close editing session and save changes
-        self.preset_layer.commitChanges()
+        return write_sizes(self.preset_layer, data["ss"], data["ps"])
 
     def get_ss_ps(self):
-        fields = self.lt.get_fields(self.preset_layer)
-        out = {"ss": 12, "ps": 1.0}
-        for f in fields:
-            c = f[:3]
-            if c == "ss_":
-                out["ss"] = int(f.split("_")[1])
-                continue
-            elif c == "ps_":
-                out["ps"] = float(f.split("_")[1])
-        return out
+        return read_sizes(self.preset_layer)
 
     def handle_change_pixel_size(self, size):
         if size <= 0:
@@ -395,15 +285,10 @@ class PresetTool(QObject):
         self.scale = 1 / size
         ss = self.dock.Spn_Preset_Spot_Size.value()
         self.handle_change_spot_size(ss)
-
-        # if not self.flag_pixel_size_tool:
-        #     pass
         if self.current_preset_mode == "grid":
             self.update_grid()
         elif self.current_preset_mode == "line":
             self.update_line()
-        # elif self.current_preset_mode == "point":
-        #     self.preview.update_symbol_size()
 
     def handle_set_pixel_size(self, px_size):
         # call from PST (Set Pixel Size button)
@@ -420,15 +305,7 @@ class PresetTool(QObject):
             return
         self.preset_layer = layer
 
-        print("layer renderer: ", layer.renderer().type())
-
-        symbol = layer.renderer().symbol()
-        # The top-level Marker unit dropdown uses outputUnit(), including width and offset units.
-        if symbol.outputUnit() != Qgis.RenderUnit.MapUnits:
-            symbol.setOutputUnit(Qgis.RenderUnit.MapUnits)
-        symbol.setSize(1.0 * self.scale * size)
-        layer.emitStyleChanged()
-        layer.triggerRepaint()
+        set_symbol_size(layer, self.scale * size)
 
         ss = self.dock.Spn_Preset_Spot_Size.value()
         ps = self.dock.Spn_Preset_Pixel_Size.value()
@@ -461,7 +338,6 @@ class PresetTool(QObject):
 
     def handle_change_PointPreview(self, state):
         # state 0: Unchecked, 2: Checked
-        print(f"handle change - PointPreview: {state}")
         self.update_preview_cursor()
 
     def handle_change_CommentPreview(self, _state=None):
@@ -475,7 +351,6 @@ class PresetTool(QObject):
         return self.preset_modes[idx]
 
     def handle_preset_mode_changed(self, idx):
-        print("preset_mode_changed")
         if idx < 0:
             self.current_preset_mode = self.get_preset_mode()
         else:
@@ -567,7 +442,7 @@ class PresetTool(QObject):
         self.preview.remove_objects()
         self.add_preset_points()
 
-        """ comment for next spot """
+        # Show the comment for the next spot.
         self.cursor_pos = pt
         self.update_preview_cursor()
 
@@ -595,28 +470,16 @@ class PresetTool(QObject):
             return
         self.undo_preset.pop()
 
-        undo_message = ""
         if undo_item["type"] == "addition":
             self.undo_add_preset_point(preset_layer, undo_item["data"])
-            undo_message = "Addition of "
-            if len(undo_item["data"]) == 1:
-                undo_message += "a spot"
-            else:
-                undo_message += "spots"
         elif undo_item["type"] == "movement":
-            undo_message = "Relocating a spot"
             self.undo_moving_point(preset_layer, undo_item["data"])
         elif undo_item["type"] == "comment":
-            undo_message = "Editing a comment"
             self.undo_editing_comment(preset_layer, undo_item["data"])
         elif undo_item["type"] == "delete":
-            undo_message = "Deleting a spot"
             self.undo_delete_preset_point(preset_layer, undo_item["data"])
 
         preset_layer.commitChanges()
-
-        print("Undo", undo_message)
-        # self.iface.messageBar().pushMessage("Undo", undo_message, level=Qgis.Info, duration=1)
         self.update_undo_btn_state()
 
     def undo_editing_comment(self, preset_layer, data):
@@ -655,13 +518,7 @@ class PresetTool(QObject):
             spn.setValue(spn.value() - len(id_list))
 
     def update_undo_btn_state(self):
-        if len(self.undo_preset):
-            self.dock.Btn_Undo_Add_Preset_Point.setEnabled(True)
-        else:
-            print("Already at oldest change")
-            self.dock.Btn_Undo_Add_Preset_Point.setEnabled(False)
-
-        print("undo btn state", self.dock.Btn_Undo_Add_Preset_Point.isEnabled())
+        self.dock.Btn_Undo_Add_Preset_Point.setEnabled(bool(self.undo_preset))
 
     def clear_preview_points(self):
         self.init_rb_line()
@@ -696,7 +553,6 @@ class PresetTool(QObject):
         else:
             txt = ""
         QToolTip.showText(pos, txt, self.canvas, QRect(pos.x(), pos.y(), 200, 200), 30000)
-        # QToolTip.showText(pos, txt, None)
 
     def hide_tooltip(self):
         QToolTip.hideText()
@@ -738,7 +594,6 @@ class PresetTool(QObject):
 
             self.rb_line.addPoint(self.start_point, False)
             self.rb_line.addPoint(self.start_point, True)
-            # self.rb_start.addPoint(self.start_point, True)
 
     def update_line(self):
         if len(self.start_point) and len(self.end_point):
@@ -754,50 +609,30 @@ class PresetTool(QObject):
         self.update_line()
 
     def draw_line_points(self, live_preview=False):
-        if len(self.start_point) == 0 or len(self.end_point) == 0 or self.scale <= 0:
+        if not self.start_point or not self.end_point or self.scale <= 0:
             return
-        length = self.update_line_length(self.end_point)
+        self.update_line_length(self.end_point)
         self.preview.remove_objects()
         self.preset_points = []
-        if length <= 0:
-            self.preview.add_points([[self.start_point, ""]])
-            self.update_add_points_btn_status(False, "Choose a different end point.")
+        use_step = self.dock.Opt_Line_Step_Size.isChecked()
+        try:
+            placement = line_positions(
+                self.start_point, self.end_point, self.scale,
+                step=self.dock.Spn_Line_Step_Size.value() if use_step else None,
+                count=None if use_step else self.dock.Spn_Line_N_Spot.value(),
+                limit=self.max_preset_points,
+            )
+        except ValueError as error:
+            if self.start_point == self.end_point:
+                self.preview.add_points([[self.start_point, ""]])
+            self.update_add_points_btn_status(False, str(error))
             return
 
-        if self.dock.Opt_Line_Step_Size.isChecked():
-            step = self.dock.Spn_Line_Step_Size.value()
-            if step <= 0:
-                self.update_add_points_btn_status(False, "Step size must be positive.")
-                return
-            n_spots = math.floor(length / step) + 1
-            if n_spots > self.max_preset_points:
-                self.update_add_points_btn_status(False, f"Maximum {self.max_preset_points} spots.")
-                return
-            self.set_value_without_signal(self.dock.Spn_Line_N_Spot, n_spots)
-            distances = [n * step for n in range(n_spots)]
+        if use_step:
+            self.set_value_without_signal(self.dock.Spn_Line_N_Spot, len(placement.points))
         else:
-            n_spots = self.dock.Spn_Line_N_Spot.value()
-            if n_spots < 2:
-                self.update_add_points_btn_status(False, "Choose at least two spots.")
-                return
-            if n_spots > self.max_preset_points:
-                self.update_add_points_btn_status(False, f"Maximum {self.max_preset_points} spots.")
-                return
-            step = length / (n_spots - 1)
-            self.set_value_without_signal(self.dock.Spn_Line_Step_Size, round(step))
-            distances = [n * step for n in range(n_spots)]
-
-        preview_points = []
-        for n, distance in enumerate(distances):
-            fraction = distance / length
-            x = self.start_point[0] + (self.end_point[0] - self.start_point[0]) * fraction
-            y = self.start_point[1] + (self.end_point[1] - self.start_point[1]) * fraction
-            comment = self.get_comment(n)
-            preview_points.append([QgsPointXY(x, y), comment])
-            if not live_preview:
-                self.preset_points.append([comment, x, y])
-        self.preview.add_points(preview_points)
-        self.update_add_points_btn_status(not live_preview)
+            self.set_value_without_signal(self.dock.Spn_Line_Step_Size, round(placement.step))
+        self._show_placement(placement.points, ready=not live_preview)
 
     def preset_grid(self, pt):
         self.start_point = pt
@@ -815,61 +650,37 @@ class PresetTool(QObject):
         self.draw_grid_points()
 
     def draw_grid_points(self):
-        order = self.dock.Cmb_Grid_Move_Order.currentIndex()
-        step_x = self.dock.Spn_Grid_Step_Size_X.value()
-        step_y = self.dock.Spn_Grid_Step_Size_Y.value()
-        n_step_x = self.dock.Spn_Grid_N_Point_X.value()
-        n_step_y = self.dock.Spn_Grid_N_Point_Y.value()
-        rotation = self.canvas.rotation()
-        if len(self.start_point) == 0:
+        if not self.start_point:
             return
-        count = n_step_x * n_step_y
-        if count > self.max_preset_points:
-            self.update_add_points_btn_status(False, f"Maximum {self.max_preset_points} spots.")
+        try:
+            points = self.calculate_grid_positions(
+                self.start_point,
+                [self.dock.Spn_Grid_Step_Size_X.value(), self.dock.Spn_Grid_Step_Size_Y.value()],
+                [self.dock.Spn_Grid_N_Point_X.value(), self.dock.Spn_Grid_N_Point_Y.value()],
+                self.dock.Cmb_Grid_Move_Order.currentIndex(), self.scale, self.canvas.rotation(),
+            )
+        except ValueError as error:
+            self.update_add_points_btn_status(False, str(error))
             return
-        if (n_step_x > 1 and step_x == 0) or (n_step_y > 1 and step_y == 0):
-            self.update_add_points_btn_status(False, "Step size must be nonzero when using multiple spots.")
-            return
+        self._show_placement(points, ready=True, draw_path=True)
 
-        points = self.calculate_grid_positions(
-            self.start_point,
-            [step_x, step_y],
-            [n_step_x, n_step_y],
-            order,
-            self.scale,
-            rotation,
-        )
-        i = 0
-
+    def _show_placement(self, points, ready, draw_path=False):
+        """Apply comments and share the Line/Grid preview and add-button state."""
         preview_points = []
-
-        for point in points:
-            pt = QgsPointXY(point[0], point[1])
-            comment = self.get_comment(i)
-            self.rb_line.addPoint(pt, True)
-            self.preset_points.append([comment, point[0], point[1]])
-            preview_points.append([pt, comment])
-            i += 1
-
+        self.preset_points = []
+        for index, (x, y) in enumerate(points):
+            point = QgsPointXY(x, y)
+            comment = self.get_comment(index)
+            preview_points.append([point, comment])
+            if draw_path:
+                self.rb_line.addPoint(point, True)
+            if ready:
+                self.preset_points.append([comment, x, y])
         self.preview.add_points(preview_points)
-        self.update_add_points_btn_status(True)
+        self.update_add_points_btn_status(ready)
 
     def calculate_grid_positions(self, start_xy, step_xy, n_xy, order, scale=1, rotation=0):
-        start_x, start_y = start_xy[0], start_xy[1]
-        step_x, step_y = step_xy
-        n_x, n_y = n_xy
-        if order == 0:  # Horizontal, then vertical
-            indices = ((x, y) for y in range(n_y) for x in range(n_x))
-        else:  # Vertical, then horizontal
-            indices = ((x, y) for x in range(n_x) for y in range(n_y))
-
-        points = [
-            [start_x + x * step_x * scale, start_y + y * step_y * scale]
-            for x, y in indices
-        ]
-        if rotation:
-            return list(CoordinateTool.rotate_coordinates(points, rotation, [start_x, start_y]))
-        return points
+        return grid_positions(start_xy, step_xy, n_xy, order, scale, rotation, self.max_preset_points)
 
     def set_value_without_signal(self, target, value):
         was_blocked = target.blockSignals(True)
@@ -880,8 +691,6 @@ class PresetTool(QObject):
 
     def handle_comment_change_preview(self):
         current_mode = self.get_preset_mode()
-        # if self.rb_line.size() == 0:
-        #     return
         if current_mode == "point":
             self.preview.update_comment(self.get_comment(0))
         elif current_mode == "line":
@@ -924,57 +733,6 @@ class PresetTool(QObject):
 
         out = [f for f in features if 0 <= geom.distance(f.geometry()) < radius]
         return out
-
-    def delete_spot_original(self, e):
-        # delete spot
-        layer = self.get_preset_layer()
-        if layer is None:
-            return
-
-        cursor_geom = QgsGeometry.fromPointXY(self.canvasMapTool.getMapCoordinates(e))
-        features = self.get_near_features(layer, cursor_geom)
-
-        if len(features) == 0:
-            return
-
-        f_id = features[-1].id()  # select uppermost feature
-
-        layer.selectByIds([f_id], QgsVectorLayer.SetSelection)
-        f = [f for f in layer.getFeatures(QgsFeatureRequest(f_id))][0]
-        comment = f["Comment"]
-        geom = f.geometry()
-        title = "Delete Spot"
-        label = f'Are you sure you want to delete "{comment}"?'
-
-        self.state_shift_key = False
-        self.state_alt_key = False
-
-        self.canvas.setCursor(Qt.CrossCursor)
-        print("delete spot")
-
-        # show confirmation dailog
-        rep_message = QMessageBox.warning(None, title, label, QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-        if rep_message == QMessageBox.No:
-            layer.removeSelection()
-            return
-
-        layer.startEditing()
-        layer.deleteFeature(f_id)
-        layer.commitChanges()
-        undo_data = {
-            "id": f_id,
-            "geometry": geom,
-            "comment": comment,
-        }
-        self.add_to_undo("delete", undo_data)
-
-        self.state_alt_key = False
-        self.state_shift_key = False
-
-        # # reset cursor
-        # self.canvas.setCursor(Qt.CrossCursor)
-
-        self.update_undo_btn_state()
 
     def delete_spot(self, layer, f_id, comment):
         title = "Delete Spot"
@@ -1025,7 +783,7 @@ class PresetTool(QObject):
         f_id = features[-1].id()  # select uppermost feature
 
         layer.selectByIds([f_id], QgsVectorLayer.SetSelection)
-        f = [f for f in layer.getFeatures(QgsFeatureRequest(f_id))][0]
+        f = features[-1]
         comment = f["Comment"]
         geom = f.geometry()
 
@@ -1116,44 +874,18 @@ class PresetTool(QObject):
     def handle_mouse_pressed(self, pt):
         self.mouse_left = True
         mode = self.get_preset_mode()
-        print("mode", mode)
-        # print(f"pressed at: {pt}, mode: {mode}, shift: {self.shift_key}, alt: {self.alt_key}, mouse: {self.mouse_left}")
         if mode == "point":
             if self.shift_key:
                 # start moving spot
-                print("start relocating spot")
                 self.relocating_spot = True
                 self.initiate_relocation(pt)
             else:
                 self.add_preset_point(pt)
-                pass
 
     def handle_mouse_released(self, pt):
         self.mouse_left = False
-
-        if self.preset_layer is None:
-            return
-
-        mode = self.get_preset_mode()
-
-        # print(
-        #     f"released at: {pt}, mode: {mode}, shift: {self.shift_key}, alt: {self.alt_key}, mouse: {self.mouse_left}"
-        # )
-        if mode == "point":
-            if self.shift_key:
-                # end moving point
-                print("end relocating spot")
-                self.relocating_spot = False
-            elif self.alt_key:
-                print("Edit spot")
-                # edit spot
-            else:
-                # add spot
-                print("Add spot")
-
-        else:
-            pass
-            # print(self.current_tool)
+        if self.shift_key:
+            self.relocating_spot = False
 
     def handle_clicked(self, pt, finish_line=False):
         if self.preset_layer is None:
@@ -1185,31 +917,23 @@ class PresetTool(QObject):
             self.preset_grid(pt)
 
     def initiate_relocation(self, pt):
-        print("relocating...", pt)
         if not self.preset_layer:
             return
 
         self.preview.reset(moving=True)
         self.init_rb_line()
 
-        """
-        finding features near cursor
-        """
+        # Locate the uppermost spot within its displayed radius.
         cursor_geom = QgsGeometry.fromPointXY(pt)
-        # print("cursor geom:", cursor_geom)
-        self.movement_offst = [0, 0]
+        self.movement_offset = [0, 0]
         features = self.get_near_features(self.preset_layer, cursor_geom)
 
         if len(features) == 0:
             # do nothing
-            print("no features")
             return
 
         self.canvas.setCursor(Qt.ClosedHandCursor)
 
-        """
-        get closet feature
-        """
         feature = features[-1]  # select uppermost feature
         geom = feature.geometry()
         pt = geom.asPoint()
@@ -1229,7 +953,11 @@ class PresetTool(QObject):
             return
 
         # Get coordinate of feature for undo
-        original_geo = [f.geometry() for f in self.preset_layer.getFeatures() if f.id() == self.feature_id][0]
+        feature = self.preset_layer.getFeature(self.feature_id)
+        if not feature.isValid():
+            self.reset_preset_points()
+            return
+        original_geo = feature.geometry()
 
         # movement_offset = offset between the center of the feature and cursor
         # Cursor doesn't always grab the center of the feature
@@ -1242,92 +970,18 @@ class PresetTool(QObject):
 
         self.preset_layer.removeSelection()
 
-        """ Add ot undo list """
+        # Keep the original geometry for undo.
         undo_data = {"id": self.feature_id, "geom": original_geo}
         self.add_to_undo("movement", undo_data)
 
         self.preview.reset()
 
         # Update cursor
-        cursor = Qt.CrossCursor
-        if self.state_shift_key:
-            cursor = Qt.OpenHandCursor
-        self.canvas.setCursor(cursor)
+        self.update_preview_cursor()
 
         self.update_undo_btn_state()
-        self.flag_cancel_moving_spot = False
         self.feature_id = None
 
-    def handle_move_point_start(self, e):
-        return
-        print("handle move point start", e)
-        if not self.preset_layer:
-            return
-
-        self.preview.reset(moving=True)
-        self.init_rb_line()
-
-        # layer = self.get_preset_layer()
-        #
-        # if layer is None:
-        #     # there is no preset layer
-        #     QMessageBox.warning(None, "No Preset Layer", "Preset layer is not selected.")
-        #     return
-
-        cursor_geom = QgsGeometry.fromPointXY(e.mapPoint())
-        print("cursor geom:", cursor_geom)
-        self.movement_offst = [0, 0]
-        features = self.get_near_features(self.preset_layer, cursor_geom)
-
-        if len(features) == 0:
-            # do nothing
-            print("no features")
-            return
-
-        self.canvas.setCursor(Qt.ClosedHandCursor)
-        feature = features[-1]  # select uppermost feature
-
-        geom = feature.geometry()
-        pt = geom.asPoint()
-        cursor_geom_p = cursor_geom.asPoint()
-        self.movement_offset = [
-            pt.x() - cursor_geom_p.x(),
-            pt.y() - cursor_geom_p.y(),
-        ]
-        self.feature_id = feature.id()
-        self.preset_layer.selectByIds([self.feature_id], QgsVectorLayer.SetSelection)
-
-        comment = [f["Comment"] for f in self.preset_layer.getFeatures(QgsFeatureRequest(self.feature_id))][0]
-        point = [pt, comment]
-
-        self.preview.add_points([point])
-
-    def handle_move_point_end(self, e):
-        if self.feature_id is None:
-            return
-
-        original_geo = [f.geometry() for f in self.preset_layer.getFeatures() if f.id() == self.feature_id][0]
-        pt = e.mapPoint()
-        pt.set(pt.x() + self.movement_offset[0], pt.y() + self.movement_offset[1])
-        geom = QgsGeometry.fromPointXY(pt)
-
-        self.preset_layer.startEditing()
-        self.preset_layer.dataProvider().changeGeometryValues({self.feature_id: geom})
-        self.preset_layer.commitChanges()
-
-        self.preset_layer.removeSelection()
-
-        undo_data = {"id": self.feature_id, "geom": original_geo}
-        self.add_to_undo("movement", undo_data)
-
-        self.preview.reset()
-
-        # Update cursor
-        cursor = Qt.CrossCursor
-        if self.state_shift_key:
-            cursor = Qt.OpenHandCursor
-        self.canvas.setCursor(cursor)
-
-        self.update_undo_btn_state()
-        self.flag_cancel_moving_spot = False
-        self.feature_id = None
+    def handle_move_point_end(self, event):
+        """Adapt the map-tool release event to the common relocation operation."""
+        self.handle_finish_relocation(event.mapPoint())
