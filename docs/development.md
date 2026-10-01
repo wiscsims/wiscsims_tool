@@ -19,6 +19,8 @@ Preset placement calculations are independent of Qt and QGIS.
 | `tools/imports/alignmentMarker.py` | Reference markers and annotations owned by the Import tool |
 | `tools/imports/sumTableTool.py` | Workbook loading, row ranges and comment filters |
 | `tools/layerTool.py` | Query layers in legend order and exclude temporary layers |
+| `tools/dependencyInstaller.py` | Confirm and install optional Excel readers in the user's QGIS Python environment |
+| `tools/operationProgress.py` | Show import stages and run Python-only workbook I/O in a worker thread |
 | `tools/signal_connections.py` | Track and release subscriptions to long-lived QGIS objects |
 
 ```mermaid
@@ -56,6 +58,10 @@ Layer-tree signals may fire synchronously when a layer is registered or removed.
 On dock close, the plugin disconnects project/UI signals, restores the previous map tool, calls the tool cleanup methods, and schedules dock deletion. `unload()` flushes pending dock deletion so Plugin Reloader does not retain old widgets. New subscriptions to the canvas or layer tree need matching cleanup; `SignalConnections` groups these subscriptions and supports repeated disconnection.
 
 Keep generated `resources.py` out of manual edits. Historical public handler names and widget object names remain in several modules; update their callers together if renaming them.
+
+Excel readers are optional so the plugin can start without them. Workbook selection calls `DependencyInstaller` before constructing `SumTableTool`. Package names are selected from a fixed extension mapping; do not pass user-controlled package names to pip. Installation resolves QGIS's bundled Python interpreter and runs it with `pip install --user`, only after the user accepts the confirmation dialog. Do not use `sys.executable` directly because a GUI QGIS session may report the QGIS application binary instead of Python. On macOS, the child process must also receive the app bundle's `Contents/Frameworks` directory as `PYTHONHOME`; without it, the bundled interpreter cannot load its standard library.
+
+Excel selection reads and caches headers/rows in a worker thread before updating dock controls. `SumTableTool` stays independent of Qt and reports row progress through an optional callback; `reload_workbook()` clears its cache. Keep QGIS layer access and widget updates on the GUI thread. Import validation periodically processes paint events, and the modal progress dialog prevents duplicate operations. Destination writes run on the GUI thread and use an indeterminate progress bar because the provider does not expose row progress.
 
 ## Run tests
 

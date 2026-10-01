@@ -1,4 +1,5 @@
 import re
+from datetime import date, time
 
 from qgis.PyQt.QtCore import QVariant
 from qgis.PyQt import sip
@@ -13,9 +14,20 @@ class LayerTool:
             return []
         return [field.name() for field in layer.fields()]
 
-    def get_field_type(self, fieldName):
+    def get_field_type(self, fieldName, values=()):
         if re.match(r"^(file|comment|sample)", fieldName, re.I):
             return QVariant.String
+        # Shapefiles cannot store a time or datetime field. Keep ISO text,
+        # and preserve mixed columns (e.g. numbers and "rejected") as text.
+        for value in values:
+            if value is None or value == "":
+                continue
+            if isinstance(value, (date, time)):
+                return QVariant.String
+            try:
+                float(value)
+            except (TypeError, ValueError):
+                return QVariant.String
         return QVariant.Double
 
     def get_layer_list(self, layertype=-1):

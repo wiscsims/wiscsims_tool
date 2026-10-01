@@ -18,6 +18,10 @@ class _OpenpyxlSheet:
     def col_values(self, index):
         return [self.row_values(row)[index] for row in range(self.nrows)]
 
+    def data_rows(self):
+        """Stream the worksheet once instead of reopening XML for each row."""
+        return self.sheet.iter_rows(min_row=2, max_row=self.nrows, values_only=True)
+
     def cell_value(self, row, column):
         value = self.sheet.cell(row + 1, column + 1).value
         return "" if value is None else value
@@ -30,9 +34,12 @@ class SumTableTool:
         self.wb = None
         self.ws = None
         self.load_error = None
+        self.missing_module = None
 
         self.prev = []
         self.values = []
+        self._rows = None
+        self._headers = None
 
         self.asc_pattern = re.compile(r"^\d{8}@\d+\.asc$")
 
@@ -49,7 +56,10 @@ class SumTableTool:
         self.wb = None
         self.ws = None
         self.load_error = None
+        self.missing_module = None
         self.values = []
+        self._rows = None
+        self._headers = None
         try:
             if self.path.lower().endswith(".xlsx"):
                 from openpyxl import load_workbook
@@ -59,6 +69,10 @@ class SumTableTool:
                 import xlrd
 
                 self.excel = xlrd.open_workbook(filename=self.path)
+        except ModuleNotFoundError as error:
+            self.missing_module = error.name
+            self.load_error = f"Required Python module is not installed: {error.name}"
+            return None
         except Exception as error:
             self.load_error = str(error)
             return None
@@ -120,21 +134,41 @@ class SumTableTool:
         return len(self.get_headers()) - 1
 
     def get_headers(self):
-        return self.ws.row_values(0, 0)
+        if self._headers is None:
+            self._headers = self.ws.row_values(0, 0)
+        return self._headers
 
-    def get_values(self):
-        self.values = self._all_data_rows()
+    def get_values(self, progress=None):
+        self.values = self._all_data_rows(progress)
         if self.asc_filter["from"] is not None or self.asc_filter["to"] is not None:
             self.values = self.filter_by_asc(self.asc_filter["from"], self.asc_filter["to"])
         elif self.comment_filter != "":
             self.values = self.filter_by_comment(self.comment_filter)
         return self.values
 
-    def _all_data_rows(self):
+    def _all_data_rows(self, progress=None):
         if self.ws is None:
             return []
-        rows = (self.ws.row_values(index) for index in range(1, self.ws.nrows))
-        return [row for row in rows if row and isinstance(row[0], str) and self.asc_pattern.match(row[0])]
+        if self._rows is not None:
+            return self._rows
+        total = max(0, self.ws.nrows - 1)
+        label = "Reading worksheet rows…"
+        if progress:
+            progress(label, 0, total)
+        if isinstance(self.ws, _OpenpyxlSheet):
+            rows = (list(row) for row in self.ws.data_rows())
+        else:
+            rows = (self.ws.row_values(index) for index in range(1, self.ws.nrows))
+        data = []
+        for index, row in enumerate(rows, 1):
+            if row and isinstance(row[0], str) and self.asc_pattern.match(row[0]):
+                data.append(row)
+            if progress and index % 100 == 0:
+                progress(label, index, total)
+        self._rows = data
+        if progress:
+            progress(label, total, total)
+        return self._rows
 
     def get_asc_list(self):
         if self.values == []:

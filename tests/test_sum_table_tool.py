@@ -38,7 +38,7 @@ class FakeOpenpyxlSheet:
         self.max_row = len(rows)
 
     def iter_rows(self, min_row, max_row, values_only):
-        return iter([self.rows[min_row - 1]])
+        return iter(self.rows[min_row - 1:max_row])
 
     def cell(self, row, column):
         return types.SimpleNamespace(value=self.rows[row - 1][column - 1])
@@ -100,6 +100,33 @@ class SumTableToolTests(unittest.TestCase):
         tool = self.tool_class(self.path.name)
         self.assertIsNone(tool.ws)
         self.assertEqual(tool.get_values(), [])
+
+    def test_missing_reader_is_reported_separately(self):
+        self._rows = []
+        with patch.dict(sys.modules, {"xlrd": None}):
+            tool = self.tool_class(self.path.name)
+        self.assertEqual(tool.missing_module, "xlrd")
+        self.assertIn("xlrd", tool.load_error)
+
+    def test_rows_report_progress_and_are_reused_until_reload(self):
+        self._rows = [["File", "Comment", "X", "Y"]] + [
+            [f"20200101@{index}.asc", "sample", index, 2]
+            for index in range(1, 251)
+        ]
+        tool = self.tool_class(self.path.name)
+        updates = []
+        values = tool.get_values(progress=lambda *args: updates.append(args))
+        tool.get_headers()
+        self.assertEqual(len(values), 250)
+        self.assertEqual(updates[0][1:], (0, 250))
+        self.assertEqual(updates[-1][1:], (250, 250))
+        self.assertIn((100, 250), [update[1:] for update in updates])
+        with patch.object(tool.ws, "row_values", side_effect=AssertionError("Worksheet reread")):
+            self.assertEqual(len(tool.filter_by_asc()), 250)
+            self.assertEqual(len(tool.filter_by_comment("sample")), 250)
+        self._rows = [["File", "Comment", "X", "Y"], ["20200101@1.asc", "new", 3, 4]]
+        tool.reload_workbook()
+        self.assertEqual(tool.get_values(), [self._rows[1]])
 
     def test_xlsx_uses_openpyxl_and_preserves_data_rows(self):
         self._rows = [

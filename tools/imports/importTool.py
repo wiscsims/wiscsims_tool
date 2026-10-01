@@ -26,6 +26,7 @@ import json
 import math
 import os
 import re
+from datetime import date, time
 
 from qgis.PyQt.QtCore import QModelIndex, QObject, QSize, pyqtSignal
 from qgis.PyQt.QtGui import QIcon, QPixmap
@@ -35,7 +36,9 @@ from qgis.core import (
     QgsProject, QgsVectorFileWriter, QgsVectorLayer,
 )
 
+from ..dependencyInstaller import DependencyInstaller
 from ..layerTool import LayerTool
+from ..operationProgress import OperationProgress
 from .alignmentInfo import AlignmentInfo
 from .alignmentMarker import AlignmentMarker
 from .alignmentTool import AlignmentModel, AlignmentModelNew
@@ -58,6 +61,7 @@ class ImportTool(QObject):
         self.ref_marker = AlignmentMarker(self.canvas, self.model)
 
         self.lt = LayerTool()
+        self.dependency_installer = DependencyInstaller(dock)
 
         self.initialize_ui()
 
@@ -239,7 +243,11 @@ class ImportTool(QObject):
         vl.setProviderEncoding("UTF-8")
         pr = vl.dataProvider()
         labels = self.xl.get_headers()
-        attrs = [QgsField(label, self.lt.get_field_type(label)) for label in labels]
+        rows = self.xl.filter_by_asc()
+        attrs = [
+            QgsField(label, self.lt.get_field_type(label, (row[index] for row in rows)))
+            for index, label in enumerate(labels)
+        ]
 
         pr.addAttributes(attrs)
         vl.setDisplayExpression("File")
@@ -291,7 +299,7 @@ class ImportTool(QObject):
         return None
 
     def select_workbook(self):
-        title = "Select WiscSIMS sesssion Workbook"
+        title = "Select WiscSIMS Session Workbook"
         mypath = os.path.dirname(QgsProject.instance().fileName())
         workbook_path, _ = QFileDialog.getOpenFileName(None, title, mypath, "Excel (*.xls *.xlsx)")
 
@@ -299,8 +307,25 @@ class ImportTool(QObject):
             return
         if self.prev_workbook_path == workbook_path:
             return
+        if not self.dependency_installer.ensure_excel_reader(workbook_path):
+            return
 
-        workbook = SumTableTool(workbook_path)
+        with OperationProgress(self.dock, "Read Excel Workbook") as progress:
+            progress.update(f"Opening Excel workbook…\n{os.path.basename(workbook_path)}")
+            try:
+                workbook = progress.run_in_background(
+                    lambda report: self.read_workbook(workbook_path, report)
+                )
+            except Exception as error:
+                QMessageBox.warning(self.dock, "Excel File Selection", f"Could not read the workbook.\n\n{error}")
+                return
+            if workbook.ws is not None:
+                progress.update("Updating workbook controls…")
+                self.xl = workbook
+                self.workbook_path = workbook_path
+                self.prev_workbook_path = workbook_path
+                self.dock.Tbx_Workbook.setText(os.path.basename(workbook_path))
+                self.dock.Tbx_Workbook.setToolTip(workbook_path)
         if workbook.ws is None:
             QMessageBox.warning(
                 None,
@@ -309,11 +334,15 @@ class ImportTool(QObject):
                 f"{workbook.load_error or ''}",
             )
             return
-        self.xl = workbook
-        self.workbook_path = workbook_path
-        self.prev_workbook_path = workbook_path
-        self.dock.Tbx_Workbook.setText(os.path.basename(workbook_path))
-        self.dock.Tbx_Workbook.setToolTip(workbook_path)
+
+    @staticmethod
+    def read_workbook(path, progress):
+        """Read Python-only workbook data before updating any QGIS widgets."""
+        workbook = SumTableTool(path)
+        if workbook.ws is not None:
+            workbook.get_headers()
+            workbook.get_values(progress=progress)
+        return workbook
 
     def workbook_udpated(self):
         # addItems asc files
@@ -353,6 +382,12 @@ class ImportTool(QObject):
         if not self.is_ok_to_import():
             return
 
+        with OperationProgress(self.dock, "Import Excel Data") as progress:
+            self._import_from_excel(progress)
+
+    def _import_from_excel(self, progress):
+        progress.update("Selecting workbook rows…")
+
         # import date from Excel file
         if self.dock.Opt_Comment.isChecked():
             try:
@@ -387,7 +422,11 @@ class ImportTool(QObject):
                 QMessageBox.warning(None, "Import Excel Data", "At least two usable alignment points are needed.")
                 return
 
-        for d in importing_data:
+        total = len(importing_data)
+        fields = importing_layer.fields()
+        progress.update("Checking coordinates and attributes…", 0, total)
+        for index, d in enumerate(importing_data, 1):
+            progress.update("Checking coordinates and attributes…", index - 1, total)
             try:
                 point = [float(d[X]), float(d[Y])]
             except (TypeError, ValueError):
@@ -408,20 +447,55 @@ class ImportTool(QObject):
                     canvasX, canvasY = self.cot.getWtAveragedStageToCanvas(point, conv_model)
                 else:
                     canvasX, canvasY = self.getWtAverageStageToCanvas(point)
-            feature = QgsFeature()
+            feature = QgsFeature(fields)
             feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(canvasX, canvasY)))
-            feature.setAttributes(d)
+            try:
+                feature.setAttributes(self.convert_attributes(d, fields))
+            except ValueError as error:
+                QMessageBox.warning(
+                    None, "Import Excel Data",
+                    f"No data were imported. File: {d[0]}\n\n{error}\n\n"
+                    "Create a new layer from this workbook to use compatible field types.",
+                )
+                return
 
             features.append(feature)
 
+        progress.update("Checking coordinates and attributes…", total, total)
         dpr = importing_layer.dataProvider()
+        progress.update(f"Writing {len(features):,} points to layer…\n{importing_layer.name()}")
         success, added_features = dpr.addFeatures(features)
         if not success:
-            QMessageBox.warning(None, "Import Excel Data", "The layer could not accept the selected data.")
+            details = "\n".join(dpr.errors())
+            QMessageBox.warning(
+                None, "Import Excel Data",
+                "The layer could not accept the selected data.\n\n" + details,
+            )
             return
+        progress.update("Updating layer display…")
+        importing_layer.updateExtents()
         importing_layer.setDisplayExpression("File")
         importing_layer.triggerRepaint()
+        progress.dialog.hide()
         QMessageBox.information(None, "Import Excel Data", f"{len(added_features)} data were imported!")
+
+    @staticmethod
+    def convert_attributes(row, fields):
+        """Validate the whole batch before writing any features to the provider."""
+        attributes = []
+        for index, field in enumerate(fields):
+            value = row[index] if index < len(row) else None
+            if value is None or value == "":
+                value = None
+            elif isinstance(value, (date, time)):
+                value = value.isoformat()
+            try:
+                attributes.append(field.convertCompatible(value))
+            except ValueError as error:
+                raise ValueError(
+                    f'Column "{field.name()}": {value!r} cannot be stored as {field.typeName()}.'
+                ) from error
+        return attributes
 
     def update_ref_point_markers(self):
         self.ref_marker.init_ref_point_markers()

@@ -41,7 +41,7 @@ WiscSIMS Tool has three main functions:
 
 The plugin metadata declares QGIS 3.4 as the minimum version. The current automated tests run with QGIS 3.44.13; older versions are not covered by those tests. Download QGIS from the [official QGIS site](https://qgis.org/download/).
 
-For Excel import, QGIS's Python environment needs `openpyxl` for `.xlsx` files or `xlrd` for `.xls` files.
+Excel import uses `openpyxl` for `.xlsx` files and `xlrd` for `.xls` files. If the required module is missing when you select a workbook, the plugin asks whether it may install the module into the current user's QGIS Python environment. Automatic installation requires an internet connection. You can decline without changing the environment.
 
 ## Installation
 
@@ -103,6 +103,10 @@ If the workbook's `X` and `Y` values are already map coordinates, uncheck **Use 
 2. The workbook needs a sheet named `Sum_table` or `Data`. Its first row supplies field names; data rows need a first-column filename such as `20240929@1.asc` and `X` and `Y` columns. **Match comment** also needs a `Comment` column.
 3. Select a compatible, visible point layer under **Destination layer**, or click **New layer…** to make a new ESRI Shapefile with fields from the workbook. **Symbol for a new layer** sets the symbol size of a new layer.
 4. Click **Import selected data**. Valid rows are appended to the chosen layer; rows without usable numeric coordinates are skipped.
+
+New layers use numeric fields for numeric columns and text fields for columns containing text, dates, or times. Dates and times are stored as ISO text, and empty cells become NULL. If an existing layer has incompatible field types, the import stops before adding points; create a new layer from the workbook.
+
+A progress dialog shows the current operation while reading Excel or importing points: opening the workbook, reading worksheet rows, checking coordinates and attributes, and writing to the destination layer. Row counts are shown during reading and validation. Workbook reading runs in the background; loaded rows are reused for range and comment selection.
 
 #### Data range
 
