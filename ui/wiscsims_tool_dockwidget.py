@@ -25,7 +25,7 @@
 import os
 
 from PyQt5 import QtWidgets, uic
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import QEvent, QSize, Qt, pyqtSignal
 
 FORM_CLASS, _ = uic.loadUiType(
     os.path.join(os.path.dirname(__file__), "wiscsims_tool_dockwidget_base.ui")
@@ -44,6 +44,47 @@ class WiscSIMSToolDockWidget(QtWidgets.QDockWidget, FORM_CLASS):
         # http://doc.qt.io/qt-5/designer-using-a-ui-file.html
         # #widgets-and-dialogs-with-auto-connect
         self.setupUi(self)
+        self.Cmb_Preset_Layer.currentIndexChanged.connect(self._update_layer_hint)
+        layer_model = self.Cmb_Preset_Layer.model()
+        layer_model.rowsInserted.connect(self._update_layer_hint)
+        layer_model.rowsRemoved.connect(self._update_layer_hint)
+        layer_model.modelReset.connect(self._update_layer_hint)
+        self._update_layer_hint()
+        # Scrolling the dock should not change a size or switch a layer by accident.
+        for control in self.findChildren((QtWidgets.QAbstractSpinBox, QtWidgets.QComboBox)):
+            control.setFocusPolicy(Qt.StrongFocus)
+            control.installEventFilter(self)
+        self._update_minimum_width()
+
+    def _update_minimum_width(self):
+        # Reserve enough logical space for the native controls at the user's font
+        # size. The height is scrollable; the dock can always be widened.
+        widths = []
+        for scroll in (self.tab_scroll, self.tab_2_scroll, self.tab_3_scroll):
+            scroll.widget().layout().invalidate()
+            widths.append(scroll.widget().minimumSizeHint().width()
+                          + scroll.verticalScrollBar().sizeHint().width()
+                          + 2 * scroll.frameWidth())
+        margins = self.dockWidgetContents.layout().contentsMargins()
+        option = QtWidgets.QStyleOptionTabWidgetFrame()
+        self.Tab_Tool.initStyleOption(option)
+        tab_size = self.style().sizeFromContents(
+            QtWidgets.QStyle.CT_TabWidget, option, QSize(max(widths), 0), self.Tab_Tool)
+        self.setMinimumWidth(tab_size.width() + margins.left() + margins.right())
+
+    def changeEvent(self, event):
+        super().changeEvent(event)
+        if event.type() in (QEvent.FontChange, QEvent.StyleChange) and hasattr(self, "tab_scroll"):
+            self._update_minimum_width()
+
+    def eventFilter(self, watched, event):
+        if event.type() == QEvent.Wheel and not watched.hasFocus():
+            event.ignore()
+            return True
+        return super().eventFilter(watched, event)
+
+    def _update_layer_hint(self, *_args):
+        self.Hint_PresetLayer.setVisible(self.Cmb_Preset_Layer.count() == 0)
 
     def closeEvent(self, event):
         self.closingPlugin.emit()

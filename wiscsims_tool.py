@@ -45,8 +45,6 @@ from qgis.core import (
     # QgsFeatureRequest,
     # QgsField,
     # QgsGeometry,
-    QgsLayerTree,
-    QgsLayerTreeLayer,
     QgsMapLayerType,
     # QgsMarkerSymbol,
     # QgsPalLayerSettings,
@@ -333,15 +331,8 @@ class WiscSIMSTool:
         self.pluginIsActive = True
         self.init_map_tool()
 
-    def handle_legend_layers_changed(self, layers):
-        print("handle legend layer", "oo", layers)
-        ltype = type(layers)
-        if ltype not in [QgsLayerTree, QgsLayerTreeLayer]:
-            return
-
-        if ltype == QgsLayerTreeLayer and layers.layer().type() != QgsMapLayerType.VectorLayer:
-            return
-
+    def handle_legend_layers_changed(self, *_args):
+        # Layer-tree signals have different signatures; always read the current tree.
         self.imp.update_import_layers()
         self.preset.init_preset_layer_combobox()
 

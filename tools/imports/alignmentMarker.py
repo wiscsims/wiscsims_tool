@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 from PyQt5.QtCore import QPointF, QSizeF
 from PyQt5.QtGui import QColor, QTextDocument
-from qgis.core import QgsFillSymbol, QgsMargins, QgsMarkerSymbol, QgsTextAnnotation
-from qgis.gui import QgsMapCanvasAnnotationItem, QgsRubberBand, Qgis
+from qgis.core import QgsFillSymbol, QgsMargins, QgsMarkerSymbol, QgsTextAnnotation, Qgis
+from qgis.gui import QgsMapCanvasAnnotationItem, QgsRubberBand
 
 """""" """""" """""" """""" """""" """""" """
 *** Alignment Marker Class

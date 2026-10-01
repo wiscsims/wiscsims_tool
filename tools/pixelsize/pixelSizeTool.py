@@ -47,17 +47,6 @@ class PixelSizeTool(QObject):
             self._dock.TXT_PST_End_Y,
         ]
 
-        # get default text color by hex
-        self.original_text_color = self._dock.Grp_Step1.palette().text().color().name(0)
-        # self.emphasize_color = 'F7A400'  # orange
-        self.emphasize_color = "C43C39"  # red
-
-        self.btn_original_color = self._dock.palette().text().color().name(0)
-        self.btn_emphasize_color = self.emphasize_color
-
-        if self._dock.palette().window().color().name(0) == "#323232":
-            self.btn_emphasize_color = "ffffff"
-
         self.pxsize_line = QgsRubberBand(self._canvas, QgsWkbTypes.LineGeometry)
         self.pxsize_start_point = QgsPointXY()
         self.pxsize_end_point = QgsPointXY()
@@ -122,6 +111,10 @@ class PixelSizeTool(QObject):
         else:
             # end point selected
             self.pxsize_end_point = pt
+            # Finalize the line at the clicked position, even if the last
+            # mouse-move event was elsewhere (or there was no move event).
+            self.pxsize_line.removeLastPoint()
+            self.pxsize_line.addPoint(self.pxsize_end_point, True)
 
             # update labels for end point (X, Y)
             self._dock.TXT_PST_End_X.setText(str(round(pt.x(), 4)))
@@ -151,10 +144,6 @@ class PixelSizeTool(QObject):
         # after the Step 2
         if d > 0 and scale_length != 1:
             self.reset_emphasize_step()
-            self._dock.Btn_PST_Set.setStyleSheet(f"color: #{self.btn_emphasize_color}")
-
-        else:
-            self._dock.Btn_PST_Set.setStyleSheet(f"color: #{self.btn_original_color}")
 
         self._dock.Btn_PST_Set.setDefault((d > 0))
 
@@ -162,23 +151,19 @@ class PixelSizeTool(QObject):
         self.setPixelSize.emit(self._dock.SPN_PST_PixelSize.value())
 
     def emphasize_step(self, step):
-        if step == 1:
-            # set emphasized color for the Step 1
-            self._dock.Grp_Step1.setStyleSheet(f"QGroupBox::title {{ color: #{self.emphasize_color} }};")
-            self._dock.Grp_Step2.setStyleSheet(f"QGroupBox::title {{ color: #{self.original_text_color} }};")
-        elif step == 2:
-            # set emphasized color for the Step 2
-            self._dock.Grp_Step1.setStyleSheet(f"QGroupBox::title {{color: #{self.original_text_color}}};")
-            self._dock.Grp_Step2.setStyleSheet(f"QGroupBox::title {{ color: #{self.emphasize_color} }};")
+        self.reset_emphasize_step()
+        groups = {1: self._dock.Grp_Step1, 2: self._dock.Grp_Step2}
+        if step in groups:
+            # Keep the active step readable in the user's light or dark theme.
+            groups[step].setStyleSheet("QGroupBox::title { font-weight: bold; }")
+        if step == 2:
             # set focus to the scale length input
             self._dock.SPN_PST_ScaleBar_Len_um.setFocus()
             self._dock.SPN_PST_ScaleBar_Len_um.selectAll()
-        else:
-            self.reset_emphasize_step()
 
     def reset_emphasize_step(self):
-        self._dock.Grp_Step1.setStyleSheet(f"QGroupBox::title {{color: #{self.original_text_color}}};")
-        self._dock.Grp_Step2.setStyleSheet(f"QGroupBox::title {{ color: #{self.original_text_color} }};")
+        self._dock.Grp_Step1.setStyleSheet("")
+        self._dock.Grp_Step2.setStyleSheet("")
 
     def show_tooltip(self):
         self.hide_tooltip()

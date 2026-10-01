@@ -5,13 +5,13 @@ import pathlib
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 try:
-    from qgis.core import QgsApplication, QgsPointXY, QgsProject, QgsRectangle
+    from qgis.core import Qgis, QgsApplication, QgsPointXY, QgsProject, QgsRectangle, QgsVectorFileWriter, QgsVectorLayer
     from qgis.gui import QgsMapCanvas, QgsMapMouseEvent
     from qgis.PyQt import sip
     from qgis.PyQt.QtCore import QEvent, QPoint, QSettings, Qt
@@ -70,6 +70,86 @@ class QgisLifecycleTests(unittest.TestCase):
         finally:
             root.addedChildren.disconnect(refresh)
             root.removedChildren.disconnect(refresh)
+            dock.deleteLater()
+            canvas.deleteLater()
+            self.app.processEvents()
+
+    def test_removing_layer_refreshes_preset_combo(self):
+        class Controller:
+            handle_legend_layers_changed = WiscSIMSTool.handle_legend_layers_changed
+            create_legend_connections = WiscSIMSTool.create_legend_connections
+            remove_legend_connections = WiscSIMSTool.remove_legend_connections
+
+            def __init__(self, preset):
+                self.imp = Mock()
+                self.preset = preset
+
+        canvas = QgsMapCanvas()
+        dock = WiscSIMSToolDockWidget()
+        preset = PresetTool(dock, canvas)
+        controller = Controller(preset)
+        controller.create_legend_connections()
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                layer_ids = []
+                for name in ("first", "second"):
+                    path = os.path.join(directory, f"{name}.shp")
+                    with patch.object(
+                        QFileDialog,
+                        "getSaveFileName",
+                        return_value=(path, "ESRI Shapefile (*.shp)"),
+                    ):
+                        preset.create_preset_layer()
+                    layer_ids.append(preset.get_preset_layer().id())
+
+                self.assertEqual(dock.Cmb_Preset_Layer.count(), 2)
+                QgsProject.instance().removeMapLayer(layer_ids[1])
+
+                self.assertEqual(dock.Cmb_Preset_Layer.count(), 1)
+                self.assertEqual(preset.get_preset_layer().id(), layer_ids[0])
+                QgsProject.instance().removeMapLayer(layer_ids[0])
+
+                self.assertEqual(dock.Cmb_Preset_Layer.count(), 0)
+                self.assertIsNone(preset.preset_layer)
+                self.assertIsNone(preset.preview.preset_layer)
+        finally:
+            controller.remove_legend_connections()
+            preset.preview.cleanup_old_layers()
+            dock.deleteLater()
+            canvas.deleteLater()
+            self.app.processEvents()
+
+    def test_existing_layer_spot_size_uses_selected_layer_and_map_units(self):
+        canvas = QgsMapCanvas()
+        dock = WiscSIMSToolDockWidget()
+        preset = None
+        layer = None
+        try:
+            with tempfile.TemporaryDirectory() as directory:
+                path = os.path.join(directory, "existing.shp")
+                source = QgsVectorLayer("Point?field=Comment:string", "source", "memory")
+                error, _ = QgsVectorFileWriter.writeAsVectorFormat(
+                    source, path, "UTF-8", source.crs(), "ESRI Shapefile"
+                )
+                self.assertEqual(error, QgsVectorFileWriter.NoError)
+                layer = QgsVectorLayer(path, "existing", "ogr")
+                layer.renderer().symbol().setOutputUnit(Qgis.RenderUnit.Millimeters)
+                QgsProject.instance().addMapLayer(layer)
+
+                preset = PresetTool(dock, canvas)
+                self.assertEqual(preset.get_preset_layer().id(), layer.id())
+                self.assertEqual(layer.renderer().symbol().outputUnit(), Qgis.RenderUnit.MapUnits)
+
+                layer.renderer().symbol().setOutputUnit(Qgis.RenderUnit.Millimeters)
+                preset.preset_layer = None
+                dock.Spn_Preset_Spot_Size.setValue(20)
+                self.assertEqual(layer.renderer().symbol().outputUnit(), Qgis.RenderUnit.MapUnits)
+                self.assertAlmostEqual(layer.renderer().symbol().size(), 20 / preset.dock.Spn_Preset_Pixel_Size.value())
+        finally:
+            if preset is not None:
+                preset.preview.cleanup_old_layers()
+            if layer is not None and QgsProject.instance().mapLayer(layer.id()) is not None:
+                QgsProject.instance().removeMapLayer(layer.id())
             dock.deleteLater()
             canvas.deleteLater()
             self.app.processEvents()
@@ -301,9 +381,27 @@ class QgisLifecycleTests(unittest.TestCase):
         tool = PixelSizeTool(dock, canvas)
         try:
             tool.handle_selecting_point(QgsPointXY(1, 2))
+            tool.handle_cursor_moved(QgsPointXY(2, 3))
             tool.handle_selecting_point(QgsPointXY(2.5, 2))
             self.assertIsInstance(dock.SPN_PST_ScaleBar_Len_Px, QDoubleSpinBox)
             self.assertAlmostEqual(dock.SPN_PST_ScaleBar_Len_Px.value(), 1.5, places=4)
+            expected = [(1, 2), (2.5, 2)]
+            self.assertEqual(
+                [(p.x(), p.y()) for p in tool.pxsize_line.asGeometry().asPolyline()],
+                expected,
+            )
+            tool.handle_cursor_moved(QgsPointXY(8, 9))
+            self.assertEqual(
+                [(p.x(), p.y()) for p in tool.pxsize_line.asGeometry().asPolyline()],
+                expected,
+            )
+            # A new measurement also finalizes correctly without a mouse move.
+            tool.handle_selecting_point(QgsPointXY(3, 4))
+            tool.handle_selecting_point(QgsPointXY(6, 4))
+            self.assertEqual(
+                [(p.x(), p.y()) for p in tool.pxsize_line.asGeometry().asPolyline()],
+                [(3, 4), (6, 4)],
+            )
         finally:
             dock.deleteLater()
             canvas.deleteLater()

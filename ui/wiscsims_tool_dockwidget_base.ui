@@ -1,82 +1,48 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <ui version="4.0">
  <class>WiscSIMSToolDockWidgetBase</class>
  <widget class="QDockWidget" name="WiscSIMSToolDockWidgetBase">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>405</width>
-    <height>701</height>
-   </rect>
-  </property>
-  <property name="sizePolicy">
-   <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-    <horstretch>0</horstretch>
-    <verstretch>0</verstretch>
-   </sizepolicy>
-  </property>
-  <property name="minimumSize">
-   <size>
-    <width>405</width>
-    <height>701</height>
-   </size>
-  </property>
-  <property name="maximumSize">
-   <size>
-    <width>405</width>
-    <height>524287</height>
-   </size>
-  </property>
-  <property name="font">
-   <font>
-    <family>Roboto</family>
-    <pointsize>12</pointsize>
-   </font>
-  </property>
   <property name="allowedAreas">
    <set>Qt::LeftDockWidgetArea|Qt::RightDockWidgetArea</set>
   </property>
   <property name="windowTitle">
    <string>WiscSIMS Tool</string>
   </property>
+  <property name="minimumSize">
+   <size>
+    <width>340</width>
+    <height>300</height>
+   </size>
+  </property>
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>420</width>
+    <height>820</height>
+   </rect>
+  </property>
   <widget class="QWidget" name="dockWidgetContents">
-   <layout class="QHBoxLayout" name="horizontalLayout_8">
+   <layout class="QVBoxLayout" name="layout_39">
+    <property name="spacing">
+     <number>8</number>
+    </property>
+    <property name="leftMargin">
+     <number>10</number>
+    </property>
+    <property name="topMargin">
+     <number>10</number>
+    </property>
+    <property name="rightMargin">
+     <number>10</number>
+    </property>
+    <property name="bottomMargin">
+     <number>10</number>
+    </property>
     <item>
      <widget class="QTabWidget" name="Tab_Tool">
       <property name="enabled">
        <bool>true</bool>
-      </property>
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>0</width>
-        <height>0</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>16777215</width>
-        <height>16777215</height>
-       </size>
-      </property>
-      <property name="font">
-       <font>
-        <pointsize>-1</pointsize>
-       </font>
-      </property>
-      <property name="styleSheet">
-       <string notr="true">* { font-size: 12px;}
-
-QTabWidget::pane { 
- margin: 0;
- padding: 5px -5px;
-}</string>
       </property>
       <property name="tabPosition">
        <enum>QTabWidget::North</enum>
@@ -84,2259 +50,2316 @@ QTabWidget::pane {
       <property name="tabShape">
        <enum>QTabWidget::Rounded</enum>
       </property>
-      <property name="currentIndex">
-       <number>1</number>
-      </property>
-      <property name="iconSize">
-       <size>
-        <width>8</width>
-        <height>8</height>
-       </size>
-      </property>
       <property name="usesScrollButtons">
        <bool>true</bool>
       </property>
       <property name="documentMode">
        <bool>false</bool>
       </property>
+      <property name="currentIndex">
+       <number>1</number>
+      </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
         <string>Import</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_6">
+       <layout class="QVBoxLayout" name="layout_12">
         <property name="spacing">
+         <number>8</number>
+        </property>
+        <item>
+         <widget class="QScrollArea" name="tab_scroll">
+          <property name="widgetResizable">
+           <bool>true</bool>
+          </property>
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
+          </property>
+          <widget class="QWidget" name="tab_content">
+           <layout class="QVBoxLayout" name="layout_11">
+            <property name="spacing">
+             <number>8</number>
+            </property>
+            <property name="leftMargin">
+             <number>10</number>
+            </property>
+            <property name="topMargin">
+             <number>10</number>
+            </property>
+            <property name="rightMargin">
+             <number>10</number>
+            </property>
+            <property name="bottomMargin">
+             <number>10</number>
+            </property>
+            <item>
+             <widget class="QGroupBox" name="Grp_Alignment">
+              <property name="flat">
+               <bool>false</bool>
+              </property>
+              <property name="checkable">
+               <bool>true</bool>
+              </property>
+              <property name="title">
+               <string>1. Use alignment file</string>
+              </property>
+              <layout class="QVBoxLayout" name="layout_2">
+               <property name="spacing">
+                <number>8</number>
+               </property>
+               <property name="leftMargin">
+                <number>10</number>
+               </property>
+               <property name="topMargin">
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>10</number>
+               </property>
+               <property name="bottomMargin">
+                <number>10</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="Hint_Alignment">
+                 <property name="text">
+                  <string>Use an alignment to convert stage coordinates. Uncheck this section if X/Y are already map coordinates.</string>
+                 </property>
+                 <property name="wordWrap">
+                  <bool>true</bool>
+                 </property>
+                 <property name="textFormat">
+                  <enum>Qt::PlainText</enum>
+                 </property>
+                 <property name="textInteractionFlags">
+                  <set>Qt::TextSelectableByMouse</set>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="Btn_Import_Alignments">
+                 <property name="text">
+                  <string>Open alignment file…</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QTableView" name="Tbv_Alignment">
+                 <property name="frameShape">
+                  <enum>QFrame::NoFrame</enum>
+                 </property>
+                 <property name="frameShadow">
+                  <enum>QFrame::Plain</enum>
+                 </property>
+                 <property name="verticalScrollBarPolicy">
+                  <enum>Qt::ScrollBarAsNeeded</enum>
+                 </property>
+                 <property name="autoScroll">
+                  <bool>true</bool>
+                 </property>
+                 <property name="editTriggers">
+                  <set>QAbstractItemView::NoEditTriggers</set>
+                 </property>
+                 <property name="showDropIndicator" stdset="0">
+                  <bool>false</bool>
+                 </property>
+                 <property name="dragDropOverwriteMode">
+                  <bool>false</bool>
+                 </property>
+                 <property name="alternatingRowColors">
+                  <bool>true</bool>
+                 </property>
+                 <property name="showGrid">
+                  <bool>false</bool>
+                 </property>
+                 <property name="gridStyle">
+                  <enum>Qt::NoPen</enum>
+                 </property>
+                 <property name="sortingEnabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="cornerButtonEnabled">
+                  <bool>false</bool>
+                 </property>
+                 <attribute name="horizontalHeaderVisible">
+                  <bool>false</bool>
+                 </attribute>
+                 <attribute name="verticalHeaderDefaultSectionSize">
+                  <number>17</number>
+                 </attribute>
+                 <property name="minimumSize">
+                  <size>
+                   <width>0</width>
+                   <height>100</height>
+                  </size>
+                 </property>
+                 <property name="maximumSize">
+                  <size>
+                   <width>16777215</width>
+                   <height>140</height>
+                  </size>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="Gbx_Alignment_Ref_Point_Markers">
+                 <property name="checkable">
+                  <bool>true</bool>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
+                 </property>
+                 <property name="title">
+                  <string>Show reference markers</string>
+                 </property>
+                 <layout class="QHBoxLayout" name="layout_1">
+                  <property name="spacing">
+                   <number>8</number>
+                  </property>
+                  <property name="leftMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="topMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>0</number>
+                  </property>
+                  <property name="bottomMargin">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <widget class="QCheckBox" name="Cbx_Alignment_Ref_Points">
+                    <property name="checked">
+                     <bool>true</bool>
+                    </property>
+                    <property name="text">
+                     <string>Points</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QCheckBox" name="Cbx_Alignment_Ref_Names">
+                    <property name="checked">
+                     <bool>true</bool>
+                    </property>
+                    <property name="text">
+                     <string>Names</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="Grp_Workbook">
+              <property name="enabled">
+               <bool>true</bool>
+              </property>
+              <property name="title">
+               <string>2. Workbook and data</string>
+              </property>
+              <layout class="QVBoxLayout" name="layout_5">
+               <property name="spacing">
+                <number>8</number>
+               </property>
+               <property name="leftMargin">
+                <number>10</number>
+               </property>
+               <property name="topMargin">
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>10</number>
+               </property>
+               <property name="bottomMargin">
+                <number>10</number>
+               </property>
+               <item>
+                <layout class="QHBoxLayout" name="layout_3">
+                 <property name="spacing">
+                  <number>8</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <widget class="QLineEdit" name="Tbx_Workbook">
+                   <property name="enabled">
+                    <bool>true</bool>
+                   </property>
+                   <property name="toolTip">
+                    <string notr="true" extracomment="this is tooltip" />
+                   </property>
+                   <property name="readOnly">
+                    <bool>true</bool>
+                   </property>
+                   <property name="placeholderText">
+                    <string>Choose an Excel workbook</string>
+                   </property>
+                   <property name="accessibleName">
+                    <string>Excel workbook</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="Btn_Select_Workbook">
+                   <property name="flat">
+                    <bool>true</bool>
+                   </property>
+                   <property name="text">
+                    <string>Browse…</string>
+                   </property>
+                   <property name="toolTip">
+                    <string>Open an .xlsx or .xls session workbook</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <widget class="QRadioButton" name="Opt_Range">
+                 <property name="enabled">
+                  <bool>true</bool>
+                 </property>
+                 <property name="checked">
+                  <bool>false</bool>
+                 </property>
+                 <attribute name="buttonGroup">
+                  <string notr="true">buttonGroup</string>
+                 </attribute>
+                 <property name="text">
+                  <string>Import a data range</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <layout class="QGridLayout" name="layout_4">
+                 <property name="spacing">
+                  <number>8</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="label_5">
+                   <property name="margin">
+                    <number>0</number>
+                   </property>
+                   <property name="indent">
+                    <number>10</number>
+                   </property>
+                   <property name="text">
+                    <string>From</string>
+                   </property>
+                   <property name="wordWrap">
+                    <bool>true</bool>
+                   </property>
+                   <property name="buddy">
+                    <cstring>Cmb_Excel_From</cstring>
+                   </property>
+                   <property name="textInteractionFlags">
+                    <set>Qt::TextSelectableByMouse</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QComboBox" name="Cmb_Excel_From">
+                   <property name="duplicatesEnabled">
+                    <bool>false</bool>
+                   </property>
+                   <property name="frame">
+                    <bool>true</bool>
+                   </property>
+                   <property name="sizeAdjustPolicy">
+                    <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
+                   </property>
+                   <property name="minimumContentsLength">
+                    <number>10</number>
+                   </property>
+                   <property name="accessibleName">
+                    <string>First data file</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="label">
+                   <property name="margin">
+                    <number>0</number>
+                   </property>
+                   <property name="indent">
+                    <number>10</number>
+                   </property>
+                   <property name="text">
+                    <string>To</string>
+                   </property>
+                   <property name="wordWrap">
+                    <bool>true</bool>
+                   </property>
+                   <property name="buddy">
+                    <cstring>Cmb_Excel_To</cstring>
+                   </property>
+                   <property name="textInteractionFlags">
+                    <set>Qt::TextSelectableByMouse</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="1">
+                  <widget class="QComboBox" name="Cmb_Excel_To">
+                   <property name="sizeAdjustPolicy">
+                    <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
+                   </property>
+                   <property name="minimumContentsLength">
+                    <number>10</number>
+                   </property>
+                   <property name="accessibleName">
+                    <string>Last data file</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <widget class="QRadioButton" name="Opt_Comment">
+                 <property name="enabled">
+                  <bool>true</bool>
+                 </property>
+                 <property name="checked">
+                  <bool>false</bool>
+                 </property>
+                 <attribute name="buttonGroup">
+                  <string notr="true">buttonGroup</string>
+                 </attribute>
+                 <property name="text">
+                  <string>Match comment (regular expression)</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLineEdit" name="Tbx_Comment_Match">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="placeholderText">
+                  <string>e.g. sample.*</string>
+                 </property>
+                 <property name="toolTip">
+                  <string>Case-insensitive regular expression matched against the Comment column.</string>
+                 </property>
+                 <property name="accessibleName">
+                  <string>Comment filter</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="Grp_Layer">
+              <property name="enabled">
+               <bool>true</bool>
+              </property>
+              <property name="title">
+               <string>3. Destination layer</string>
+              </property>
+              <layout class="QVBoxLayout" name="layout_7">
+               <property name="spacing">
+                <number>8</number>
+               </property>
+               <property name="leftMargin">
+                <number>10</number>
+               </property>
+               <property name="topMargin">
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>10</number>
+               </property>
+               <property name="bottomMargin">
+                <number>10</number>
+               </property>
+               <item>
+                <layout class="QHBoxLayout" name="layout_6">
+                 <property name="spacing">
+                  <number>8</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <widget class="QComboBox" name="Cmb_Import_Layer">
+                   <property name="toolTip">
+                    <string>Select the point layer that will receive the imported rows.</string>
+                   </property>
+                   <property name="sizeAdjustPolicy">
+                    <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
+                   </property>
+                   <property name="minimumContentsLength">
+                    <number>10</number>
+                   </property>
+                   <property name="accessibleName">
+                    <string>Import destination layer</string>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QPushButton" name="Btn_Create_New_Layer">
+                   <property name="text">
+                    <string>New layer…</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <widget class="QLabel" name="Hint_ImportLayer">
+                 <property name="text">
+                  <string>Select a compatible point layer, or create one from the workbook fields.</string>
+                 </property>
+                 <property name="wordWrap">
+                  <bool>true</bool>
+                 </property>
+                 <property name="textFormat">
+                  <enum>Qt::PlainText</enum>
+                 </property>
+                 <property name="textInteractionFlags">
+                  <set>Qt::TextSelectableByMouse</set>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="groupBox_3">
+              <property name="title">
+               <string>4. Symbol for a new layer</string>
+              </property>
+              <layout class="QVBoxLayout" name="layout_9">
+               <property name="spacing">
+                <number>8</number>
+               </property>
+               <property name="leftMargin">
+                <number>10</number>
+               </property>
+               <property name="topMargin">
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>10</number>
+               </property>
+               <property name="bottomMargin">
+                <number>10</number>
+               </property>
+               <item>
+                <layout class="QHBoxLayout" name="layout_8">
+                 <property name="spacing">
+                  <number>8</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
+                 <item>
+                  <widget class="QLabel" name="ImportSpotLabel">
+                   <property name="text">
+                    <string>Spot diameter</string>
+                   </property>
+                   <property name="wordWrap">
+                    <bool>true</bool>
+                   </property>
+                   <property name="buddy">
+                    <cstring>Spn_Spot_Size</cstring>
+                   </property>
+                   <property name="textInteractionFlags">
+                    <set>Qt::TextSelectableByMouse</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item>
+                  <widget class="QSpinBox" name="Spn_Spot_Size">
+                   <property name="value">
+                    <number>10</number>
+                   </property>
+                   <property name="suffix">
+                    <string> µm</string>
+                   </property>
+                   <property name="keyboardTracking">
+                    <bool>false</bool>
+                   </property>
+                   <property name="accessibleName">
+                    <string>Spot diameter</string>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="groupBox">
+              <property name="title">
+               <string>5. Import</string>
+              </property>
+              <layout class="QVBoxLayout" name="layout_10">
+               <property name="spacing">
+                <number>8</number>
+               </property>
+               <property name="leftMargin">
+                <number>10</number>
+               </property>
+               <property name="topMargin">
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>10</number>
+               </property>
+               <property name="bottomMargin">
+                <number>10</number>
+               </property>
+               <item>
+                <widget class="QPushButton" name="Btn_Import_From_Excel">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="autoFillBackground">
+                  <bool>false</bool>
+                 </property>
+                 <property name="flat">
+                  <bool>false</bool>
+                 </property>
+                 <property name="text">
+                  <string>Import selected data</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <spacer name="spacer_0">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Expanding</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+         </widget>
+        </item>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
          <number>0</number>
         </property>
         <property name="bottomMargin">
-         <number>12</number>
+         <number>0</number>
         </property>
-        <item>
-         <widget class="QGroupBox" name="Grp_Alignment">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>16777215</height>
-           </size>
-          </property>
-          <property name="title">
-           <string>1. Import Alignment File</string>
-          </property>
-          <property name="flat">
-           <bool>false</bool>
-          </property>
-          <property name="checkable">
-           <bool>true</bool>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout">
-           <item>
-            <widget class="QTableView" name="Tbv_Alignment">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">.item{ padding: 5px; }</string>
-             </property>
-             <property name="frameShape">
-              <enum>QFrame::NoFrame</enum>
-             </property>
-             <property name="frameShadow">
-              <enum>QFrame::Plain</enum>
-             </property>
-             <property name="verticalScrollBarPolicy">
-              <enum>Qt::ScrollBarAsNeeded</enum>
-             </property>
-             <property name="autoScroll">
-              <bool>true</bool>
-             </property>
-             <property name="editTriggers">
-              <set>QAbstractItemView::NoEditTriggers</set>
-             </property>
-             <property name="showDropIndicator" stdset="0">
-              <bool>false</bool>
-             </property>
-             <property name="dragDropOverwriteMode">
-              <bool>false</bool>
-             </property>
-             <property name="alternatingRowColors">
-              <bool>true</bool>
-             </property>
-             <property name="showGrid">
-              <bool>false</bool>
-             </property>
-             <property name="gridStyle">
-              <enum>Qt::NoPen</enum>
-             </property>
-             <property name="sortingEnabled">
-              <bool>false</bool>
-             </property>
-             <property name="cornerButtonEnabled">
-              <bool>false</bool>
-             </property>
-             <attribute name="horizontalHeaderVisible">
-              <bool>false</bool>
-             </attribute>
-             <attribute name="verticalHeaderDefaultSectionSize">
-              <number>17</number>
-             </attribute>
-            </widget>
-           </item>
-           <item>
-            <widget class="QGroupBox" name="Gbx_Alignment_Ref_Point_Markers">
-             <property name="title">
-              <string>Reference Point Markers</string>
-             </property>
-             <property name="checkable">
-              <bool>true</bool>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-             <layout class="QHBoxLayout" name="horizontalLayout_11">
-              <item>
-               <widget class="QCheckBox" name="Cbx_Alignment_Ref_Points">
-                <property name="text">
-                 <string>Point</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="Cbx_Alignment_Ref_Names">
-                <property name="text">
-                 <string>Name</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="Btn_Import_Alignments">
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Open Alignment File...</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="Grp_Workbook">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>177</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>177</height>
-           </size>
-          </property>
-          <property name="title">
-           <string>2. Select Excel Workbook</string>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout_2">
-           <property name="spacing">
-            <number>6</number>
-           </property>
-           <item>
-            <widget class="QFrame" name="Frame_for_Excel_file">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>30</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>30</height>
-              </size>
-             </property>
-             <layout class="QHBoxLayout" name="horizontalLayout_2">
-              <property name="spacing">
-               <number>4</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <widget class="QLabel" name="label_14">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="text">
-                 <string>Excel file:</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLineEdit" name="Tbx_Workbook">
-                <property name="enabled">
-                 <bool>true</bool>
-                </property>
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="MinimumExpanding" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>130</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>16777215</width>
-                  <height>16777215</height>
-                 </size>
-                </property>
-                <property name="toolTip">
-                 <string notr="true" extracomment="this is tooltip"/>
-                </property>
-                <property name="readOnly">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="Btn_Select_Workbook">
-                <property name="maximumSize">
-                 <size>
-                  <width>30</width>
-                  <height>20</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string/>
-                </property>
-                <property name="iconSize">
-                 <size>
-                  <width>30</width>
-                  <height>30</height>
-                 </size>
-                </property>
-                <property name="flat">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="Opt_Range">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Data Range</string>
-             </property>
-             <property name="checked">
-              <bool>false</bool>
-             </property>
-             <attribute name="buttonGroup">
-              <string notr="true">buttonGroup</string>
-             </attribute>
-            </widget>
-           </item>
-           <item>
-            <widget class="QFrame" name="Frame_for_from_to">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>26</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>200000</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="frameShape">
-              <enum>QFrame::NoFrame</enum>
-             </property>
-             <property name="frameShadow">
-              <enum>QFrame::Plain</enum>
-             </property>
-             <property name="lineWidth">
-              <number>1</number>
-             </property>
-             <layout class="QHBoxLayout" name="horizontalLayout_6">
-              <property name="spacing">
-               <number>5</number>
-              </property>
-              <property name="leftMargin">
-               <number>10</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <widget class="QLabel" name="label_5">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>0</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string>From:</string>
-                </property>
-                <property name="margin">
-                 <number>0</number>
-                </property>
-                <property name="indent">
-                 <number>10</number>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QComboBox" name="Cmb_Excel_From">
-                <property name="minimumSize">
-                 <size>
-                  <width>0</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="styleSheet">
-                 <string notr="true">minWidth: 200px;</string>
-                </property>
-                <property name="sizeAdjustPolicy">
-                 <enum>QComboBox::AdjustToMinimumContentsLength</enum>
-                </property>
-                <property name="duplicatesEnabled">
-                 <bool>false</bool>
-                </property>
-                <property name="frame">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QLabel" name="label">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>0</width>
-                  <height>18</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string>To:</string>
-                </property>
-                <property name="margin">
-                 <number>0</number>
-                </property>
-                <property name="indent">
-                 <number>10</number>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QComboBox" name="Cmb_Excel_To">
-                <property name="minimumSize">
-                 <size>
-                  <width>0</width>
-                  <height>18</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="Opt_Comment">
-             <property name="enabled">
-              <bool>true</bool>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>25</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Comment Match (reglar exression is available)</string>
-             </property>
-             <property name="checked">
-              <bool>false</bool>
-             </property>
-             <attribute name="buttonGroup">
-              <string notr="true">buttonGroup</string>
-             </attribute>
-            </widget>
-           </item>
-           <item>
-            <widget class="QFrame" name="Frame_for_Comment_match">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>18</height>
-              </size>
-             </property>
-             <property name="frameShape">
-              <enum>QFrame::NoFrame</enum>
-             </property>
-             <property name="frameShadow">
-              <enum>QFrame::Plain</enum>
-             </property>
-             <layout class="QVBoxLayout" name="verticalLayout_12">
-              <property name="spacing">
-               <number>0</number>
-              </property>
-              <property name="leftMargin">
-               <number>19</number>
-              </property>
-              <property name="topMargin">
-               <number>0</number>
-              </property>
-              <property name="rightMargin">
-               <number>0</number>
-              </property>
-              <property name="bottomMargin">
-               <number>0</number>
-              </property>
-              <item>
-               <widget class="QLineEdit" name="Tbx_Comment_Match">
-                <property name="enabled">
-                 <bool>false</bool>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>13</width>
-                  <height>0</height>
-                 </size>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="Grp_Layer">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>70</height>
-           </size>
-          </property>
-          <property name="title">
-           <string>3. Select Layer to Import SIMS Data</string>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_9" columnstretch="0,0">
-           <property name="topMargin">
-            <number>6</number>
-           </property>
-           <property name="bottomMargin">
-            <number>6</number>
-           </property>
-           <property name="horizontalSpacing">
-            <number>10</number>
-           </property>
-           <property name="verticalSpacing">
-            <number>0</number>
-           </property>
-           <item row="0" column="0">
-            <widget class="QComboBox" name="Cmb_Import_Layer">
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>16777215</height>
-              </size>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QPushButton" name="Btn_Create_New_Layer">
-             <property name="maximumSize">
-              <size>
-               <width>90</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Create…</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="groupBox_3">
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>70</height>
-           </size>
-          </property>
-          <property name="title">
-           <string>4. Set Spot Size for the Session</string>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout_4">
-           <property name="spacing">
-            <number>0</number>
-           </property>
-           <property name="topMargin">
-            <number>6</number>
-           </property>
-           <property name="bottomMargin">
-            <number>6</number>
-           </property>
-           <item>
-            <widget class="QSpinBox" name="Spn_Spot_Size">
-             <property name="suffix">
-              <string> um</string>
-             </property>
-             <property name="value">
-              <number>10</number>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="groupBox">
-          <property name="title">
-           <string>5. Import Data</string>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout_3">
-           <item>
-            <widget class="QPushButton" name="Btn_Import_From_Excel">
-             <property name="enabled">
-              <bool>false</bool>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>170</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="font">
-              <font>
-               <pointsize>-1</pointsize>
-               <weight>75</weight>
-               <bold>true</bold>
-              </font>
-             </property>
-             <property name="autoFillBackground">
-              <bool>false</bool>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">background-color: rgb(255, 49, 49);
-color: #ffffff;
-font-weight: bold;
-</string>
-             </property>
-             <property name="text">
-              <string>Import Excel Data</string>
-             </property>
-             <property name="flat">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
        </layout>
       </widget>
       <widget class="QWidget" name="tab_2">
        <attribute name="title">
         <string>Preset</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_9">
+       <layout class="QVBoxLayout" name="layout_32">
         <property name="spacing">
-         <number>4</number>
-        </property>
-        <property name="bottomMargin">
-         <number>0</number>
+         <number>8</number>
         </property>
         <item>
-         <widget class="QGroupBox" name="groupBox_7">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
+         <widget class="QScrollArea" name="tab_2_scroll">
+          <property name="widgetResizable">
+           <bool>true</bool>
           </property>
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>150</height>
-           </size>
+          <property name="frameShape">
+           <enum>QFrame::NoFrame</enum>
           </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>150</height>
-           </size>
-          </property>
-          <property name="title">
-           <string>Comment</string>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout_15">
-           <property name="spacing">
-            <number>12</number>
-           </property>
-           <property name="topMargin">
-            <number>3</number>
-           </property>
-           <property name="bottomMargin">
-            <number>3</number>
-           </property>
-           <item>
-            <widget class="QLineEdit" name="Tbx_Comment">
-             <property name="inputMask">
-              <string/>
-             </property>
-             <property name="text">
-              <string>spot-{}</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QGroupBox" name="Cbx_Number_Increment">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Preferred" vsizetype="Maximum">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>0</width>
-               <height>88</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>16777215</width>
-               <height>100</height>
-              </size>
-             </property>
-             <property name="toolTip">
-              <string extracomment="Example: {:03} will be replaced by a three digit number filled with zero"/>
-             </property>
-             <property name="styleSheet">
-              <string notr="true"/>
-             </property>
-             <property name="title">
-              <string>Auto Number Increments</string>
-             </property>
-             <property name="flat">
-              <bool>false</bool>
-             </property>
-             <property name="checkable">
-              <bool>true</bool>
-             </property>
-             <property name="checked">
-              <bool>true</bool>
-             </property>
-             <layout class="QVBoxLayout" name="verticalLayout_5">
-              <property name="spacing">
-               <number>0</number>
+          <widget class="QWidget" name="tab_2_content">
+           <layout class="QVBoxLayout" name="layout_31">
+            <property name="spacing">
+             <number>8</number>
+            </property>
+            <property name="leftMargin">
+             <number>10</number>
+            </property>
+            <property name="topMargin">
+             <number>10</number>
+            </property>
+            <property name="rightMargin">
+             <number>10</number>
+            </property>
+            <property name="bottomMargin">
+             <number>10</number>
+            </property>
+            <item>
+             <widget class="QGroupBox" name="groupBox_8">
+              <property name="title">
+               <string>1. Destination layer</string>
               </property>
-              <property name="topMargin">
-               <number>3</number>
-              </property>
-              <property name="bottomMargin">
-               <number>3</number>
-              </property>
-              <item>
-               <widget class="QLabel" name="label_3">
-                <property name="text">
-                 <string>&quot;{}&quot; will be replaced by a number</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QFrame" name="frame_2">
-                <property name="sizePolicy">
-                 <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                  <horstretch>0</horstretch>
-                  <verstretch>0</verstretch>
-                 </sizepolicy>
-                </property>
-                <property name="minimumSize">
-                 <size>
-                  <width>0</width>
-                  <height>26</height>
-                 </size>
-                </property>
-                <property name="maximumSize">
-                 <size>
-                  <width>16777215</width>
-                  <height>26</height>
-                 </size>
-                </property>
-                <layout class="QHBoxLayout" name="horizontalLayout_5">
+              <layout class="QVBoxLayout" name="layout_14">
+               <property name="spacing">
+                <number>8</number>
+               </property>
+               <property name="leftMargin">
+                <number>10</number>
+               </property>
+               <property name="topMargin">
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>10</number>
+               </property>
+               <property name="bottomMargin">
+                <number>10</number>
+               </property>
+               <item>
+                <layout class="QHBoxLayout" name="layout_13">
                  <property name="spacing">
-                  <number>2</number>
+                  <number>8</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
                  </property>
                  <property name="topMargin">
                   <number>0</number>
                  </property>
                  <property name="rightMargin">
-                  <number>9</number>
+                  <number>0</number>
                  </property>
                  <property name="bottomMargin">
                   <number>0</number>
                  </property>
                  <item>
-                  <widget class="QLabel" name="label_2">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
+                  <widget class="QComboBox" name="Cmb_Preset_Layer">
+                   <property name="toolTip">
+                    <string>Point layers with a Comment field and a single symbol renderer.</string>
                    </property>
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>20</height>
-                    </size>
+                   <property name="sizeAdjustPolicy">
+                    <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
                    </property>
-                   <property name="text">
-                    <string>Start with #</string>
+                   <property name="minimumContentsLength">
+                    <number>10</number>
+                   </property>
+                   <property name="accessibleName">
+                    <string>Preset destination layer</string>
                    </property>
                   </widget>
                  </item>
                  <item>
-                  <widget class="QSpinBox" name="Spn_Current_Number">
-                   <property name="minimumSize">
-                    <size>
-                     <width>0</width>
-                     <height>20</height>
-                    </size>
+                  <widget class="QPushButton" name="Btn_Create_Preset_Layer">
+                   <property name="text">
+                    <string>New layer…</string>
                    </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>60</width>
-                     <height>16777215</height>
-                    </size>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <widget class="QLabel" name="Hint_PresetLayer">
+                 <property name="text">
+                  <string>No compatible layer. Create one, or add a point layer with a Comment field.</string>
+                 </property>
+                 <property name="wordWrap">
+                  <bool>true</bool>
+                 </property>
+                 <property name="textFormat">
+                  <enum>Qt::PlainText</enum>
+                 </property>
+                 <property name="textInteractionFlags">
+                  <set>Qt::TextSelectableByMouse</set>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="groupBox_12">
+              <property name="checkable">
+               <bool>false</bool>
+              </property>
+              <property name="title">
+               <string>2. Spot size and scale</string>
+              </property>
+              <layout class="QVBoxLayout" name="layout_16">
+               <property name="spacing">
+                <number>8</number>
+               </property>
+               <property name="leftMargin">
+                <number>10</number>
+               </property>
+               <property name="topMargin">
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>10</number>
+               </property>
+               <property name="bottomMargin">
+                <number>10</number>
+               </property>
+               <item>
+                <layout class="QGridLayout" name="layout_15">
+                 <property name="spacing">
+                  <number>8</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
+                 <item row="0" column="0">
+                  <widget class="QLabel" name="label_11">
+                   <property name="text">
+                    <string>Spot diameter</string>
+                   </property>
+                   <property name="wordWrap">
+                    <bool>true</bool>
+                   </property>
+                   <property name="buddy">
+                    <cstring>Spn_Preset_Spot_Size</cstring>
+                   </property>
+                   <property name="textInteractionFlags">
+                    <set>Qt::TextSelectableByMouse</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="1">
+                  <widget class="QSpinBox" name="Spn_Preset_Spot_Size">
+                   <property name="prefix">
+                    <string />
                    </property>
                    <property name="minimum">
                     <number>1</number>
                    </property>
                    <property name="maximum">
-                    <number>99999</number>
+                    <number>100</number>
+                   </property>
+                   <property name="value">
+                    <number>10</number>
+                   </property>
+                   <property name="suffix">
+                    <string> µm</string>
+                   </property>
+                   <property name="keyboardTracking">
+                    <bool>false</bool>
+                   </property>
+                   <property name="accessibleName">
+                    <string>Spot diameter</string>
                    </property>
                   </widget>
                  </item>
-                 <item>
-                  <widget class="QPushButton" name="Btn_Reset_Current_Number">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>55</width>
-                     <height>16777215</height>
-                    </size>
-                   </property>
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="label_13">
                    <property name="text">
-                    <string>Reset</string>
+                    <string>Pixel size</string>
+                   </property>
+                   <property name="wordWrap">
+                    <bool>true</bool>
+                   </property>
+                   <property name="buddy">
+                    <cstring>Spn_Preset_Pixel_Size</cstring>
+                   </property>
+                   <property name="textInteractionFlags">
+                    <set>Qt::TextSelectableByMouse</set>
                    </property>
                   </widget>
                  </item>
-                 <item>
-                  <spacer name="horizontalSpacer_6">
-                   <property name="orientation">
-                    <enum>Qt::Horizontal</enum>
+                 <item row="1" column="1">
+                  <widget class="QDoubleSpinBox" name="Spn_Preset_Pixel_Size">
+                   <property name="alignment">
+                    <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                    </property>
-                   <property name="sizeType">
-                    <enum>QSizePolicy::Expanding</enum>
+                   <property name="decimals">
+                    <number>3</number>
                    </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>40</width>
-                     <height>20</height>
-                    </size>
+                   <property name="minimum">
+                    <double>0.001000000000000</double>
                    </property>
-                  </spacer>
+                   <property name="maximum">
+                    <double>10000.000000000000000</double>
+                   </property>
+                   <property name="singleStep">
+                    <double>0.100000000000000</double>
+                   </property>
+                   <property name="value">
+                    <double>1.000000000000000</double>
+                   </property>
+                   <property name="suffix">
+                    <string> µm / unit</string>
+                   </property>
+                   <property name="toolTip">
+                    <string>Real length represented by one map unit. Measure it in the Pixel Size tab, or load an alignment.</string>
+                   </property>
+                   <property name="keyboardTracking">
+                    <bool>false</bool>
+                   </property>
+                   <property name="accessibleName">
+                    <string>Pixel size</string>
+                   </property>
+                  </widget>
                  </item>
                 </layout>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="Cbx_Reset_Increment_Number">
-                <property name="minimumSize">
-                 <size>
-                  <width>0</width>
-                  <height>0</height>
-                 </size>
-                </property>
-                <property name="text">
-                 <string>Reset when comment changes</string>
-                </property>
-                <property name="checked">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="groupBox_8">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>78</height>
-           </size>
-          </property>
-          <property name="title">
-           <string>Layer</string>
-          </property>
-          <layout class="QGridLayout">
-           <property name="topMargin">
-            <number>6</number>
-           </property>
-           <property name="bottomMargin">
-            <number>6</number>
-           </property>
-           <property name="horizontalSpacing">
-            <number>10</number>
-           </property>
-           <property name="verticalSpacing">
-            <number>0</number>
-           </property>
-           <item row="0" column="1">
-            <widget class="QComboBox" name="Cmb_Preset_Layer"/>
-           </item>
-           <item row="0" column="2">
-            <widget class="QPushButton" name="Btn_Create_Preset_Layer">
-             <property name="maximumSize">
-              <size>
-               <width>90</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Create…</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="groupBox_12">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="MinimumExpanding">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>60</height>
-           </size>
-          </property>
-          <property name="title">
-           <string>Scale</string>
-          </property>
-          <property name="checkable">
-           <bool>false</bool>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_3">
-           <property name="spacing">
-            <number>6</number>
-           </property>
-           <property name="topMargin">
-            <number>6</number>
-           </property>
-           <property name="bottomMargin">
-            <number>6</number>
-           </property>
-           <item>
-            <widget class="QLabel" name="label_13">
-             <property name="maximumSize">
-              <size>
-               <width>61</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Pixel Size:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QDoubleSpinBox" name="Spn_Preset_Pixel_Size">
-             <property name="maximumSize">
-              <size>
-               <width>100</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-             </property>
-             <property name="suffix">
-              <string> µm</string>
-             </property>
-             <property name="decimals">
-              <number>3</number>
-             </property>
-             <property name="minimum">
-              <double>0.001000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>10000.000000000000000</double>
-             </property>
-             <property name="singleStep">
-              <double>0.100000000000000</double>
-             </property>
-             <property name="value">
-              <double>1.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_11">
-             <property name="maximumSize">
-              <size>
-               <width>60</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="text">
-              <string>Spot Size:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QSpinBox" name="Spn_Preset_Spot_Size">
-             <property name="maximumSize">
-              <size>
-               <width>100</width>
-               <height>16777215</height>
-              </size>
-             </property>
-             <property name="suffix">
-              <string> µm</string>
-             </property>
-             <property name="prefix">
-              <string/>
-             </property>
-             <property name="minimum">
-              <number>1</number>
-             </property>
-             <property name="maximum">
-              <number>100</number>
-             </property>
-             <property name="value">
-              <number>10</number>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="label_4">
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>20</height>
-           </size>
-          </property>
-          <property name="font">
-           <font>
-            <pointsize>-1</pointsize>
-           </font>
-          </property>
-          <property name="text">
-           <string> Mode</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QTabWidget" name="Tab_Preset_Mode">
-          <property name="enabled">
-           <bool>true</bool>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>0</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>250</height>
-           </size>
-          </property>
-          <property name="tabPosition">
-           <enum>QTabWidget::North</enum>
-          </property>
-          <property name="tabShape">
-           <enum>QTabWidget::Rounded</enum>
-          </property>
-          <property name="currentIndex">
-           <number>0</number>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>8</width>
-            <height>8</height>
-           </size>
-          </property>
-          <property name="elideMode">
-           <enum>Qt::ElideLeft</enum>
-          </property>
-          <property name="usesScrollButtons">
-           <bool>false</bool>
-          </property>
-          <property name="documentMode">
-           <bool>false</bool>
-          </property>
-          <property name="tabBarAutoHide">
-           <bool>true</bool>
-          </property>
-          <widget class="QWidget" name="tabWidgetPage1">
-           <attribute name="title">
-            <string>Point</string>
-           </attribute>
-           <layout class="QVBoxLayout" name="verticalLayout_13">
-            <item>
-             <widget class="QFrame" name="frame_5">
-              <property name="frameShape">
-               <enum>QFrame::NoFrame</enum>
-              </property>
-              <property name="frameShadow">
-               <enum>QFrame::Raised</enum>
-              </property>
-              <layout class="QVBoxLayout" name="verticalLayout_21">
-               <item>
-                <widget class="QCheckBox" name="Opt_Comment_Popup">
-                 <property name="font">
-                  <font>
-                   <pointsize>-1</pointsize>
-                  </font>
-                 </property>
-                 <property name="text">
-                  <string>Auto pop-up comment box</string>
-                 </property>
-                </widget>
                </item>
                <item>
-                <widget class="QCheckBox" name="Opt_Point_Preview">
-                 <property name="font">
-                  <font>
-                   <pointsize>-1</pointsize>
-                  </font>
-                 </property>
+                <widget class="QLabel" name="Hint_Scale">
                  <property name="text">
-                  <string>Preview</string>
+                  <string>Pixel size is µm per map unit. Calibrate it in the Pixel Size tab.</string>
                  </property>
-                 <property name="shortcut">
-                  <string>Meta+Ctrl+Shift+A</string>
-                 </property>
-                 <property name="checked">
+                 <property name="wordWrap">
                   <bool>true</bool>
                  </property>
-                </widget>
-               </item>
-               <item>
-                <widget class="QCheckBox" name="Opt_Comment_Preview">
-                 <property name="text">
-                  <string>Preview (Text)</string>
+                 <property name="textFormat">
+                  <enum>Qt::PlainText</enum>
+                 </property>
+                 <property name="textInteractionFlags">
+                  <set>Qt::TextSelectableByMouse</set>
                  </property>
                 </widget>
                </item>
               </layout>
              </widget>
             </item>
-           </layout>
-          </widget>
-          <widget class="QWidget" name="tabWidgetPage2">
-           <attribute name="title">
-            <string>Line</string>
-           </attribute>
-           <layout class="QVBoxLayout" name="verticalLayout_8">
-            <property name="spacing">
-             <number>0</number>
-            </property>
-            <property name="leftMargin">
-             <number>6</number>
-            </property>
-            <property name="topMargin">
-             <number>0</number>
-            </property>
-            <property name="rightMargin">
-             <number>6</number>
-            </property>
-            <property name="bottomMargin">
-             <number>0</number>
-            </property>
             <item>
-             <widget class="QFrame" name="frame_4">
-              <property name="minimumSize">
-               <size>
-                <width>0</width>
-                <height>240</height>
-               </size>
+             <widget class="QGroupBox" name="groupBox_7">
+              <property name="title">
+               <string>3. Spot comment</string>
               </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>260</height>
-               </size>
-              </property>
-              <property name="frameShape">
-               <enum>QFrame::NoFrame</enum>
-              </property>
-              <property name="frameShadow">
-               <enum>QFrame::Raised</enum>
-              </property>
-              <layout class="QVBoxLayout" name="verticalLayout_20" stretch="0,0">
+              <layout class="QVBoxLayout" name="layout_19">
                <property name="spacing">
-                <number>-1</number>
+                <number>8</number>
                </property>
                <property name="leftMargin">
-                <number>6</number>
+                <number>10</number>
                </property>
                <property name="topMargin">
-                <number>0</number>
+                <number>10</number>
                </property>
                <property name="rightMargin">
-                <number>6</number>
+                <number>10</number>
                </property>
                <property name="bottomMargin">
-                <number>40</number>
+                <number>10</number>
                </property>
                <item>
-                <widget class="QGroupBox" name="groupBox_9">
-                 <property name="maximumSize">
-                  <size>
-                   <width>16777215</width>
-                   <height>155</height>
-                  </size>
+                <widget class="QLabel" name="Hint_Comment">
+                 <property name="text">
+                  <string>Use {} for the next number, e.g. spot-{}.</string>
                  </property>
-                 <property name="font">
-                  <font>
-                   <pointsize>-1</pointsize>
-                  </font>
+                 <property name="wordWrap">
+                  <bool>true</bool>
+                 </property>
+                 <property name="textFormat">
+                  <enum>Qt::PlainText</enum>
+                 </property>
+                 <property name="textInteractionFlags">
+                  <set>Qt::TextSelectableByMouse</set>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLineEdit" name="Tbx_Comment">
+                 <property name="inputMask">
+                  <string />
+                 </property>
+                 <property name="text">
+                  <string>spot-{}</string>
+                 </property>
+                 <property name="placeholderText">
+                  <string>e.g. spot-{}</string>
+                 </property>
+                 <property name="toolTip">
+                  <string>Saved in the Comment field. Use {} for automatic numbering, or {:04} for four digits.</string>
+                 </property>
+                 <property name="accessibleName">
+                  <string>Spot comment template</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="Cbx_Number_Increment">
+                 <property name="toolTip">
+                  <string extracomment="Example: {:03} will be replaced by a three digit number filled with zero" />
+                 </property>
+                 <property name="flat">
+                  <bool>false</bool>
+                 </property>
+                 <property name="checkable">
+                  <bool>true</bool>
+                 </property>
+                 <property name="checked">
+                  <bool>true</bool>
                  </property>
                  <property name="title">
-                  <string>Step Size and Number of Spots</string>
+                  <string>Auto-number spots</string>
                  </property>
-                 <layout class="QGridLayout" name="gridLayout_8" rowminimumheight="0,0,0,0,5">
-                  <property name="sizeConstraint">
-                   <enum>QLayout::SetDefaultConstraint</enum>
+                 <layout class="QVBoxLayout" name="layout_18">
+                  <property name="spacing">
+                   <number>8</number>
                   </property>
                   <property name="leftMargin">
-                   <number>12</number>
+                   <number>10</number>
                   </property>
                   <property name="topMargin">
-                   <number>0</number>
+                   <number>10</number>
+                  </property>
+                  <property name="rightMargin">
+                   <number>10</number>
                   </property>
                   <property name="bottomMargin">
-                   <number>0</number>
+                   <number>10</number>
                   </property>
-                  <property name="spacing">
-                   <number>6</number>
-                  </property>
-                  <item row="3" column="0">
-                   <widget class="QRadioButton" name="Opt_Line_N_Spot">
-                    <property name="text">
-                     <string>N of Spots</string>
+                  <item>
+                   <layout class="QHBoxLayout" name="layout_17">
+                    <property name="spacing">
+                     <number>8</number>
                     </property>
+                    <property name="leftMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="topMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="rightMargin">
+                     <number>0</number>
+                    </property>
+                    <property name="bottomMargin">
+                     <number>0</number>
+                    </property>
+                    <item>
+                     <widget class="QLabel" name="label_2">
+                      <property name="text">
+                       <string>Next number</string>
+                      </property>
+                      <property name="wordWrap">
+                       <bool>true</bool>
+                      </property>
+                      <property name="buddy">
+                       <cstring>Spn_Current_Number</cstring>
+                      </property>
+                      <property name="textInteractionFlags">
+                       <set>Qt::TextSelectableByMouse</set>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QSpinBox" name="Spn_Current_Number">
+                      <property name="minimum">
+                       <number>1</number>
+                      </property>
+                      <property name="maximum">
+                       <number>99999</number>
+                      </property>
+                      <property name="keyboardTracking">
+                       <bool>false</bool>
+                      </property>
+                      <property name="accessibleName">
+                       <string>Next number</string>
+                      </property>
+                     </widget>
+                    </item>
+                    <item>
+                     <widget class="QPushButton" name="Btn_Reset_Current_Number">
+                      <property name="text">
+                       <string>Reset</string>
+                      </property>
+                      <property name="toolTip">
+                       <string>Reset the next number to 1</string>
+                      </property>
+                     </widget>
+                    </item>
+                   </layout>
+                  </item>
+                  <item>
+                   <widget class="QCheckBox" name="Cbx_Reset_Increment_Number">
                     <property name="checked">
                      <bool>true</bool>
                     </property>
-                    <attribute name="buttonGroup">
-                     <string notr="true">buttonGroup</string>
-                    </attribute>
-                   </widget>
-                  </item>
-                  <item row="2" column="0">
-                   <widget class="QRadioButton" name="Opt_Line_Step_Size">
                     <property name="text">
-                     <string>Step Size</string>
-                    </property>
-                    <property name="checked">
-                     <bool>false</bool>
-                    </property>
-                    <attribute name="buttonGroup">
-                     <string notr="true">buttonGroup</string>
-                    </attribute>
-                   </widget>
-                  </item>
-                  <item row="4" column="0">
-                   <widget class="QLabel" name="label_17">
-                    <property name="maximumSize">
-                     <size>
-                      <width>16777215</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string>Line length</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="4" column="1">
-                   <widget class="QLabel" name="Txt_Line_Length">
-                    <property name="maximumSize">
-                     <size>
-                      <width>16777215</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string>0</string>
-                    </property>
-                    <property name="alignment">
-                     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="4" column="2">
-                   <widget class="QLabel" name="label_12">
-                    <property name="maximumSize">
-                     <size>
-                      <width>16777215</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                    <property name="text">
-                     <string> µm</string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="3" column="1" colspan="2">
-                   <widget class="QSpinBox" name="Spn_Line_N_Spot">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="minimumSize">
-                     <size>
-                      <width>0</width>
-                      <height>22</height>
-                     </size>
-                    </property>
-                    <property name="readOnly">
-                     <bool>false</bool>
-                    </property>
-                    <property name="minimum">
-                     <number>2</number>
-                    </property>
-                    <property name="maximum">
-                     <number>999999</number>
-                    </property>
-                    <property name="value">
-                     <number>11</number>
-                    </property>
-                   </widget>
-                  </item>
-                  <item row="2" column="1" colspan="2">
-                   <widget class="QSpinBox" name="Spn_Line_Step_Size">
-                    <property name="enabled">
-                     <bool>false</bool>
-                    </property>
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="minimumSize">
-                     <size>
-                      <width>0</width>
-                      <height>22</height>
-                     </size>
-                    </property>
-                    <property name="suffix">
-                     <string> µm</string>
-                    </property>
-                    <property name="minimum">
-                     <number>1</number>
-                    </property>
-                    <property name="maximum">
-                     <number>999999999</number>
-                    </property>
-                    <property name="value">
-                     <number>20</number>
+                     <string>Restart on comment change</string>
                     </property>
                    </widget>
                   </item>
                  </layout>
                 </widget>
                </item>
-               <item>
-                <widget class="QPushButton" name="Btn_Line_Add_Points">
-                 <property name="enabled">
-                  <bool>false</bool>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>0</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="font">
-                  <font>
-                   <pointsize>-1</pointsize>
-                   <weight>75</weight>
-                   <bold>true</bold>
-                  </font>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true">background-color: #C0C0C0;
-color: #808080;
-font-weight: bold;</string>
-                 </property>
-                 <property name="text">
-                  <string>Add Points</string>
-                 </property>
-                </widget>
-               </item>
               </layout>
              </widget>
             </item>
-           </layout>
-          </widget>
-          <widget class="QWidget" name="tabWidgetPage3">
-           <attribute name="title">
-            <string>Grid</string>
-           </attribute>
-           <layout class="QVBoxLayout" name="verticalLayout_7">
-            <property name="leftMargin">
-             <number>6</number>
-            </property>
-            <property name="topMargin">
-             <number>0</number>
-            </property>
-            <property name="rightMargin">
-             <number>6</number>
-            </property>
-            <property name="bottomMargin">
-             <number>0</number>
-            </property>
             <item>
-             <widget class="QFrame" name="frame_3">
-              <property name="minimumSize">
+             <widget class="QLabel" name="label_4">
+              <property name="text">
+               <string>4. Place spots</string>
+              </property>
+              <property name="wordWrap">
+               <bool>true</bool>
+              </property>
+              <property name="textInteractionFlags">
+               <set>Qt::TextSelectableByMouse</set>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="ActivePageTabWidget" name="Tab_Preset_Mode">
+              <property name="enabled">
+               <bool>true</bool>
+              </property>
+              <property name="tabPosition">
+               <enum>QTabWidget::North</enum>
+              </property>
+              <property name="tabShape">
+               <enum>QTabWidget::Rounded</enum>
+              </property>
+              <property name="currentIndex">
+               <number>0</number>
+              </property>
+              <property name="elideMode">
+               <enum>Qt::ElideLeft</enum>
+              </property>
+              <property name="usesScrollButtons">
+               <bool>false</bool>
+              </property>
+              <property name="documentMode">
+               <bool>false</bool>
+              </property>
+              <property name="tabBarAutoHide">
+               <bool>true</bool>
+              </property>
+              <widget class="QWidget" name="tabWidgetPage1">
+               <layout class="QVBoxLayout" name="layout_20">
+                <property name="spacing">
+                 <number>8</number>
+                </property>
+                <property name="leftMargin">
+                 <number>10</number>
+                </property>
+                <property name="topMargin">
+                 <number>10</number>
+                </property>
+                <property name="rightMargin">
+                 <number>10</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>10</number>
+                </property>
+                <item>
+                 <widget class="QLabel" name="Hint_Point">
+                  <property name="text">
+                   <string>Click the map to add a spot.
+Shift + drag: move a spot
+Option / Alt + click: edit its comment
+Option / Alt + Shift + click: delete a spot</string>
+                  </property>
+                  <property name="wordWrap">
+                   <bool>true</bool>
+                  </property>
+                  <property name="textFormat">
+                   <enum>Qt::PlainText</enum>
+                  </property>
+                  <property name="textInteractionFlags">
+                   <set>Qt::TextSelectableByMouse</set>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QCheckBox" name="Opt_Point_Preview">
+                  <property name="checked">
+                   <bool>true</bool>
+                  </property>
+                  <property name="text">
+                   <string>Preview spot at pointer</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QCheckBox" name="Opt_Comment_Preview">
+                  <property name="text">
+                   <string>Preview comment at pointer</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QCheckBox" name="Opt_Comment_Popup">
+                  <property name="text">
+                   <string>Confirm comment on add</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+               <attribute name="title">
+                <string>Point</string>
+               </attribute>
+              </widget>
+              <widget class="QWidget" name="tabWidgetPage2">
+               <layout class="QVBoxLayout" name="layout_24">
+                <property name="spacing">
+                 <number>8</number>
+                </property>
+                <property name="leftMargin">
+                 <number>10</number>
+                </property>
+                <property name="topMargin">
+                 <number>10</number>
+                </property>
+                <property name="rightMargin">
+                 <number>10</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>10</number>
+                </property>
+                <item>
+                 <widget class="QLabel" name="Hint_Line">
+                  <property name="text">
+                   <string>Click the start, then the end of a line. Review the preview and click Add line spots.</string>
+                  </property>
+                  <property name="wordWrap">
+                   <bool>true</bool>
+                  </property>
+                  <property name="textFormat">
+                   <enum>Qt::PlainText</enum>
+                  </property>
+                  <property name="textInteractionFlags">
+                   <set>Qt::TextSelectableByMouse</set>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_9">
+                  <property name="title">
+                   <string>Spacing</string>
+                  </property>
+                  <layout class="QVBoxLayout" name="layout_23">
+                   <property name="spacing">
+                    <number>8</number>
+                   </property>
+                   <property name="leftMargin">
+                    <number>10</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>10</number>
+                   </property>
+                   <property name="rightMargin">
+                    <number>10</number>
+                   </property>
+                   <property name="bottomMargin">
+                    <number>10</number>
+                   </property>
+                   <item>
+                    <layout class="QGridLayout" name="layout_22">
+                     <property name="spacing">
+                      <number>8</number>
+                     </property>
+                     <property name="leftMargin">
+                      <number>0</number>
+                     </property>
+                     <property name="topMargin">
+                      <number>0</number>
+                     </property>
+                     <property name="rightMargin">
+                      <number>0</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>0</number>
+                     </property>
+                     <item row="0" column="0">
+                      <widget class="QRadioButton" name="Opt_Line_N_Spot">
+                       <property name="checked">
+                        <bool>true</bool>
+                       </property>
+                       <attribute name="buttonGroup">
+                        <string notr="true">buttonGroup</string>
+                       </attribute>
+                       <property name="text">
+                        <string>Spot count</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="0" column="1">
+                      <widget class="QSpinBox" name="Spn_Line_N_Spot">
+                       <property name="readOnly">
+                        <bool>false</bool>
+                       </property>
+                       <property name="minimum">
+                        <number>2</number>
+                       </property>
+                       <property name="maximum">
+                        <number>999999</number>
+                       </property>
+                       <property name="value">
+                        <number>11</number>
+                       </property>
+                       <property name="keyboardTracking">
+                        <bool>false</bool>
+                       </property>
+                       <property name="accessibleName">
+                        <string>Line spot count</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="1" column="0">
+                      <widget class="QRadioButton" name="Opt_Line_Step_Size">
+                       <property name="checked">
+                        <bool>false</bool>
+                       </property>
+                       <attribute name="buttonGroup">
+                        <string notr="true">buttonGroup</string>
+                       </attribute>
+                       <property name="text">
+                        <string>Fixed step</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="1" column="1">
+                      <widget class="QSpinBox" name="Spn_Line_Step_Size">
+                       <property name="enabled">
+                        <bool>false</bool>
+                       </property>
+                       <property name="minimum">
+                        <number>1</number>
+                       </property>
+                       <property name="maximum">
+                        <number>999999999</number>
+                       </property>
+                       <property name="value">
+                        <number>20</number>
+                       </property>
+                       <property name="suffix">
+                        <string> µm</string>
+                       </property>
+                       <property name="keyboardTracking">
+                        <bool>false</bool>
+                       </property>
+                       <property name="accessibleName">
+                        <string>Line step size in micrometers</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="2" column="0">
+                      <widget class="QLabel" name="label_17">
+                       <property name="text">
+                        <string>Line length</string>
+                       </property>
+                       <property name="wordWrap">
+                        <bool>true</bool>
+                       </property>
+                       <property name="textInteractionFlags">
+                        <set>Qt::TextSelectableByMouse</set>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="2" column="1">
+                      <layout class="QHBoxLayout" name="layout_21">
+                       <property name="spacing">
+                        <number>8</number>
+                       </property>
+                       <property name="leftMargin">
+                        <number>0</number>
+                       </property>
+                       <property name="topMargin">
+                        <number>0</number>
+                       </property>
+                       <property name="rightMargin">
+                        <number>0</number>
+                       </property>
+                       <property name="bottomMargin">
+                        <number>0</number>
+                       </property>
+                       <item>
+                        <widget class="QLabel" name="Txt_Line_Length">
+                         <property name="text">
+                          <string>0</string>
+                         </property>
+                         <property name="alignment">
+                          <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                         </property>
+                         <property name="textInteractionFlags">
+                          <set>Qt::TextSelectableByMouse</set>
+                         </property>
+                        </widget>
+                       </item>
+                       <item>
+                        <widget class="QLabel" name="label_12">
+                         <property name="text">
+                          <string>µm</string>
+                         </property>
+                         <property name="wordWrap">
+                          <bool>true</bool>
+                         </property>
+                         <property name="textInteractionFlags">
+                          <set>Qt::TextSelectableByMouse</set>
+                         </property>
+                        </widget>
+                       </item>
+                      </layout>
+                     </item>
+                    </layout>
+                   </item>
+                   <item>
+                    <widget class="QLabel" name="Hint_LineSpacing">
+                     <property name="text">
+                      <string>Number: evenly spaced, including both ends.
+Fixed step: exact spacing; the end may be empty.</string>
+                     </property>
+                     <property name="wordWrap">
+                      <bool>true</bool>
+                     </property>
+                     <property name="textFormat">
+                      <enum>Qt::PlainText</enum>
+                     </property>
+                     <property name="textInteractionFlags">
+                      <set>Qt::TextSelectableByMouse</set>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="Status_Line">
+                  <property name="text">
+                   <string>Click the map to choose a start point.</string>
+                  </property>
+                  <property name="wordWrap">
+                   <bool>true</bool>
+                  </property>
+                  <property name="textFormat">
+                   <enum>Qt::PlainText</enum>
+                  </property>
+                  <property name="textInteractionFlags">
+                   <set>Qt::TextSelectableByMouse</set>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="Btn_Line_Add_Points">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>Add line spots</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+               <attribute name="title">
+                <string>Line</string>
+               </attribute>
+              </widget>
+              <widget class="QWidget" name="tabWidgetPage3">
+               <layout class="QVBoxLayout" name="layout_30">
+                <property name="spacing">
+                 <number>8</number>
+                </property>
+                <property name="leftMargin">
+                 <number>10</number>
+                </property>
+                <property name="topMargin">
+                 <number>10</number>
+                </property>
+                <property name="rightMargin">
+                 <number>10</number>
+                </property>
+                <property name="bottomMargin">
+                 <number>10</number>
+                </property>
+                <item>
+                 <widget class="QLabel" name="Hint_Grid">
+                  <property name="text">
+                   <string>Click the map to place the first spot. Adjust the grid, then click Add grid spots.</string>
+                  </property>
+                  <property name="wordWrap">
+                   <bool>true</bool>
+                  </property>
+                  <property name="textFormat">
+                   <enum>Qt::PlainText</enum>
+                  </property>
+                  <property name="textInteractionFlags">
+                   <set>Qt::TextSelectableByMouse</set>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_2">
+                  <property name="flat">
+                   <bool>false</bool>
+                  </property>
+                  <property name="title">
+                   <string>Step size and direction</string>
+                  </property>
+                  <layout class="QVBoxLayout" name="layout_26">
+                   <property name="spacing">
+                    <number>8</number>
+                   </property>
+                   <property name="leftMargin">
+                    <number>10</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>10</number>
+                   </property>
+                   <property name="rightMargin">
+                    <number>10</number>
+                   </property>
+                   <property name="bottomMargin">
+                    <number>10</number>
+                   </property>
+                   <item>
+                    <layout class="QGridLayout" name="layout_25">
+                     <property name="spacing">
+                      <number>8</number>
+                     </property>
+                     <property name="leftMargin">
+                      <number>0</number>
+                     </property>
+                     <property name="topMargin">
+                      <number>0</number>
+                     </property>
+                     <property name="rightMargin">
+                      <number>0</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>0</number>
+                     </property>
+                     <item row="0" column="0">
+                      <widget class="QLabel" name="label_6">
+                       <property name="alignment">
+                        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                       </property>
+                       <property name="text">
+                        <string>Horizontal</string>
+                       </property>
+                       <property name="wordWrap">
+                        <bool>true</bool>
+                       </property>
+                       <property name="buddy">
+                        <cstring>Spn_Grid_Step_Size_X</cstring>
+                       </property>
+                       <property name="textInteractionFlags">
+                        <set>Qt::TextSelectableByMouse</set>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="0" column="1">
+                      <widget class="QSpinBox" name="Spn_Grid_Step_Size_X">
+                       <property name="minimum">
+                        <number>-9999</number>
+                       </property>
+                       <property name="maximum">
+                        <number>9999</number>
+                       </property>
+                       <property name="value">
+                        <number>20</number>
+                       </property>
+                       <property name="suffix">
+                        <string> µm</string>
+                       </property>
+                       <property name="keyboardTracking">
+                        <bool>false</bool>
+                       </property>
+                       <property name="accessibleName">
+                        <string>Horizontal</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="1" column="0">
+                      <widget class="QLabel" name="label_7">
+                       <property name="alignment">
+                        <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                       </property>
+                       <property name="text">
+                        <string>Vertical</string>
+                       </property>
+                       <property name="wordWrap">
+                        <bool>true</bool>
+                       </property>
+                       <property name="buddy">
+                        <cstring>Spn_Grid_Step_Size_Y</cstring>
+                       </property>
+                       <property name="textInteractionFlags">
+                        <set>Qt::TextSelectableByMouse</set>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="1" column="1">
+                      <widget class="QSpinBox" name="Spn_Grid_Step_Size_Y">
+                       <property name="minimum">
+                        <number>-9999</number>
+                       </property>
+                       <property name="maximum">
+                        <number>9999</number>
+                       </property>
+                       <property name="value">
+                        <number>-20</number>
+                       </property>
+                       <property name="suffix">
+                        <string> µm</string>
+                       </property>
+                       <property name="keyboardTracking">
+                        <bool>false</bool>
+                       </property>
+                       <property name="accessibleName">
+                        <string>Vertical</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                   <item>
+                    <widget class="QLabel" name="Hint_GridDirection">
+                     <property name="text">
+                      <string>Negative step sizes reverse the direction.</string>
+                     </property>
+                     <property name="wordWrap">
+                      <bool>true</bool>
+                     </property>
+                     <property name="textFormat">
+                      <enum>Qt::PlainText</enum>
+                     </property>
+                     <property name="textInteractionFlags">
+                      <set>Qt::TextSelectableByMouse</set>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_6">
+                  <property name="flat">
+                   <bool>false</bool>
+                  </property>
+                  <property name="title">
+                   <string>Number of spots</string>
+                  </property>
+                  <layout class="QVBoxLayout" name="layout_28">
+                   <property name="spacing">
+                    <number>8</number>
+                   </property>
+                   <property name="leftMargin">
+                    <number>10</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>10</number>
+                   </property>
+                   <property name="rightMargin">
+                    <number>10</number>
+                   </property>
+                   <property name="bottomMargin">
+                    <number>10</number>
+                   </property>
+                   <item>
+                    <layout class="QGridLayout" name="layout_27">
+                     <property name="spacing">
+                      <number>8</number>
+                     </property>
+                     <property name="leftMargin">
+                      <number>0</number>
+                     </property>
+                     <property name="topMargin">
+                      <number>0</number>
+                     </property>
+                     <property name="rightMargin">
+                      <number>0</number>
+                     </property>
+                     <property name="bottomMargin">
+                      <number>0</number>
+                     </property>
+                     <item row="0" column="0">
+                      <widget class="QLabel" name="label_9">
+                       <property name="text">
+                        <string>Columns</string>
+                       </property>
+                       <property name="wordWrap">
+                        <bool>true</bool>
+                       </property>
+                       <property name="buddy">
+                        <cstring>Spn_Grid_N_Point_X</cstring>
+                       </property>
+                       <property name="textInteractionFlags">
+                        <set>Qt::TextSelectableByMouse</set>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="0" column="1">
+                      <widget class="QSpinBox" name="Spn_Grid_N_Point_X">
+                       <property name="minimum">
+                        <number>1</number>
+                       </property>
+                       <property name="maximum">
+                        <number>999999</number>
+                       </property>
+                       <property name="value">
+                        <number>5</number>
+                       </property>
+                       <property name="keyboardTracking">
+                        <bool>false</bool>
+                       </property>
+                       <property name="accessibleName">
+                        <string>Columns</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="1" column="0">
+                      <widget class="QLabel" name="label_8">
+                       <property name="text">
+                        <string>Rows</string>
+                       </property>
+                       <property name="wordWrap">
+                        <bool>true</bool>
+                       </property>
+                       <property name="buddy">
+                        <cstring>Spn_Grid_N_Point_Y</cstring>
+                       </property>
+                       <property name="textInteractionFlags">
+                        <set>Qt::TextSelectableByMouse</set>
+                       </property>
+                      </widget>
+                     </item>
+                     <item row="1" column="1">
+                      <widget class="QSpinBox" name="Spn_Grid_N_Point_Y">
+                       <property name="minimum">
+                        <number>1</number>
+                       </property>
+                       <property name="maximum">
+                        <number>9999</number>
+                       </property>
+                       <property name="value">
+                        <number>4</number>
+                       </property>
+                       <property name="keyboardTracking">
+                        <bool>false</bool>
+                       </property>
+                       <property name="accessibleName">
+                        <string>Rows</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QGroupBox" name="groupBox_11">
+                  <property name="flat">
+                   <bool>false</bool>
+                  </property>
+                  <property name="title">
+                   <string>Analysis order</string>
+                  </property>
+                  <layout class="QVBoxLayout" name="layout_29">
+                   <property name="spacing">
+                    <number>8</number>
+                   </property>
+                   <property name="leftMargin">
+                    <number>10</number>
+                   </property>
+                   <property name="topMargin">
+                    <number>10</number>
+                   </property>
+                   <property name="rightMargin">
+                    <number>10</number>
+                   </property>
+                   <property name="bottomMargin">
+                    <number>10</number>
+                   </property>
+                   <item>
+                    <widget class="QComboBox" name="Cmb_Grid_Move_Order">
+                     <property name="currentIndex">
+                      <number>1</number>
+                     </property>
+                     <property name="maxVisibleItems">
+                      <number>4</number>
+                     </property>
+                     <item>
+                      <property name="text">
+                       <string>Horizontal, then Vertical</string>
+                      </property>
+                     </item>
+                     <item>
+                      <property name="text">
+                       <string>Vertical, then Horizontal</string>
+                      </property>
+                     </item>
+                     <property name="sizeAdjustPolicy">
+                      <enum>QComboBox::AdjustToMinimumContentsLengthWithIcon</enum>
+                     </property>
+                     <property name="minimumContentsLength">
+                      <number>10</number>
+                     </property>
+                     <property name="accessibleName">
+                      <string>Analysis order</string>
+                     </property>
+                    </widget>
+                   </item>
+                  </layout>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QLabel" name="Status_Grid">
+                  <property name="text">
+                   <string>Click the map to choose the first spot.</string>
+                  </property>
+                  <property name="wordWrap">
+                   <bool>true</bool>
+                  </property>
+                  <property name="textFormat">
+                   <enum>Qt::PlainText</enum>
+                  </property>
+                  <property name="textInteractionFlags">
+                   <set>Qt::TextSelectableByMouse</set>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="Btn_Grid_Add_Points">
+                  <property name="enabled">
+                   <bool>false</bool>
+                  </property>
+                  <property name="autoFillBackground">
+                   <bool>false</bool>
+                  </property>
+                  <property name="flat">
+                   <bool>false</bool>
+                  </property>
+                  <property name="text">
+                   <string>Add grid spots</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+               <attribute name="title">
+                <string>Grid</string>
+               </attribute>
+              </widget>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="Btn_Undo_Add_Preset_Point">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="text">
+               <string>Undo last edit</string>
+              </property>
+              <property name="toolTip">
+               <string>Undo the latest spot addition, move, comment edit, or deletion.</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="spacer_1">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Expanding</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
                <size>
                 <width>0</width>
                 <height>0</height>
                </size>
               </property>
-              <property name="maximumSize">
-               <size>
-                <width>16777215</width>
-                <height>255</height>
-               </size>
-              </property>
-              <property name="frameShape">
-               <enum>QFrame::NoFrame</enum>
-              </property>
-              <property name="frameShadow">
-               <enum>QFrame::Plain</enum>
-              </property>
-              <property name="lineWidth">
-               <number>0</number>
-              </property>
-              <layout class="QVBoxLayout" name="verticalLayout_19">
-               <property name="spacing">
-                <number>6</number>
-               </property>
-               <property name="sizeConstraint">
-                <enum>QLayout::SetDefaultConstraint</enum>
-               </property>
-               <property name="leftMargin">
-                <number>6</number>
-               </property>
-               <property name="topMargin">
-                <number>0</number>
-               </property>
-               <property name="rightMargin">
-                <number>6</number>
-               </property>
-               <property name="bottomMargin">
-                <number>0</number>
-               </property>
-               <item>
-                <widget class="QGroupBox" name="groupBox_2">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>0</width>
-                   <height>0</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>16777215</width>
-                   <height>59</height>
-                  </size>
-                 </property>
-                 <property name="font">
-                  <font>
-                   <pointsize>-1</pointsize>
-                  </font>
-                 </property>
-                 <property name="title">
-                  <string>Step Size and Direction</string>
-                 </property>
-                 <property name="flat">
-                  <bool>false</bool>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_4">
-                  <property name="spacing">
-                   <number>6</number>
-                  </property>
-                  <property name="topMargin">
-                   <number>6</number>
-                  </property>
-                  <property name="bottomMargin">
-                   <number>6</number>
-                  </property>
-                  <item>
-                   <widget class="QLabel" name="label_6">
-                    <property name="maximumSize">
-                     <size>
-                      <width>16777215</width>
-                      <height>14</height>
-                     </size>
-                    </property>
-                    <property name="font">
-                     <font>
-                      <pointsize>-1</pointsize>
-                     </font>
-                    </property>
-                    <property name="text">
-                     <string>X:</string>
-                    </property>
-                    <property name="alignment">
-                     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QSpinBox" name="Spn_Grid_Step_Size_X">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="minimumSize">
-                     <size>
-                      <width>0</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>16777215</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                    <property name="suffix">
-                     <string> µm</string>
-                    </property>
-                    <property name="minimum">
-                     <number>-9999</number>
-                    </property>
-                    <property name="maximum">
-                     <number>9999</number>
-                    </property>
-                    <property name="value">
-                     <number>20</number>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QLabel" name="label_7">
-                    <property name="maximumSize">
-                     <size>
-                      <width>16777215</width>
-                      <height>14</height>
-                     </size>
-                    </property>
-                    <property name="font">
-                     <font>
-                      <pointsize>-1</pointsize>
-                     </font>
-                    </property>
-                    <property name="text">
-                     <string>Y: </string>
-                    </property>
-                    <property name="alignment">
-                     <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QSpinBox" name="Spn_Grid_Step_Size_Y">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="minimumSize">
-                     <size>
-                      <width>0</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>16777215</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                    <property name="suffix">
-                     <string> µm</string>
-                    </property>
-                    <property name="minimum">
-                     <number>-9999</number>
-                    </property>
-                    <property name="maximum">
-                     <number>9999</number>
-                    </property>
-                    <property name="value">
-                     <number>-20</number>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QGroupBox" name="groupBox_6">
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="minimumSize">
-                  <size>
-                   <width>0</width>
-                   <height>50</height>
-                  </size>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>16777215</width>
-                   <height>59</height>
-                  </size>
-                 </property>
-                 <property name="font">
-                  <font>
-                   <pointsize>-1</pointsize>
-                  </font>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true"/>
-                 </property>
-                 <property name="title">
-                  <string>Number of Spots</string>
-                 </property>
-                 <property name="flat">
-                  <bool>false</bool>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout">
-                  <property name="spacing">
-                   <number>6</number>
-                  </property>
-                  <property name="leftMargin">
-                   <number>6</number>
-                  </property>
-                  <property name="topMargin">
-                   <number>6</number>
-                  </property>
-                  <property name="rightMargin">
-                   <number>6</number>
-                  </property>
-                  <property name="bottomMargin">
-                   <number>6</number>
-                  </property>
-                  <item>
-                   <widget class="QLabel" name="label_9">
-                    <property name="maximumSize">
-                     <size>
-                      <width>16777215</width>
-                      <height>14</height>
-                     </size>
-                    </property>
-                    <property name="font">
-                     <font>
-                      <pointsize>-1</pointsize>
-                     </font>
-                    </property>
-                    <property name="styleSheet">
-                     <string notr="true">font-size: 10px;</string>
-                    </property>
-                    <property name="text">
-                     <string>Horizontal: </string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QSpinBox" name="Spn_Grid_N_Point_X">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="minimumSize">
-                     <size>
-                      <width>0</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>42</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                    <property name="minimum">
-                     <number>1</number>
-                    </property>
-                    <property name="maximum">
-                     <number>999999</number>
-                    </property>
-                    <property name="value">
-                     <number>5</number>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <spacer name="horizontalSpacer_3">
-                    <property name="orientation">
-                     <enum>Qt::Horizontal</enum>
-                    </property>
-                    <property name="sizeHint" stdset="0">
-                     <size>
-                      <width>40</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                   </spacer>
-                  </item>
-                  <item>
-                   <widget class="QLabel" name="label_8">
-                    <property name="maximumSize">
-                     <size>
-                      <width>16777215</width>
-                      <height>14</height>
-                     </size>
-                    </property>
-                    <property name="font">
-                     <font>
-                      <pointsize>-1</pointsize>
-                     </font>
-                    </property>
-                    <property name="styleSheet">
-                     <string notr="true">font-size: 10px;</string>
-                    </property>
-                    <property name="text">
-                     <string>Vertical: </string>
-                    </property>
-                   </widget>
-                  </item>
-                  <item>
-                   <widget class="QSpinBox" name="Spn_Grid_N_Point_Y">
-                    <property name="sizePolicy">
-                     <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                      <horstretch>0</horstretch>
-                      <verstretch>0</verstretch>
-                     </sizepolicy>
-                    </property>
-                    <property name="minimumSize">
-                     <size>
-                      <width>0</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>42</width>
-                      <height>20</height>
-                     </size>
-                    </property>
-                    <property name="minimum">
-                     <number>1</number>
-                    </property>
-                    <property name="maximum">
-                     <number>9999</number>
-                    </property>
-                    <property name="value">
-                     <number>4</number>
-                    </property>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QGroupBox" name="groupBox_11">
-                 <property name="maximumSize">
-                  <size>
-                   <width>16777215</width>
-                   <height>59</height>
-                  </size>
-                 </property>
-                 <property name="font">
-                  <font>
-                   <pointsize>-1</pointsize>
-                  </font>
-                 </property>
-                 <property name="title">
-                  <string>Order of Analysis</string>
-                 </property>
-                 <property name="flat">
-                  <bool>false</bool>
-                 </property>
-                 <layout class="QHBoxLayout" name="horizontalLayout_7">
-                  <property name="spacing">
-                   <number>0</number>
-                  </property>
-                  <property name="sizeConstraint">
-                   <enum>QLayout::SetDefaultConstraint</enum>
-                  </property>
-                  <property name="leftMargin">
-                   <number>12</number>
-                  </property>
-                  <property name="topMargin">
-                   <number>3</number>
-                  </property>
-                  <property name="rightMargin">
-                   <number>12</number>
-                  </property>
-                  <property name="bottomMargin">
-                   <number>6</number>
-                  </property>
-                  <item>
-                   <widget class="QComboBox" name="Cmb_Grid_Move_Order">
-                    <property name="minimumSize">
-                     <size>
-                      <width>0</width>
-                      <height>26</height>
-                     </size>
-                    </property>
-                    <property name="maximumSize">
-                     <size>
-                      <width>16777215</width>
-                      <height>19</height>
-                     </size>
-                    </property>
-                    <property name="font">
-                     <font>
-                      <pointsize>-1</pointsize>
-                     </font>
-                    </property>
-                    <property name="currentIndex">
-                     <number>1</number>
-                    </property>
-                    <property name="maxVisibleItems">
-                     <number>4</number>
-                    </property>
-                    <item>
-                     <property name="text">
-                      <string>Horizontal, then Vertical</string>
-                     </property>
-                    </item>
-                    <item>
-                     <property name="text">
-                      <string>Vertical, then Horizontal</string>
-                     </property>
-                    </item>
-                   </widget>
-                  </item>
-                 </layout>
-                </widget>
-               </item>
-               <item>
-                <widget class="QPushButton" name="Btn_Grid_Add_Points">
-                 <property name="enabled">
-                  <bool>false</bool>
-                 </property>
-                 <property name="sizePolicy">
-                  <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-                   <horstretch>0</horstretch>
-                   <verstretch>0</verstretch>
-                  </sizepolicy>
-                 </property>
-                 <property name="maximumSize">
-                  <size>
-                   <width>16777215</width>
-                   <height>16777215</height>
-                  </size>
-                 </property>
-                 <property name="font">
-                  <font>
-                   <pointsize>-1</pointsize>
-                   <weight>75</weight>
-                   <bold>true</bold>
-                  </font>
-                 </property>
-                 <property name="autoFillBackground">
-                  <bool>false</bool>
-                 </property>
-                 <property name="styleSheet">
-                  <string notr="true">background-color: #C0C0C0;
-color: #808080;
-font-weight: bold;
-</string>
-                 </property>
-                 <property name="text">
-                  <string>Add Points</string>
-                 </property>
-                 <property name="flat">
-                  <bool>false</bool>
-                 </property>
-                </widget>
-               </item>
-              </layout>
-             </widget>
+             </spacer>
             </item>
            </layout>
           </widget>
          </widget>
         </item>
-        <item>
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item>
-         <widget class="QPushButton" name="Btn_Undo_Add_Preset_Point">
-          <property name="enabled">
-           <bool>false</bool>
-          </property>
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="font">
-           <font>
-            <pointsize>-1</pointsize>
-           </font>
-          </property>
-          <property name="text">
-           <string>Undo</string>
-          </property>
-         </widget>
-        </item>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
        </layout>
       </widget>
       <widget class="QWidget" name="tab_3">
        <attribute name="title">
         <string>Pixel Size</string>
        </attribute>
-       <layout class="QGridLayout" name="gridLayout_3">
-        <item row="2" column="0">
-         <widget class="QGroupBox" name="Grp_Step3">
-          <property name="title">
-           <string>Pixel Size</string>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_4">
-           <item row="0" column="0">
-            <widget class="QDoubleSpinBox" name="SPN_PST_PixelSize">
-             <property name="font">
-              <font>
-               <pointsize>-1</pointsize>
-               <weight>75</weight>
-               <bold>true</bold>
-              </font>
-             </property>
-             <property name="styleSheet">
-              <string notr="true">background-color: transparent;
-font-size: 25px;
-font-weight: bold;</string>
-             </property>
-             <property name="wrapping">
-              <bool>false</bool>
-             </property>
-             <property name="frame">
-              <bool>false</bool>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-             <property name="readOnly">
-              <bool>true</bool>
-             </property>
-             <property name="buttonSymbols">
-              <enum>QAbstractSpinBox::NoButtons</enum>
-             </property>
-             <property name="suffix">
-              <string> µm</string>
-             </property>
-             <property name="minimum">
-              <double>0.000000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>9999999999.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QGroupBox" name="Grp_Step2">
-          <property name="styleSheet">
-           <string notr="true"/>
-          </property>
-          <property name="title">
-           <string>2. Input Scale Length</string>
-          </property>
-          <layout class="QGridLayout" name="gridLayout_2">
-           <item row="0" column="0">
-            <widget class="QLabel" name="label_26">
-             <property name="text">
-              <string>Scale Bar Length</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="1">
-            <widget class="QDoubleSpinBox" name="SPN_PST_ScaleBar_Len_um">
-             <property name="alignment">
-              <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-             </property>
-             <property name="suffix">
-              <string> µm</string>
-             </property>
-             <property name="minimum">
-              <double>0.000000000000000</double>
-             </property>
-             <property name="maximum">
-              <double>9999999999999.000000000000000</double>
-             </property>
-             <property name="value">
-              <double>1.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QGroupBox" name="Grp_Step1">
-          <property name="styleSheet">
-           <string notr="true">:</string>
-          </property>
-          <property name="title">
-           <string>1. Click Start and End points of Scale Bar on the Map</string>
-          </property>
-          <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0">
-           <item row="0" column="1">
-            <widget class="QLabel" name="label_21">
-             <property name="text">
-              <string>X</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QLabel" name="TXT_PST_End_X">
-             <property name="styleSheet">
-              <string notr="true">color: rgb(111, 110, 112);</string>
-             </property>
-             <property name="text">
-              <string>0</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="0">
-            <widget class="QLabel" name="label_22">
-             <property name="text">
-              <string>End</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="2">
-            <widget class="QLabel" name="TXT_PST_End_Y">
-             <property name="styleSheet">
-              <string notr="true">color: rgb(111, 110, 112);</string>
-             </property>
-             <property name="text">
-              <string>0</string>
-             </property>
-            </widget>
-           </item>
-           <item row="0" column="2">
-            <widget class="QLabel" name="label_23">
-             <property name="text">
-              <string>Y</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QLabel" name="TXT_PST_Start_X">
-             <property name="styleSheet">
-              <string notr="true">color: rgb(111, 110, 112);</string>
-             </property>
-             <property name="text">
-              <string>0</string>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="0">
-            <widget class="QLabel" name="label_24">
-             <property name="text">
-              <string>Length</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
-            <widget class="QLabel" name="label_25">
-             <property name="text">
-              <string>Start</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="2">
-            <widget class="QLabel" name="TXT_PST_Start_Y">
-             <property name="styleSheet">
-              <string notr="true">color: rgb(111, 110, 112);</string>
-             </property>
-             <property name="text">
-              <string>0</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="0" colspan="3">
-            <widget class="Line" name="line">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="1">
-            <widget class="QDoubleSpinBox" name="SPN_PST_ScaleBar_Len_Px">
-             <property name="styleSheet">
-              <string notr="true">background-color: transparent;</string>
-             </property>
-             <property name="frame">
-              <bool>false</bool>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-             </property>
-             <property name="readOnly">
-              <bool>true</bool>
-             </property>
-             <property name="buttonSymbols">
-              <enum>QAbstractSpinBox::NoButtons</enum>
-             </property>
-             <property name="keyboardTracking">
-              <bool>false</bool>
-             </property>
-             <property name="showGroupSeparator" stdset="0">
-              <bool>false</bool>
-             </property>
-             <property name="suffix">
-              <string> px</string>
-             </property>
-             <property name="decimals">
-              <number>4</number>
-             </property>
-             <property name="prefix">
-              <string/>
-             </property>
-             <property name="maximum">
-              <double>999999999.000000000000000</double>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item row="4" column="0">
-         <widget class="QFrame" name="frame">
-          <property name="maximumSize">
-           <size>
-            <width>16777215</width>
-            <height>50</height>
-           </size>
+       <layout class="QVBoxLayout" name="layout_38">
+        <property name="spacing">
+         <number>8</number>
+        </property>
+        <item>
+         <widget class="QScrollArea" name="tab_3_scroll">
+          <property name="widgetResizable">
+           <bool>true</bool>
           </property>
           <property name="frameShape">
-           <enum>QFrame::StyledPanel</enum>
+           <enum>QFrame::NoFrame</enum>
           </property>
-          <property name="frameShadow">
-           <enum>QFrame::Raised</enum>
-          </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_14">
-           <item>
-            <widget class="QPushButton" name="Btn_PST_Set">
-             <property name="text">
-              <string>Set Pixel Size</string>
-             </property>
-             <property name="autoDefault">
-              <bool>false</bool>
-             </property>
-             <property name="default">
-              <bool>false</bool>
-             </property>
-            </widget>
-           </item>
-          </layout>
+          <widget class="QWidget" name="tab_3_content">
+           <layout class="QVBoxLayout" name="layout_37">
+            <property name="spacing">
+             <number>8</number>
+            </property>
+            <property name="leftMargin">
+             <number>10</number>
+            </property>
+            <property name="topMargin">
+             <number>10</number>
+            </property>
+            <property name="rightMargin">
+             <number>10</number>
+            </property>
+            <property name="bottomMargin">
+             <number>10</number>
+            </property>
+            <item>
+             <widget class="QGroupBox" name="Grp_Step1">
+              <property name="title">
+               <string>1. Measure on the map</string>
+              </property>
+              <layout class="QVBoxLayout" name="layout_34">
+               <property name="spacing">
+                <number>8</number>
+               </property>
+               <property name="leftMargin">
+                <number>10</number>
+               </property>
+               <property name="topMargin">
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>10</number>
+               </property>
+               <property name="bottomMargin">
+                <number>10</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="Hint_Measure">
+                 <property name="text">
+                  <string>Click both ends of a scale bar on the map. Click again to start a new measurement.</string>
+                 </property>
+                 <property name="wordWrap">
+                  <bool>true</bool>
+                 </property>
+                 <property name="textFormat">
+                  <enum>Qt::PlainText</enum>
+                 </property>
+                 <property name="textInteractionFlags">
+                  <set>Qt::TextSelectableByMouse</set>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <layout class="QGridLayout" name="layout_33">
+                 <property name="spacing">
+                  <number>8</number>
+                 </property>
+                 <property name="leftMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="topMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="rightMargin">
+                  <number>0</number>
+                 </property>
+                 <property name="bottomMargin">
+                  <number>0</number>
+                 </property>
+                 <item row="0" column="1">
+                  <widget class="QLabel" name="label_21">
+                   <property name="text">
+                    <string>X</string>
+                   </property>
+                   <property name="wordWrap">
+                    <bool>true</bool>
+                   </property>
+                   <property name="textInteractionFlags">
+                    <set>Qt::TextSelectableByMouse</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="0" column="2">
+                  <widget class="QLabel" name="label_23">
+                   <property name="text">
+                    <string>Y</string>
+                   </property>
+                   <property name="wordWrap">
+                    <bool>true</bool>
+                   </property>
+                   <property name="textInteractionFlags">
+                    <set>Qt::TextSelectableByMouse</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="0">
+                  <widget class="QLabel" name="label_25">
+                   <property name="text">
+                    <string>Start</string>
+                   </property>
+                   <property name="wordWrap">
+                    <bool>true</bool>
+                   </property>
+                   <property name="textInteractionFlags">
+                    <set>Qt::TextSelectableByMouse</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="1">
+                  <widget class="QLabel" name="TXT_PST_Start_X">
+                   <property name="text">
+                    <string>0</string>
+                   </property>
+                   <property name="textInteractionFlags">
+                    <set>Qt::TextSelectableByMouse</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="1" column="2">
+                  <widget class="QLabel" name="TXT_PST_Start_Y">
+                   <property name="text">
+                    <string>0</string>
+                   </property>
+                   <property name="textInteractionFlags">
+                    <set>Qt::TextSelectableByMouse</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="0">
+                  <widget class="QLabel" name="label_22">
+                   <property name="text">
+                    <string>End</string>
+                   </property>
+                   <property name="wordWrap">
+                    <bool>true</bool>
+                   </property>
+                   <property name="textInteractionFlags">
+                    <set>Qt::TextSelectableByMouse</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="1">
+                  <widget class="QLabel" name="TXT_PST_End_X">
+                   <property name="text">
+                    <string>0</string>
+                   </property>
+                   <property name="textInteractionFlags">
+                    <set>Qt::TextSelectableByMouse</set>
+                   </property>
+                  </widget>
+                 </item>
+                 <item row="2" column="2">
+                  <widget class="QLabel" name="TXT_PST_End_Y">
+                   <property name="text">
+                    <string>0</string>
+                   </property>
+                   <property name="textInteractionFlags">
+                    <set>Qt::TextSelectableByMouse</set>
+                   </property>
+                  </widget>
+                 </item>
+                </layout>
+               </item>
+               <item>
+                <widget class="QLabel" name="label_24">
+                 <property name="text">
+                  <string>Measured distance</string>
+                 </property>
+                 <property name="wordWrap">
+                  <bool>true</bool>
+                 </property>
+                 <property name="buddy">
+                  <cstring>SPN_PST_ScaleBar_Len_Px</cstring>
+                 </property>
+                 <property name="textInteractionFlags">
+                  <set>Qt::TextSelectableByMouse</set>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QDoubleSpinBox" name="SPN_PST_ScaleBar_Len_Px">
+                 <property name="frame">
+                  <bool>false</bool>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+                 </property>
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                 <property name="buttonSymbols">
+                  <enum>QAbstractSpinBox::NoButtons</enum>
+                 </property>
+                 <property name="showGroupSeparator" stdset="0">
+                  <bool>false</bool>
+                 </property>
+                 <property name="decimals">
+                  <number>4</number>
+                 </property>
+                 <property name="prefix">
+                  <string />
+                 </property>
+                 <property name="maximum">
+                  <double>999999999.000000000000000</double>
+                 </property>
+                 <property name="suffix">
+                  <string> map units</string>
+                 </property>
+                 <property name="keyboardTracking">
+                  <bool>false</bool>
+                 </property>
+                 <property name="accessibleName">
+                  <string>Measured distance</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="Grp_Step2">
+              <property name="title">
+               <string>2. Enter known length</string>
+              </property>
+              <layout class="QVBoxLayout" name="layout_35">
+               <property name="spacing">
+                <number>8</number>
+               </property>
+               <property name="leftMargin">
+                <number>10</number>
+               </property>
+               <property name="topMargin">
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>10</number>
+               </property>
+               <property name="bottomMargin">
+                <number>10</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="label_26">
+                 <property name="text">
+                  <string>Real length of the scale bar</string>
+                 </property>
+                 <property name="wordWrap">
+                  <bool>true</bool>
+                 </property>
+                 <property name="buddy">
+                  <cstring>SPN_PST_ScaleBar_Len_um</cstring>
+                 </property>
+                 <property name="textInteractionFlags">
+                  <set>Qt::TextSelectableByMouse</set>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QDoubleSpinBox" name="SPN_PST_ScaleBar_Len_um">
+                 <property name="alignment">
+                  <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                 </property>
+                 <property name="minimum">
+                  <double>0.000000000000000</double>
+                 </property>
+                 <property name="maximum">
+                  <double>9999999999999.000000000000000</double>
+                 </property>
+                 <property name="value">
+                  <double>1.000000000000000</double>
+                 </property>
+                 <property name="suffix">
+                  <string> µm</string>
+                 </property>
+                 <property name="keyboardTracking">
+                  <bool>false</bool>
+                 </property>
+                 <property name="accessibleName">
+                  <string>Real length of the scale bar</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="Grp_Step3">
+              <property name="title">
+               <string>3. Apply the result</string>
+              </property>
+              <layout class="QVBoxLayout" name="layout_36">
+               <property name="spacing">
+                <number>8</number>
+               </property>
+               <property name="leftMargin">
+                <number>10</number>
+               </property>
+               <property name="topMargin">
+                <number>10</number>
+               </property>
+               <property name="rightMargin">
+                <number>10</number>
+               </property>
+               <property name="bottomMargin">
+                <number>10</number>
+               </property>
+               <item>
+                <widget class="QLabel" name="Hint_Calculation">
+                 <property name="text">
+                  <string>Pixel size = known length ÷ measured distance</string>
+                 </property>
+                 <property name="wordWrap">
+                  <bool>true</bool>
+                 </property>
+                 <property name="textFormat">
+                  <enum>Qt::PlainText</enum>
+                 </property>
+                 <property name="textInteractionFlags">
+                  <set>Qt::TextSelectableByMouse</set>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QDoubleSpinBox" name="SPN_PST_PixelSize">
+                 <property name="wrapping">
+                  <bool>false</bool>
+                 </property>
+                 <property name="frame">
+                  <bool>false</bool>
+                 </property>
+                 <property name="alignment">
+                  <set>Qt::AlignCenter</set>
+                 </property>
+                 <property name="readOnly">
+                  <bool>true</bool>
+                 </property>
+                 <property name="buttonSymbols">
+                  <enum>QAbstractSpinBox::NoButtons</enum>
+                 </property>
+                 <property name="minimum">
+                  <double>0.000000000000000</double>
+                 </property>
+                 <property name="maximum">
+                  <double>9999999999.000000000000000</double>
+                 </property>
+                 <property name="suffix">
+                  <string> µm / map unit</string>
+                 </property>
+                 <property name="keyboardTracking">
+                  <bool>false</bool>
+                 </property>
+                 <property name="accessibleName">
+                  <string>Calculated pixel size in micrometers per map unit</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="Btn_PST_Set">
+                 <property name="autoDefault">
+                  <bool>false</bool>
+                 </property>
+                 <property name="default">
+                  <bool>false</bool>
+                 </property>
+                 <property name="text">
+                  <string>Apply pixel size to Preset</string>
+                 </property>
+                 <property name="toolTip">
+                  <string>Copy this value to Preset and switch to that tab.</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <spacer name="spacer_2">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Expanding</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>0</width>
+                <height>0</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
          </widget>
         </item>
-        <item row="3" column="0">
-         <spacer name="verticalSpacer_2">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
+        <property name="leftMargin">
+         <number>0</number>
+        </property>
+        <property name="topMargin">
+         <number>0</number>
+        </property>
+        <property name="rightMargin">
+         <number>0</number>
+        </property>
+        <property name="bottomMargin">
+         <number>0</number>
+        </property>
        </layout>
       </widget>
      </widget>
@@ -2344,7 +2367,7 @@ font-weight: bold;</string>
    </layout>
   </widget>
  </widget>
- <resources/>
+ <resources />
  <connections>
   <connection>
    <sender>Opt_Range</sender>
@@ -2428,6 +2451,14 @@ font-weight: bold;</string>
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="buttonGroup"/>
+  <buttongroup name="buttonGroup" />
  </buttongroups>
+ <customwidgets>
+  <customwidget>
+   <class>ActivePageTabWidget</class>
+   <extends>QTabWidget</extends>
+   <header>wiscsims_tool_class.ui.activePageTabWidget</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
 </ui>

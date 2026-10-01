@@ -54,6 +54,7 @@ from PyQt5.QtWidgets import (
     # QHeaderView,
 )
 from qgis.core import (
+    Qgis,
     QgsFeature,
     QgsFeatureRequest,
     QgsField,
@@ -414,13 +415,20 @@ class PresetTool(QObject):
         self.dock.Tab_Tool.setCurrentIndex(1)
 
     def handle_change_spot_size(self, size):
-        if self.preset_layer is None:
+        layer = self.get_preset_layer()
+        if layer is None:
             return
+        self.preset_layer = layer
 
-        print("layer renderer: ", self.preset_layer.renderer().type())
+        print("layer renderer: ", layer.renderer().type())
 
-        self.preset_layer.renderer().symbol().symbolLayer(0).setSize(1.0 * self.scale * size)
-        self.preset_layer.triggerRepaint()
+        symbol = layer.renderer().symbol()
+        # The top-level Marker unit dropdown uses outputUnit(), including width and offset units.
+        if symbol.outputUnit() != Qgis.RenderUnit.MapUnits:
+            symbol.setOutputUnit(Qgis.RenderUnit.MapUnits)
+        symbol.setSize(1.0 * self.scale * size)
+        layer.emitStyleChanged()
+        layer.triggerRepaint()
 
         ss = self.dock.Spn_Preset_Spot_Size.value()
         ps = self.dock.Spn_Preset_Pixel_Size.value()
@@ -694,16 +702,23 @@ class PresetTool(QObject):
         QToolTip.hideText()
 
     def update_add_points_btn_status(self, status, reason=""):
-        for mode, btn in (
-            ("line", self.dock.Btn_Line_Add_Points),
-            ("grid", self.dock.Btn_Grid_Add_Points),
+        for mode, btn, label in (
+            ("line", self.dock.Btn_Line_Add_Points, self.dock.Status_Line),
+            ("grid", self.dock.Btn_Grid_Add_Points, self.dock.Status_Grid),
         ):
             enabled = status and self.current_preset_mode == mode
-            bg_color = "rgb(255, 49, 49)" if enabled else "rgb(192, 192, 192)"
-            fg_color = "rgb(255, 255, 255)" if enabled else "rgb(128, 128, 128)"
-            btn.setStyleSheet(f"background-color: {bg_color};color: {fg_color};font-weight: bold;")
             btn.setEnabled(enabled)
             btn.setToolTip(reason if mode == self.current_preset_mode and not enabled else "")
+            if mode != self.current_preset_mode:
+                continue
+            if enabled:
+                label.setText(f"{len(self.preset_points):,} spots ready to add.")
+            elif reason:
+                label.setText(reason)
+            elif mode == "line" and self.line_in_progress:
+                label.setText("Click the map to set the end point.")
+            else:
+                label.setText("Click the map to choose the first spot.")
 
     def preset_line(self, pt, line_end=False, live_preview=False):
         if line_end:

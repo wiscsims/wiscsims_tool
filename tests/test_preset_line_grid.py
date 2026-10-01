@@ -12,10 +12,11 @@ from unittest.mock import patch
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 try:
-    from qgis.core import QgsApplication, QgsPointXY, QgsProject, QgsRectangle
-    from qgis.gui import QgsMapCanvas, QgsMapMouseEvent
+    from qgis.core import Qgis, QgsApplication, QgsPointXY, QgsProject, QgsRectangle, QgsStyle
+    from qgis.gui import QgsMapCanvas, QgsMapMouseEvent, QgsSymbolsListWidget
     from qgis.PyQt.QtCore import QEvent, QPoint, Qt
-    from qgis.PyQt.QtWidgets import QFileDialog
+    from qgis.PyQt.QtTest import QSignalSpy
+    from qgis.PyQt.QtWidgets import QComboBox, QFileDialog, QWidget
 
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
     from wiscsims_tool_class.tools.canvasMapTool import CanvasMapTool
@@ -63,6 +64,35 @@ class PresetLineGridTests(unittest.TestCase):
             WiscSIMSTool.canvasClickedRight(self.controller, pt)
         else:
             WiscSIMSTool.canvasClicked(self.controller, pt)
+
+    def test_spot_size_converts_selected_symbol_to_map_units(self):
+        symbol = self.layer.renderer().symbol()
+        self.assertEqual(symbol.sizeUnit(), Qgis.RenderUnit.MapUnits)
+        symbol.setOutputUnit(Qgis.RenderUnit.Millimeters)
+        self.assertEqual(symbol.sizeUnit(), Qgis.RenderUnit.Millimeters)
+        style_changes = QSignalSpy(self.layer.styleChanged)
+
+        self.dock.Spn_Preset_Spot_Size.setValue(20)
+        current_symbol = self.layer.renderer().symbol()
+        self.assertEqual(current_symbol.sizeUnit(), Qgis.RenderUnit.MapUnits)
+        self.assertEqual(current_symbol.outputUnit(), Qgis.RenderUnit.MapUnits)
+        self.assertEqual(current_symbol.symbolLayer(0).sizeUnit(), Qgis.RenderUnit.MapUnits)
+        self.assertAlmostEqual(current_symbol.size(), 20 / self.dock.Spn_Preset_Pixel_Size.value())
+        self.assertGreater(len(style_changes), 0)
+
+        # This is the unit dropdown used for the top-level Marker in Layer Properties.
+        symbol_widget = QgsSymbolsListWidget(current_symbol, QgsStyle.defaultStyle(), None, None, self.layer)
+        unit_widget = symbol_widget.findChild(QWidget, "mMarkerUnitWidget")
+        unit_combo = unit_widget.findChild(QComboBox, "mUnitCombo")
+        self.assertEqual(unit_combo.currentData(), Qgis.RenderUnit.MapUnits)
+
+        self.dock.Spn_Preset_Pixel_Size.setValue(2)
+        self.assertEqual(self.layer.renderer().symbol().sizeUnit(), Qgis.RenderUnit.MapUnits)
+        self.assertAlmostEqual(self.layer.renderer().symbol().size(), 10)
+
+        self.layer.renderer().symbol().setOutputUnit(Qgis.RenderUnit.Millimeters)
+        self.preset.handle_change_preset_layer(self.dock.Cmb_Preset_Layer.currentIndex())
+        self.assertEqual(self.layer.renderer().symbol().outputUnit(), Qgis.RenderUnit.MapUnits)
 
     def test_line_preview_add_and_undo(self):
         self.dock.Tab_Preset_Mode.setCurrentIndex(1)

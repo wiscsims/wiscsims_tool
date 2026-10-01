@@ -175,7 +175,7 @@ class ImportTool(QObject):
         self.update_ref_point_markers()
         self.update_canvas_rotation()
         self.dock.Grp_Alignment.setTitle(
-            f"1. Import Alignment File ({'NEW' if new_alignment else 'OLD'})"
+            f"1. Use alignment file ({'current' if new_alignment else 'legacy'})"
         )
 
     def toggle_use_alignment(self, status):
