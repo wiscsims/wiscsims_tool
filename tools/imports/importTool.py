@@ -101,6 +101,10 @@ class ImportTool(QObject):
         ## Workbook
         self.dock.Btn_Select_Workbook.clicked.connect(self.select_workbook)
         self.dock.Tbx_Workbook.textChanged.connect(self.workbook_udpated)
+        self.dock.Cmb_Excel_From.currentIndexChanged.connect(self.update_import_count)
+        self.dock.Cmb_Excel_To.currentIndexChanged.connect(self.update_import_count)
+        self.dock.Opt_Range.toggled.connect(self.update_import_count)
+        self.dock.Tbx_Comment_Match.textChanged.connect(self.update_import_count)
 
         ## Import layer
         self.dock.Btn_Create_New_Layer.clicked.connect(self.create_new_layer)
@@ -146,6 +150,12 @@ class ImportTool(QObject):
         else:
             self.init_alignmentTable()
         self.dock.Grp_Workbook.setEnabled(True)
+        if new_alignment:
+            sizes = [model.getBeam(row).get("size") for row in model.getAvailableRows()]
+            sizes = [size for size in sizes if isinstance(size, (int, float))
+                     and not isinstance(size, bool) and math.isfinite(size) and size > 0]
+            if sizes:
+                self.dock.Spn_Spot_Size.setValue(round(sum(sizes) / len(sizes)))
         self.dock.Spn_Preset_Pixel_Size.setValue(sum(scales) / len(scales))
         self.update_ref_point_markers()
         self.update_canvas_rotation()
@@ -295,6 +305,9 @@ class ImportTool(QObject):
             newVlayer.renderer().setSymbol(mySimpleSymbol)
             newVlayer.updateExtents()
             QgsProject.instance().addMapLayer(newVlayer)
+            node = QgsProject.instance().layerTreeRoot().findLayer(newVlayer.id())
+            if node is not None:
+                node.setCustomProperty("showFeatureCount", True)
             # emit set_active_layer
             self.setActiveLayer.emit(newVlayer)
 
@@ -367,6 +380,30 @@ class ImportTool(QObject):
         # add appropriate layers to combobox
         self.update_import_layers()
 
+        self.update_import_count()
+
+    def selected_workbook_rows(self):
+        """Share row selection between the point count and the actual import."""
+        if self.xl is None or self.xl.ws is None:
+            return []
+        if self.dock.Opt_Comment.isChecked():
+            return self.xl.filter_by_comment(self.dock.Tbx_Comment_Match.text())
+        start, end = sorted((self.dock.Cmb_Excel_From.currentIndex(), self.dock.Cmb_Excel_To.currentIndex()))
+        if start < 0:
+            return []
+        return self.xl.filter_by_asc(
+            start=self.dock.Cmb_Excel_From.itemData(start),
+            end=self.dock.Cmb_Excel_To.itemData(end),
+        )
+
+    def update_import_count(self):
+        try:
+            count = len(self.selected_workbook_rows())
+        except re.error:
+            self.dock.Lbl_Import_Count.setText("Invalid comment pattern")
+            return
+        self.dock.Lbl_Import_Count.setText(f"{count:,} {'spot' if count == 1 else 'spots'} selected for import")
+
     def update_import_layers(self):
         if self.xl is None:
             return
@@ -395,23 +432,11 @@ class ImportTool(QObject):
     def _import_from_excel(self, progress):
         progress.update("Selecting workbook rows…")
 
-        # import date from Excel file
-        if self.dock.Opt_Comment.isChecked():
-            try:
-                importing_data = self.xl.filter_by_comment(self.dock.Tbx_Comment_Match.text())
-            except re.error as error:
-                QMessageBox.warning(None, "Import Excel Data", f"Invalid comment pattern: {error}")
-                return
-        else:
-            start_idx = self.dock.Cmb_Excel_From.currentIndex()
-            end_idx = self.dock.Cmb_Excel_To.currentIndex()
-            if start_idx > end_idx:
-                start_idx, end_idx = end_idx, start_idx
-                self.dock.Cmb_Excel_From.setCurrentIndex(start_idx)
-                self.dock.Cmb_Excel_To.setCurrentIndex(end_idx)
-            start_asc = self.dock.Cmb_Excel_From.itemData(start_idx)
-            end_asc = self.dock.Cmb_Excel_To.itemData(end_idx)
-            importing_data = self.xl.filter_by_asc(start=start_asc, end=end_asc)
+        try:
+            importing_data = self.selected_workbook_rows()
+        except re.error as error:
+            QMessageBox.warning(None, "Import Excel Data", f"Invalid comment pattern: {error}")
+            return
 
         importing_layer = self.dock.Cmb_Import_Layer.itemData(self.dock.Cmb_Import_Layer.currentIndex())
         coordinate_columns = self.xl.find_columns(["X", "Y"], False)

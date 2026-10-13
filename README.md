@@ -95,7 +95,7 @@ After a WiscSIMS session, use the **Import** tab to add data from a session work
 
 #### Alignment file
 
-If you have a Stage Navigator alignment `.json` file, load it under **Use alignment file**. The plugin uses the alignment to transform stage coordinates to map coordinates. You can inspect the reference points in the dock, and loading the alignment updates the Preset pixel size.
+If you have a Stage Navigator alignment `.json` file, load it under **Use alignment file**. The plugin uses the alignment to transform stage coordinates to map coordinates. You can inspect the reference points in the dock, and loading the alignment updates the Preset pixel size. For MonkeyNavigator2 alignments, the new-layer spot size is also set from the mean beam size of the enabled references.
 
 Under **Import conversion**, choose **Current (reference pairs)** for the existing nearest-pair conversion, or **GLP (MonkeyNavigator2)** for points exported using MonkeyNavigator2's Global + Local Plane model. Current remains the default; the export model is not recorded in the alignment JSON, so select GLP explicitly.
 
@@ -123,6 +123,8 @@ A progress dialog shows the current operation while reading Excel or importing p
 #### Data range
 
 Use **Import a data range** to import rows between selected `.asc` filenames. Alternatively, use **Match comment** to filter the `Comment` column with a case-insensitive regular expression.
+
+The selected spot count updates as you change the range or comment filter. Invalid regular expressions are indicated beside the selection controls.
 
 The **From** and **To** lists show the part after the date, such as `@1.asc`; the underlying workbook filename still needs the full `YYYYMMDD@number.asc` format.
 

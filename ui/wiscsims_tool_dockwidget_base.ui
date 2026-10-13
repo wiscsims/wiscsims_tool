@@ -503,6 +503,16 @@
                  </property>
                 </widget>
                </item>
+               <item>
+                <widget class="QLabel" name="Lbl_Import_Count">
+                 <property name="text">
+                  <string>0 spots selected for import</string>
+                 </property>
+                 <property name="wordWrap">
+                  <bool>true</bool>
+                 </property>
+                </widget>
+               </item>
               </layout>
              </widget>
             </item>

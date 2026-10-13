@@ -1,6 +1,7 @@
 """Workbook values must survive the actual Shapefile import path."""
 
 import os
+import json
 import pathlib
 import sys
 import tempfile
@@ -19,6 +20,7 @@ try:
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[2]))
     from wiscsims_tool_class.tools.imports.importTool import ImportTool
     from wiscsims_tool_class.tools.imports.coordinateTool import CoordinateTool
+    from wiscsims_tool_class.tools.imports.sumTableTool import SumTableTool
     from wiscsims_tool_class.tools.imports.glpInverse import PreparedGLPInverse
     from wiscsims_tool_class.ui.wiscsims_tool_dockwidget import WiscSIMSToolDockWidget
 except ImportError:
@@ -247,6 +249,47 @@ class ExcelLayerImportTests(unittest.TestCase):
         self.assertIn("20261001@2.asc", warning.call_args.args[2])
         self.assertIn("No usable pair", warning.call_args.args[2])
         information.assert_not_called()
+
+    def test_selected_count_tracks_range_comment_and_imported_rows(self):
+        rows = [["20261001@1.asc", "sample A", 100, 200],
+                ["20261001@2.asc", "standard", 300, 400],
+                ["20261001@3.asc", "sample B", 500, 600]]
+        workbook = SumTableTool("example.xlsx")
+        workbook.ws = True
+        workbook._headers = ["File", "Comment", "X", "Y"]
+        workbook._rows = rows
+        self.tool.xl = workbook
+        self.tool.workbook_udpated()
+        self.assertEqual(self.dock.Lbl_Import_Count.text(), "3 spots selected for import")
+        self.dock.Cmb_Excel_To.setCurrentIndex(0)
+        self.assertEqual(self.dock.Lbl_Import_Count.text(), "1 spot selected for import")
+        self.dock.Cmb_Excel_From.setCurrentIndex(1)
+        self.assertEqual(self.dock.Lbl_Import_Count.text(), "2 spots selected for import")
+        self.dock.Opt_Comment.setChecked(True)
+        self.dock.Tbx_Comment_Match.setText("sample")
+        self.assertEqual(self.dock.Lbl_Import_Count.text(), "2 spots selected for import")
+        self.dock.Tbx_Comment_Match.setText("[")
+        self.assertEqual(self.dock.Lbl_Import_Count.text(), "Invalid comment pattern")
+        self.dock.Tbx_Comment_Match.setText("sample B")
+        self.assertEqual(self.dock.Lbl_Import_Count.text(), "1 spot selected for import")
+        layer = self.create_layer()
+        with patch.object(QMessageBox, "information"):
+            self.tool.import_from_excel()
+        self.assertEqual([f["File"] for f in layer.getFeatures()], ["20261001@3.asc"])
+
+    def test_alignment_load_keeps_enabled_beam_size_mean_from_main(self):
+        canvas = [(0, 0), (100, 0), (0, 100), (100, 100), (200, 200)]
+        records = [dict(r=i, used=2 if i < 4 else 0, refname=f"ref-{i}",
+                        canvas=[point], stage=[(point[0]*2+10, point[1]*2-20)],
+                        beam=dict(position=[500, 500], size=size, eccentricity=.8))
+                   for i, (point, size) in enumerate(zip(canvas, [8, 10, 12, 14, 30]))]
+        path = pathlib.Path(self.directory.name) / "alignment.json"
+        path.write_text(json.dumps(records))
+        with patch.object(QMessageBox, "warning") as warning:
+            self.tool.import_alignments(str(path))
+        warning.assert_not_called()
+        self.assertEqual(self.dock.Spn_Spot_Size.value(), 11)
+        self.assertEqual(self.dock.Spn_Preset_Pixel_Size.value(), 2)
 
     def test_alignment_edits_and_enabled_states_invalidate_glp_cache(self):
         canvas = [(0, 0), (100, 0), (0, 100), (100, 100)]
