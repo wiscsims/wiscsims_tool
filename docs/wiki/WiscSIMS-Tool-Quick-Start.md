@@ -19,7 +19,7 @@ This guide shows the updated interface with **Import**, **Preset**, and **Pixel 
 3. Drag a sample image from the SIMS folder onto the QGIS map canvas.
 4. Open WiscSIMS Tool using its toolbar button or **Plugins > WiscSIMS > WiscSIMS Tool**. Keep this map tool active while selecting positions.
 
-The dock can be widened. Scroll within a tab if some controls are below the visible area.
+The dock can be widened. Scroll within a tab if some controls are below the visible area. To bring measured data back after exporting spots with MonkeyNavigator2 GLP, see [Import measured data with GLP](#import-measured-data-with-glp).
 
 ## 2. Create a layer for your spots
 
@@ -116,3 +116,20 @@ Option / Alt + click on empty space does nothing. The comment editor also offers
 Save the QGIS project in your SIMS folder and keep the project, sample images, and all shapefile files together. Reopen the project to check that its images and spot layers load correctly before sharing the folder.
 
 For Excel session-data import and other details, see the plugin [README](../../README.md#usage). Exporting preset spots to a WiscSIMS Excel session workbook is not currently implemented in this development version.
+
+## Import measured data with GLP
+
+This optional step is separate from the six-step preparation workflow in the animation.
+
+1. In **Import**, enable **Use alignment file** and open the MonkeyNavigator2 alignment `.json` used when exporting the spots. Keep the same reference coordinates and enabled references.
+2. Set **Import conversion** to **GLP (MonkeyNavigator2)**. GLP needs at least four usable references. The default **Current (reference pairs)** remains available for exports made with the previous conversion.
+3. Browse to the Excel session workbook and select the data range or comment filter.
+4. Create a destination layer with **New layer…**, then click **Import selected data**. The progress dialog shows reading, checking coordinates/attributes, and writing points.
+
+GLP verifies the inverse against MonkeyNavigator2's forward calculation. If the inverse fails or multiple matching positions are found, a review dialog appears before any points are added. Open **Show Details** for all affected files. **Cancel** leaves the layer unchanged; **Import … verified points** skips the affected files and imports only verified positions. The completion message reports how many were skipped. Use the same calibration and preserve stage-coordinate precision; rounded or measured coordinates need not land exactly on the originally planned point.
+
+To include the affected files, choose **Use reference pairs for affected points**. Only the failed GLP points use the usual **Current (reference pairs)** conversion; the other points retain their verified GLP positions. The completion message reports the pair-converted count. Pair positions use a different model and are not verified GLP inverses. If pair conversion fails, the whole import stops before writing any points.
+
+At boundaries where the nearest reference set changes, a stage coordinate can have no exact inverse. The error reports a forward residual when available; this mode does not automatically substitute an approximate location.
+
+<a href="../../img/readme/import-current.png"><img src="../../img/readme/import-current.png" width="400" alt="Import tab showing the GLP conversion selector and alignment, workbook, and destination layer controls"></a>

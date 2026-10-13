@@ -143,6 +143,38 @@
                 </widget>
                </item>
                <item>
+                <widget class="QLabel" name="Lbl_Import_Conversion">
+                 <property name="text">
+                  <string>Import conversion</string>
+                 </property>
+                 <property name="buddy">
+                  <cstring>Cmb_Import_Conversion</cstring>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QComboBox" name="Cmb_Import_Conversion">
+                 <property name="toolTip">
+                  <string>Select GLP when points were exported with MonkeyNavigator2's GLP model. Use the same alignment file and enabled references.</string>
+                 </property>
+                 <item>
+                  <property name="text"><string>Current (reference pairs)</string></property>
+                 </item>
+                 <item>
+                  <property name="text"><string>GLP (MonkeyNavigator2)</string></property>
+                 </item>
+                </widget>
+               </item>
+               <item>
+                <widget class="QLabel" name="Hint_Import_Conversion">
+                 <property name="text">
+                  <string>For GLP exports, select GLP and load the same alignment used for export. GLP needs at least four usable references.</string>
+                 </property>
+                 <property name="wordWrap"><bool>true</bool></property>
+                 <property name="textFormat"><enum>Qt::PlainText</enum></property>
+                </widget>
+               </item>
+               <item>
                 <widget class="QTableView" name="Tbv_Alignment">
                  <property name="frameShape">
                   <enum>QFrame::NoFrame</enum>

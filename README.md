@@ -39,7 +39,7 @@ WiscSIMS Tool has three main functions:
 
 ### [QGIS 3](https://www.qgis.org/)
 
-The plugin metadata declares QGIS 3.4 as the minimum version. The current automated tests run with QGIS 3.44.13; older versions are not covered by those tests. Download QGIS from the [official QGIS site](https://qgis.org/download/).
+Version **3.40** requires **QGIS 3.44 or later in the QGIS 3 series**. The automated tests run with QGIS 3.44.13. QGIS 4 is not supported by this release. Download QGIS from the [official QGIS site](https://qgis.org/download/).
 
 Excel import uses `openpyxl` for `.xlsx` files and `xlrd` for `.xls` files. If the required module is missing when you select a workbook, the plugin asks whether it may install the module into the current user's QGIS Python environment. Automatic installation requires an internet connection. You can decline without changing the environment.
 
@@ -59,7 +59,7 @@ There are two ways to install WiscSIMS Tool. The screenshots below show an older
 
 3. Check **Installed Plugins** to confirm that it is enabled. You should also see its icon in the QGIS toolbar.
 
-The published repository package and this development checkout may be different versions. This checkout's `metadata.txt` currently names the plugin **WiscSIMS Tool2**; its QGIS menu action is **WiscSIMS Tool**.
+This checkout targets **WiscSIMS Tool 3.40**. The published repository package may be an earlier version until the new release is submitted and approved.
 
 ### Install from ZIP file
 
@@ -77,6 +77,8 @@ Manual installation is also available.
 
 Start with the [updated Quick Start](docs/wiki/WiscSIMS-Tool-Quick-Start.md), including an animation of the complete workflow from project setup and Pixel Size measurement to spot placement and saving.
 
+Release ZIPs omit the large GIF and MP4 recordings. View the [online Quick Start](https://github.com/wiscsims/wiscsims_tool/blob/main/docs/wiki/WiscSIMS-Tool-Quick-Start.md) for the animations; the recordings remain in the source repository.
+
 Open the dock from its toolbar button or **Plugins > WiscSIMS > WiscSIMS Tool**. The dock has **Import**, **Preset**, and **Pixel Size** tabs. Keep the WiscSIMS Tool map tool active when selecting locations on the map.
 
 The dock can be widened and follows the QGIS font and display scaling settings, including high DPI displays. Each tab scrolls vertically when space is limited. Size inputs and layer selectors only respond to the mouse wheel when focused, to avoid accidental changes while scrolling.
@@ -87,13 +89,23 @@ The usage screenshots below were captured from the current plugin widgets and QG
 
 After a WiscSIMS session, use the **Import** tab to add data from a session workbook to a QGIS point layer. You can convert stage coordinates with an alignment file or import coordinates directly.
 
-<a href="img/readme/import-current.png"><img src="img/readme/import-current.png" width="400" alt="Current Import tab with alignment disabled, example-session.xlsx selected, data range from @1.asc to @5.asc, and a destination layer ready for import"></a>
+<a href="img/readme/import-current.png"><img src="img/readme/import-current.png" width="400" alt="Import tab with GLP alignment enabled, example-session.xlsx selected, data range from @1.asc to @5.asc, and a destination layer ready for import"></a>
 
-*Example: the workbook already contains map coordinates, so **Use alignment file** is unchecked. The selected range contains five data files, ready to append to `example-session` with **Import selected data**.*
+*Example: **Use alignment file** is checked and **GLP (MonkeyNavigator2)** is selected. The selected range contains five data files, ready to convert from stage coordinates and append to `example-session` with **Import selected data**.*
 
 #### Alignment file
 
 If you have a Stage Navigator alignment `.json` file, load it under **Use alignment file**. The plugin uses the alignment to transform stage coordinates to map coordinates. You can inspect the reference points in the dock, and loading the alignment updates the Preset pixel size.
+
+Under **Import conversion**, choose **Current (reference pairs)** for the existing nearest-pair conversion, or **GLP (MonkeyNavigator2)** for points exported using MonkeyNavigator2's Global + Local Plane model. Current remains the default; the export model is not recorded in the alignment JSON, so select GLP explicitly.
+
+GLP import inverts MonkeyNavigator2's forward model and verifies each result. Load the **same alignment file and enable the same references used for export**. GLP requires at least four usable references in the MonkeyNavigator2 alignment format; its reference validation also checks beam information, matching MonkeyNavigator2. The model combines a global similarity fit with a local residual plane using the nearest 12 references. It keeps fractional coordinates; the original Excel `X` and `Y` attributes remain stage coordinates.
+
+If no consistent inverse is found, local geometry is singular, or multiple matching map positions are found, a review dialog lists all affected files under **Show Details** before any points are added. **Cancel** is the default and leaves the layer unchanged. You can explicitly choose **Import … verified points** to skip the affected files and import only the verified positions; the completion message reports how many were skipped. There is no automatic fallback to Current or an approximate position. Exact return to a planned spot also depends on preserving the exported stage-coordinate precision; measured or rounded coordinates can differ.
+
+Choose **Use reference pairs for affected points** to import the failed GLP points with the usual **Current (reference pairs)** conversion. Verified GLP points keep their GLP positions. The completion message reports how many points used reference pairs. These pair-converted positions are not verified GLP inverses. If pair conversion or attribute validation fails, no points are written.
+
+Changes in the nearest-12 reference set can create small discontinuities, so some measured or rounded stage positions may have no exact GLP inverse. The error includes the best attempted forward residual in µm when available; it does not silently accept an approximate position.
 
 If the workbook's `X` and `Y` values are already map coordinates, uncheck **Use alignment file** to import them directly.
 

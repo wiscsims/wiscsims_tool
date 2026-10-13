@@ -18,6 +18,8 @@ Preset placement calculations are independent of Qt and QGIS.
 | `tools/imports/coordinateTool.py` | Current and legacy alignment coordinate transformations |
 | `tools/imports/alignmentMarker.py` | Reference markers and annotations owned by the Import tool |
 | `tools/imports/sumTableTool.py` | Workbook loading, row ranges and comment filters |
+| `tools/imports/globalLocalPlane.py` | Vendored MonkeyNavigator2 forward GLP; source SHA256 is recorded in the header |
+| `tools/imports/glpInverse.py` | Matching reference validation, cached local affine inverses and verification with the forward GLP |
 | `tools/layerTool.py` | Query layers in legend order and exclude temporary layers |
 | `tools/dependencyInstaller.py` | Confirm and install optional Excel readers in the user's QGIS Python environment |
 | `tools/operationProgress.py` | Show import stages and run Python-only workbook I/O in a worker thread |
@@ -62,6 +64,24 @@ Keep generated `resources.py` out of manual edits. Historical public handler nam
 Excel readers are optional so the plugin can start without them. Workbook selection calls `DependencyInstaller` before constructing `SumTableTool`. Package names are selected from a fixed extension mapping; do not pass user-controlled package names to pip. Installation resolves QGIS's bundled Python interpreter and runs it with `pip install --user`, only after the user accepts the confirmation dialog. Do not use `sys.executable` directly because a GUI QGIS session may report the QGIS application binary instead of Python. On macOS, the child process must also receive the app bundle's `Contents/Frameworks` directory as `PYTHONHOME`; without it, the bundled interpreter cannot load its standard library.
 
 Excel selection reads and caches headers/rows in a worker thread before updating dock controls. `SumTableTool` stays independent of Qt and reports row progress through an optional callback; `reload_workbook()` clears its cache. Keep QGIS layer access and widget updates on the GUI thread. Import validation periodically processes paint events, and the modal progress dialog prevents duplicate operations. Destination writes run on the GUI thread and use an indeterminate progress bar because the provider does not expose row progress.
+
+### GLP import
+
+Current remains the default. GLP uses the same enabled/complete reference rules as MonkeyNavigator2's `referenceValidation.py`, including beam validity and its FOV bounds. Keep these rules and the vendored forward implementation synchronized when MonkeyNavigator2 changes. GLP operates only on the current alignment format. The fit cache uses the ordered reference row/canvas/stage snapshot; changing coordinates or enabled/valid states invalidates it before another import.
+
+For each nearest-12 canvas reference set the forward GLP is affine. The inverse solves that affine map, checks that the result selects the same nearest reference set, and verifies the original forward prediction within 1e-6 stage µm (or a larger tolerance required by floating-point resolution). Seeds come from the inverse global similarity and the nearest 12 stage references; changed neighborhoods are followed up to 128 distinct sets. A discovered second solution is rejected. This is a bounded search, not a proof of global uniqueness for arbitrary folded/discontinuous calibrations. Singular geometry, failed verification, ambiguity or an exhausted search rejects that point. All rejected filenames and diagnostics are collected before any provider write; a review dialog defaults to Cancel. The user may explicitly import only verified GLP points or use Current reference pairs for rejected points. The shared `convert_with_reference_pairs` method keeps this fallback identical to regular Current imports. GLP successes are retained, Excel row order is preserved, and all fallback geometry and attributes are checked before a single provider write. Failed fallback, invalid global calibration or incompatible attributes aborts the whole batch. Do not replace the GLP inverse with a GLP fit trained on swapped coordinates; that is a different model and is not an export inverse.
+
+## Release settings and packaging
+
+Release 3.40 targets QGIS 3.44 through 3.99. Keep the public name `WiscSIMS Tool` and the package directory `wiscsims_tool` when updating the existing QGIS repository entry. Excel dependencies and their installation prompt are documented in `metadata.txt`.
+
+Create the submission archive from the final committed release revision:
+
+```sh
+git archive --format=zip --prefix=wiscsims_tool/ --output=/tmp/wiscsims_tool-3.40.zip HEAD
+```
+
+The tracked `.gitattributes` excludes tests, recording scripts, GIF/MP4 recordings, the old README PDF and Git configuration from the archive. The recordings remain in GitHub for the online guides. Untracked alignment, Shapefile and database files are never included by `git archive`. Runtime modules, UI files, icons, `metadata.txt`, `__init__.py` and `LICENSE` must be present. Check that the ZIP is below the repository's 25 MB limit and install it in a disposable QGIS profile before submission. Published source and the ZIP must correspond to the same release revision.
 
 ## Run tests
 

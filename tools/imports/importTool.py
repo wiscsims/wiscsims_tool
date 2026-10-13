@@ -43,6 +43,7 @@ from .alignmentInfo import AlignmentInfo
 from .alignmentMarker import AlignmentMarker
 from .alignmentTool import AlignmentModel, AlignmentModelNew
 from .coordinateTool import CoordinateTool
+from .glpInverse import PreparedGLPInverse, reference_snapshot
 from .sumTableTool import SumTableTool
 
 
@@ -80,6 +81,8 @@ class ImportTool(QObject):
         self.new_aliginment = True
 
         self.xl = None
+        self._glp_inverse = None
+        self._glp_snapshot = None
 
     def unload(self):
         self.ref_marker.init_ref_point_markers()
@@ -134,6 +137,9 @@ class ImportTool(QObject):
         self.model = model
         self.ref_marker.model = model
         self.new_aliginment = new_alignment
+        self.dock.Cmb_Import_Conversion.model().item(1).setEnabled(bool(new_alignment))
+        if not new_alignment:
+            self.dock.Cmb_Import_Conversion.setCurrentIndex(0)
         self.cot = CoordinateTool(new=new_alignment)
         if new_alignment:
             self.init_alignmentTableNew()
@@ -143,8 +149,9 @@ class ImportTool(QObject):
         self.dock.Spn_Preset_Pixel_Size.setValue(sum(scales) / len(scales))
         self.update_ref_point_markers()
         self.update_canvas_rotation()
-        self.dock.Grp_Alignment.setTitle(
-            f"1. Use alignment file ({'current' if new_alignment else 'legacy'})"
+        self.dock.Grp_Alignment.setTitle("1. Use alignment file")
+        self.dock.Grp_Alignment.setToolTip(
+            f"Alignment format: {'MonkeyNavigator2' if new_alignment else 'legacy pairs'}"
         )
 
     def toggle_use_alignment(self, status):
@@ -413,10 +420,23 @@ class ImportTool(QObject):
             return
         X, Y = coordinate_columns
 
-        features = []
+        features_by_row = {}
+        glp_failures = []
+        glp_failed_rows = []
+        pair_fallback_count = 0
         is_direct_import = not self.dock.Grp_Alignment.isChecked()
 
-        if self.new_aliginment and not is_direct_import:
+        use_glp = not is_direct_import and self.dock.Cmb_Import_Conversion.currentIndex() == 1
+        glp_inverse = None
+        if use_glp:
+            progress.update("Preparing GLP alignment conversion…")
+            try:
+                glp_inverse = self.prepare_glp_inverse()
+            except (ValueError, OverflowError) as error:
+                progress.dialog.hide()
+                QMessageBox.warning(self.dock, "GLP Import", f"No data were imported.\n\n{error}")
+                return
+        elif self.new_aliginment and not is_direct_import:
             self.update_conv_params()
             if not self.conv_params:
                 QMessageBox.warning(None, "Import Excel Data", "At least two usable alignment points are needed.")
@@ -435,18 +455,19 @@ class ImportTool(QObject):
                 continue
             if is_direct_import:
                 canvasX, canvasY = point
+            elif use_glp:
+                try:
+                    canvasX, canvasY = glp_inverse.predict(point)
+                except (ValueError, OverflowError) as error:
+                    glp_failures.append((str(d[0]), str(error)))
+                    glp_failed_rows.append((index, d, point))
+                    continue
             else:
-                if self.new_aliginment:
-                    # get conversion model
-                    conv_model = self.get_conversion_models(
-                        point, self.model.getStagePositions(), self.conv_params, 2
-                    )
-                    if not conv_model:
-                        QMessageBox.warning(None, "Import Excel Data", "No usable alignment pair was found.")
-                        return
-                    canvasX, canvasY = self.cot.getWtAveragedStageToCanvas(point, conv_model)
-                else:
-                    canvasX, canvasY = self.getWtAverageStageToCanvas(point)
+                try:
+                    canvasX, canvasY = self.convert_with_reference_pairs(point)
+                except (ValueError, OverflowError, ZeroDivisionError) as error:
+                    QMessageBox.warning(self.dock, "Import Excel Data", f"No data were imported. File: {d[0]}\n\n{error}")
+                    return
             feature = QgsFeature(fields)
             feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(canvasX, canvasY)))
             try:
@@ -459,9 +480,35 @@ class ImportTool(QObject):
                 )
                 return
 
-            features.append(feature)
+            features_by_row[index] = feature
 
         progress.update("Checking coordinates and attributes…", total, total)
+        if glp_failures:
+            progress.dialog.hide()
+            action = self.review_glp_failures(glp_failures, len(features_by_row))
+            if action not in ("verified", "pairs"):
+                return
+            progress.dialog.show()
+            if action == "pairs":
+                progress.update("Preparing reference-pair conversion…")
+                self.update_conv_params()
+                for completed, (index, row, point) in enumerate(glp_failed_rows):
+                    progress.update("Converting affected points with reference pairs…", completed, len(glp_failed_rows))
+                    try:
+                        canvas_point = self.convert_with_reference_pairs(point)
+                        feature = QgsFeature(fields)
+                        feature.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(*canvas_point)))
+                        feature.setAttributes(self.convert_attributes(row, fields))
+                    except (ValueError, OverflowError, ZeroDivisionError) as error:
+                        progress.dialog.hide()
+                        QMessageBox.warning(
+                            self.dock, "Reference-pair Import",
+                            f"No data were imported. File: {row[0]}\n\n{error}",
+                        )
+                        return
+                    features_by_row[index] = feature
+                pair_fallback_count = len(glp_failed_rows)
+        features = [features_by_row[index] for index in sorted(features_by_row)]
         dpr = importing_layer.dataProvider()
         progress.update(f"Writing {len(features):,} points to layer…\n{importing_layer.name()}")
         success, added_features = dpr.addFeatures(features)
@@ -477,7 +524,76 @@ class ImportTool(QObject):
         importing_layer.setDisplayExpression("File")
         importing_layer.triggerRepaint()
         progress.dialog.hide()
-        QMessageBox.information(None, "Import Excel Data", f"{len(added_features)} data were imported!")
+        message = f"{len(added_features)} data were imported!"
+        if pair_fallback_count:
+            message += f"\n{pair_fallback_count} points were converted with Current (reference pairs)."
+        elif glp_failures:
+            message += f"\n{len(glp_failures)} points without a verified GLP position were skipped."
+        QMessageBox.information(None, "Import Excel Data", message)
+
+    def convert_with_reference_pairs(self, point):
+        """Use the same conversion for Current imports and explicit GLP fallback."""
+        if self.new_aliginment:
+            models = self.get_conversion_models(point, self.model.getStagePositions(), self.conv_params, 2)
+            if not models:
+                raise ValueError("No usable alignment pair was found.")
+            result = self.cot.getWtAveragedStageToCanvas(point, models)
+        else:
+            result = self.getWtAverageStageToCanvas(point)
+        if not all(math.isfinite(value) for value in result):
+            raise ValueError("Reference-pair conversion produced non-finite coordinates.")
+        return result
+
+    def review_glp_failures(self, failures, verified_count):
+        """Choose how to handle failed inverses before writing any features."""
+        box = QMessageBox(self.dock)
+        box.setWindowTitle("GLP Import")
+        box.setIcon(QMessageBox.Warning)
+        box.setText(
+            f"{len(failures):,} points could not be assigned a verified GLP position.\n"
+            f"{verified_count:,} points have verified positions. No data have been imported yet."
+        )
+        box.setInformativeText(
+            f"First affected file: {failures[0][0]}\n\n"
+            "Open Details to review all affected files. Check that the alignment and enabled "
+            "references match the GLP export. Choose reference pairs to import the affected "
+            "points with Current (reference pairs), import only verified GLP points, or cancel. "
+            "Pair-converted points use a different model and are not verified GLP positions."
+        )
+        box.setDetailedText("\n\n".join(f"File: {name}\n{error}" for name, error in failures))
+        import_button = None
+        if verified_count:
+            import_button = box.addButton(f"Import {verified_count:,} verified points", QMessageBox.AcceptRole)
+        pair_button = box.addButton("Use reference pairs for affected points", QMessageBox.ActionRole)
+        cancel_button = box.addButton(QMessageBox.Cancel)
+        box.setDefaultButton(cancel_button)
+        box.setEscapeButton(cancel_button)
+        box.exec_()
+        action = "cancel"
+        if box.clickedButton() is pair_button:
+            action = "pairs"
+        elif import_button is not None and box.clickedButton() is import_button:
+            action = "verified"
+        box.deleteLater()
+        return action
+
+    def prepare_glp_inverse(self):
+        if not self.new_aliginment:
+            raise ValueError("GLP needs a MonkeyNavigator2 alignment, not the legacy pair format.")
+        snapshot = reference_snapshot(self.model.ExportAsObject())
+        if snapshot != self._glp_snapshot:
+            # Invalidate first: failed preparation must never reuse an old fit.
+            self._glp_inverse = None
+            self._glp_snapshot = None
+            if len(snapshot) < 4:
+                raise ValueError(
+                    f"GLP requires at least four usable references (found {len(snapshot)}). "
+                    "Use the same alignment and enabled references as MonkeyNavigator2 Export."
+                )
+            inverse = PreparedGLPInverse([r[1] for r in snapshot], [r[2] for r in snapshot])
+            self._glp_inverse = inverse
+            self._glp_snapshot = snapshot
+        return self._glp_inverse
 
     @staticmethod
     def convert_attributes(row, fields):
@@ -603,10 +719,10 @@ class ImportTool(QObject):
         return [p / sum_weights for p in [sum(wpt_x), sum(wpt_y)]]
 
     def update_conv_params(self):
+        self.conv_params = {}
         if self.model.isAvailable():
             # Get available rows (indexes)
             available_refs = self.model.getAvailableRows()
-            self.conv_params = {}
             for g in available_refs:
                 for r in available_refs:
                     if g >= r:

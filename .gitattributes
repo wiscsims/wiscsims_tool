@@ -1,0 +1,9 @@
+# Keep runtime code, metadata, license, UI and static documentation in releases.
+# Large recordings stay in the source repository and are not shipped to QGIS.
+/.gitattributes export-ignore
+/.gitignore export-ignore
+/tests/ export-ignore
+/docs/media/ export-ignore
+/README.pdf export-ignore
+/img/readme/*.gif export-ignore
+/img/readme/*.mp4 export-ignore
