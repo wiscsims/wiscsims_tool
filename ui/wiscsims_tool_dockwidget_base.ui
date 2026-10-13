@@ -2499,7 +2499,7 @@ Fixed step: exact spacing; the end may be empty.</string>
   <customwidget>
    <class>ActivePageTabWidget</class>
    <extends>QTabWidget</extends>
-   <header>wiscsims_tool_class.ui.activePageTabWidget</header>
+   <header>.activePageTabWidget</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

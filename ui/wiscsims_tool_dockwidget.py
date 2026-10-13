@@ -22,14 +22,23 @@
  ***************************************************************************/
 """
 
+import io
 import os
+import xml.etree.ElementTree as ET
 
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QEvent, QSize, Qt, pyqtSignal
 
-FORM_CLASS, _ = uic.loadUiType(
-    os.path.join(os.path.dirname(__file__), "wiscsims_tool_dockwidget_base.ui")
-)
+def _load_form():
+    """Resolve local custom widgets using the installed plugin package name."""
+    definition = ET.parse(os.path.join(os.path.dirname(__file__), "wiscsims_tool_dockwidget_base.ui"))
+    for header in definition.findall("./customwidgets/customwidget/header"):
+        if header.text and header.text.startswith("."):
+            header.text = __package__ + header.text
+    return uic.loadUiType(io.StringIO(ET.tostring(definition.getroot(), encoding="unicode")))
+
+
+FORM_CLASS, _ = _load_form()
 
 
 class WiscSIMSToolDockWidget(QtWidgets.QDockWidget, FORM_CLASS):

@@ -1,9 +1,13 @@
 """Layout checks also runnable with QT_SCALE_FACTOR=2 for high DPI displays."""
 
 import os
+import importlib
 import pathlib
+import shutil
 import sys
+import tempfile
 import unittest
+from unittest.mock import patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -74,6 +78,22 @@ class DockUiTests(unittest.TestCase):
         self.dock.Tab_Preset_Mode.setCurrentIndex(0)
         self.app.processEvents()
         self.assertLess(self.dock.Tab_Preset_Mode.sizeHint().height(), grid_height)
+
+    def test_custom_widget_loads_under_a_different_plugin_package_name(self):
+        source = pathlib.Path(__file__).resolve().parents[1] / "ui"
+        with tempfile.TemporaryDirectory() as directory:
+            target = pathlib.Path(directory) / "release_test_plugin" / "ui"
+            target.mkdir(parents=True)
+            (target.parent / "__init__.py").write_text("")
+            (target / "__init__.py").write_text("")
+            for name in ("wiscsims_tool_dockwidget.py", "wiscsims_tool_dockwidget_base.ui", "activePageTabWidget.py"):
+                shutil.copy2(source / name, target / name)
+            with patch.object(sys, "path", [directory, *sys.path]), patch.dict(sys.modules):
+                module = importlib.import_module("release_test_plugin.ui.wiscsims_tool_dockwidget")
+                dock = module.WiscSIMSToolDockWidget()
+                self.assertEqual(type(dock.Tab_Preset_Mode).__module__, "release_test_plugin.ui.activePageTabWidget")
+                dock.deleteLater()
+                self.app.processEvents()
 
     def test_empty_layer_hint_tracks_blocked_combo_updates(self):
         combo = self.dock.Cmb_Preset_Layer
