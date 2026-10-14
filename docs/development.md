@@ -73,12 +73,14 @@ For each nearest-12 canvas reference set the forward GLP is affine. The inverse 
 
 ## Release settings and packaging
 
-Release 3.40 targets QGIS 3.44 through 3.99. Keep the public name `WiscSIMS Tool` and the package directory `wiscsims_tool` when updating the existing QGIS repository entry. Excel dependencies and their installation prompt are documented in `metadata.txt`.
+Release 3.40.1 targets QGIS 3.44 through 3.99. Keep the public name `WiscSIMS Tool` and the package directory `wiscsims_tool` when updating the existing QGIS repository entry. Excel dependencies and their installation prompt are documented in `metadata.txt`.
+
+The dock UI loader reads only its bundled `.ui` file and substitutes the exact local custom widget header with the installed package name. Keep the header unique. Do not add a general XML parser for this substitution; the previous ElementTree import and parse call were rejected by the repository's security scan.
 
 Create the submission archive from the final committed release revision:
 
 ```sh
-git archive --format=zip --prefix=wiscsims_tool/ --output=/tmp/wiscsims_tool-3.40.zip HEAD
+git archive --format=zip --prefix=wiscsims_tool/ --output=/tmp/wiscsims_tool-3.40.1.zip HEAD
 ```
 
 The tracked `.gitattributes` excludes tests, recording scripts, GIF/MP4 recordings, the old README PDF and Git configuration from the archive. The recordings remain in GitHub for the online guides. Untracked alignment, Shapefile and database files are never included by `git archive`. Runtime modules, UI files, icons, `metadata.txt`, `__init__.py` and `LICENSE` must be present. Check that the ZIP is below the repository's 25 MB limit and install it in a disposable QGIS profile before submission. Published source and the ZIP must correspond to the same release revision.

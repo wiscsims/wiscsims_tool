@@ -11,7 +11,7 @@ name=WiscSIMS Tool
 qgisMinimumVersion=3.44
 qgisMaximumVersion=3.99
 description=Useful QGIS tools for WiscSIMS sessions
-version=3.40
+version=3.40.1
 author=WiscSIMS (Kouki Kitajima)
 email=kitajima@wisc.edu
 
@@ -26,7 +26,8 @@ repository=https://github.com/wiscsims/wiscsims_tool
 
 # Recommended items:
 
-changelog=3.40: Improve dock layout and high DPI support; enable Point, Line and Grid placement; fix preview, cursor, symbol units and plugin reload cleanup; add pixel-size measurement guidance; improve Excel types, optional dependency installation and progress reporting; add verified MonkeyNavigator2 GLP import with optional reference-pair conversion for affected points.
+changelog=3.40.1: Remove ElementTree XML parsing from the dock UI loader to resolve the security scan findings. Preserve custom widget loading under the installed plugin package name. Simplify Quick Start with step images and a first-point GIF.
+    3.40: Improve dock layout and high DPI support; enable Point, Line and Grid placement; fix preview, cursor, symbol units and plugin reload cleanup; add pixel-size measurement guidance; improve Excel types, optional dependency installation and progress reporting; add verified MonkeyNavigator2 GLP import with optional reference-pair conversion for affected points.
 
 # Tags are comma separated with spaces allowed
 tags=python,SIMS,import,excel

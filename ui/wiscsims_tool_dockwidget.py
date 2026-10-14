@@ -24,18 +24,22 @@
 
 import io
 import os
-import xml.etree.ElementTree as ET
 
 from PyQt5 import QtWidgets, uic
 from PyQt5.QtCore import QEvent, QSize, Qt, pyqtSignal
 
 def _load_form():
     """Resolve local custom widgets using the installed plugin package name."""
-    definition = ET.parse(os.path.join(os.path.dirname(__file__), "wiscsims_tool_dockwidget_base.ui"))
-    for header in definition.findall("./customwidgets/customwidget/header"):
-        if header.text and header.text.startswith("."):
-            header.text = __package__ + header.text
-    return uic.loadUiType(io.StringIO(ET.tostring(definition.getroot(), encoding="unicode")))
+    path = os.path.join(os.path.dirname(__file__), "wiscsims_tool_dockwidget_base.ui")
+    with open(path, encoding="utf-8") as source:
+        definition = source.read()
+    # This bundled template has one local custom widget. Substitute its exact
+    # header without parsing XML or changing any other part of the UI document.
+    header = "<header>.activePageTabWidget</header>"
+    if definition.count(header) != 1:
+        raise ValueError("Expected one ActivePageTabWidget header in the bundled UI.")
+    definition = definition.replace(header, f"<header>{__package__}.activePageTabWidget</header>", 1)
+    return uic.loadUiType(io.StringIO(definition))
 
 
 FORM_CLASS, _ = _load_form()

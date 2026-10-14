@@ -39,7 +39,7 @@ WiscSIMS Tool has three main functions:
 
 ### [QGIS 3](https://www.qgis.org/)
 
-Version **3.40** requires **QGIS 3.44 or later in the QGIS 3 series**. The automated tests run with QGIS 3.44.13. QGIS 4 is not supported by this release. Download QGIS from the [official QGIS site](https://qgis.org/download/).
+Version **3.40.1** requires **QGIS 3.44 or later in the QGIS 3 series**. The automated tests run with QGIS 3.44.13. QGIS 4 is not supported by this release. Download QGIS from the [official QGIS site](https://qgis.org/download/).
 
 Excel import uses `openpyxl` for `.xlsx` files and `xlrd` for `.xls` files. If the required module is missing when you select a workbook, the plugin asks whether it may install the module into the current user's QGIS Python environment. Automatic installation requires an internet connection. You can decline without changing the environment.
 
@@ -59,7 +59,7 @@ There are two ways to install WiscSIMS Tool. The screenshots below show an older
 
 3. Check **Installed Plugins** to confirm that it is enabled. You should also see its icon in the QGIS toolbar.
 
-This checkout targets **WiscSIMS Tool 3.40**. The published repository package may be an earlier version until the new release is submitted and approved.
+This checkout targets **WiscSIMS Tool 3.40.1**. The published repository package may be an earlier version until the new release is submitted and approved.
 
 ### Install from ZIP file
 
