@@ -75,9 +75,9 @@ Manual installation is also available.
 
 ## Usage
 
-Start with the [updated Quick Start](docs/wiki/WiscSIMS-Tool-Quick-Start.md), including an animation of the complete workflow from project setup and Pixel Size measurement to spot placement and saving.
+New to QGIS? Follow the [Quick Start](docs/wiki/WiscSIMS-Tool-Quick-Start.md) to choose your first spot. Image calibration is explained in the separate [Pixel Size guide](docs/wiki/Estimate-Pixel-Size-of-the-image.md).
 
-Release ZIPs omit the large GIF and MP4 recordings. View the [online Quick Start](https://github.com/wiscsims/wiscsims_tool/blob/main/docs/wiki/WiscSIMS-Tool-Quick-Start.md) for the animations; the recordings remain in the source repository.
+Release ZIPs omit the large GIF and MP4 recordings. The [Pixel Size demonstration](https://github.com/wiscsims/wiscsims_tool/blob/main/docs/wiki/Estimate-Pixel-Size-of-the-image.md#watch-the-measurement) remains available online, and the full workflow recordings are retained in the source repository.
 
 Open the dock from its toolbar button or **Plugins > WiscSIMS > WiscSIMS Tool**. The dock has **Import**, **Preset**, and **Pixel Size** tabs. Keep the WiscSIMS Tool map tool active when selecting locations on the map.
 

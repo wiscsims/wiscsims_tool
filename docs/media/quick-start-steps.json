@@ -1,0 +1,14 @@
+{
+  "source_video": "../../img/readme/quick-start-first-point.mp4",
+  "fps": 20,
+  "frames": 73,
+  "duration_seconds": 3.65,
+  "video_width": 282,
+  "video_height": 198,
+  "analysis_spot_um": 10,
+  "selection_diameter_um": 12,
+  "example_pixel_size": 0.87,
+  "saved_point_count": 1,
+  "saved_comment": "spot-1",
+  "note": "The blue circle is a recording overlay showing the pointer position."
+}

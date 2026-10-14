@@ -11,6 +11,16 @@ The MP4 files are kept as the source recordings. GIF conversion does not delete 
 
 ## Reproduce the recording
 
+### Five-step first-spot guide
+
+The simplified Quick Start uses four cropped native QGIS screenshots and a short first-point GIF. Run [record_quick_start_steps.py](record_quick_start_steps.py) with the same environment variables and disposable-profile precautions below. On macOS, the profile settings file is `<temporary-profile-root>/profiles/quickstart/qgis.org/QGIS3.ini`; set `auth/use_password_helper=false` before starting. Pass the temporary profile root to `--profiles-path`.
+
+The recorder creates `quick-start-01-image.png` through `quick-start-04-size.png` and retains `quick-start-first-point.mp4`. It selects a 12 µm diameter for a 10 µm analysis spot, uses the example image's 0.87 µm per map unit, and verifies that exactly one point with comment `spot-1` is saved. A blue circle indicates the pointer during the recording. [quick-start-steps.json](quick-start-steps.json) records the result.
+
+Run `python3 docs/media/make_quick_start_step_gif.py` with `WISCSIMS_FFMPEG` set to create `quick-start-05-first-point.gif`. The 20 fps MP4 is retained. The GIF shows only approaching, clicking and leaving the first spot; it does not include other placement modes or pixel-size measurement.
+
+### Earlier full workflow recording
+
 The recorder needs QGIS with its Python bindings, Pillow, GDAL, and FFmpeg with the `libx264`, `palettegen`, and `paletteuse` filters. It uses the current plugin source. Run it in a **disposable QGIS profile**, since it creates and clears a demo project. Configure `auth/use_password_helper=false` in that profile's settings before starting QGIS to avoid a system keychain prompt during offscreen recording.
 
 Set these environment variables before starting QGIS with `--nologo --noversioncheck --noplugins --profiles-path <temporary-profile-root> --profile quickstart --lang en --code <absolute-path-to-record_quick_start.py>`:

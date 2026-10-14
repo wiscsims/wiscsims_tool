@@ -1,4 +1,6 @@
-Use the **Pixel Size** tab to measure image scale from a known scale bar and apply it to **Preset**. This replaces the older method of adjusting pixel size manually in Line mode.
+# Measure Pixel Size
+
+Use this page when you need to set the image scale before choosing your first spot. Measure a known scale bar in **Pixel Size**, then apply the result to **Preset**.
 
 ## Choose the scale bar endpoints
 
@@ -40,6 +42,6 @@ The still screenshot gives `1000 / 1148.5 ≈ 0.8707 µm / map unit`. The GIF us
 
 A map unit represents a pixel only when the map coordinates use image pixels. For a positioned or georeferenced image, the plugin uses the distance in its map coordinates.
 
-Once applied, Preset calculates spot diameter in map units as `spot diameter in µm / pixel size`. Set **Spot diameter** to your planned SIMS spot size before adding spots.
+Once applied, Preset calculates spot diameter in map units as `spot diameter in µm / pixel size`. Set **Spot diameter** for selecting your spots. For a 10 µm analysis spot, use about 12 µm to allow 20% extra margin.
 
-Return to the [WiscSIMS Tool Quick Start](WiscSIMS-Tool-Quick-Start.md) to continue with Point, Line, or Grid placement.
+Return to [Quick Start, step 4](WiscSIMS-Tool-Quick-Start.md#4-set-scale-and-spot-size) to set the spot diameter and choose your first point.
